@@ -1,0 +1,39 @@
+{
+  "name": "moodboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "start": "npm run build && vite preview --open",
+    "prepare": "husky",
+
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "format": "prettier --write src"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "eslint": "^10.1.0",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
+  },
+  "dependencies": {
+    "dexie": "^4.3.0",
+    "fabric": "^7.2.0"
+  },
+  "lint-staged": {
+      "src/**/*.ts": [
+          "prettier --write",
+          "eslint --fix"
+      ]
+  }
+}
