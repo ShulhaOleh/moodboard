@@ -65,8 +65,8 @@ export class TextBlock {
     private setupInteraction() {
         this.el.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return
+            if (this.editing) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
-            if ((e.target as HTMLElement).tagName === 'TEXTAREA') return
             if (!this.selected) this.select()
             this.startDrag(e)
         })
