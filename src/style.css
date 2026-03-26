@@ -82,6 +82,18 @@ body {
     cursor: pointer;
 }
 
+.prop-font-picker {
+    flex: 1;
+}
+
+.prop-font-picker .font-picker-trigger {
+    height: 24px;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    font-size: 12px;
+}
+
 .prop-row button {
     font-size: 11px;
     color: #94a3b8;
@@ -224,6 +236,66 @@ body {
     padding: 0 4px;
     font-size: 12px;
     text-align: center;
+}
+
+/* Font picker */
+.font-picker {
+    position: relative;
+}
+
+.font-picker-trigger {
+    height: 26px;
+    min-width: 100px;
+    max-width: 130px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0 8px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+    background: white;
+}
+
+.font-picker-trigger:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.font-picker-dropdown {
+    position: fixed;
+    z-index: 2000;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    max-height: 240px;
+    overflow-y: auto;
+    min-width: 160px;
+}
+
+.font-picker-dropdown.hidden {
+    display: none;
+}
+
+.font-picker-item {
+    padding: 7px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.font-picker-item:hover {
+    background: #f1f5f9;
+}
+
+.font-picker-item.is-active {
+    background: #eff6ff;
+    color: #2563eb;
 }
 
 /* Selection handles container */

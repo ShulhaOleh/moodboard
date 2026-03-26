@@ -11,6 +11,7 @@ export type PropertyField =
           step?: number
       }
     | { type: 'color'; key: string; label: string; value: string; clearable?: boolean }
+    | { type: 'font'; key: string; label: string; value: string }
 
 export interface BoardObject {
     el: HTMLElement

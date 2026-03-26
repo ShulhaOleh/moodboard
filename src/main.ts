@@ -38,6 +38,7 @@ const demo = new TextBlock(overlay, {
     padding: 16,
     color: '#333333',
     background: '#ffffff',
+    fontFamily: 'Inter',
 })
 
 demo.onSelect = (obj) => panel.show(obj)

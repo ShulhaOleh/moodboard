@@ -2,6 +2,8 @@
 // Positioned above the selection using the browser's Selection API.
 
 import { Editor } from '@tiptap/core'
+import { loadFont } from '../lib/fonts'
+import { FontPicker } from './FontPicker'
 
 export class TextFormatToolbar {
     readonly el: HTMLElement
@@ -9,6 +11,7 @@ export class TextFormatToolbar {
     private _interacting = false
     private interactingTimer = 0
     private sizeInput!: HTMLInputElement
+    private fontPicker!: FontPicker
 
     // True while the user is interacting with the toolbar (mousedown held or color picker open).
     // Used by the editor's blur handler to decide whether to exit edit mode.
@@ -74,7 +77,12 @@ export class TextFormatToolbar {
         )
         this.sizeInput.addEventListener('blur', () => this.editor.commands.focus())
 
-        this.el.append(bold, italic, colorInput, this.sizeInput)
+        this.fontPicker = new FontPicker('Inter', (family) => {
+            loadFont(family)
+            this.editor.chain().focus().setFontFamily(family).run()
+        })
+
+        this.el.append(this.fontPicker.el, bold, italic, colorInput, this.sizeInput)
 
         // Only prevent default on buttons — inputs need real focus to be usable
         this.el.addEventListener('mousedown', (e) => {
@@ -97,6 +105,7 @@ export class TextFormatToolbar {
             } else {
                 this.updatePosition()
                 this.updateSizeInput()
+                this.updateFontSelect()
                 this.show()
             }
         })
@@ -106,6 +115,12 @@ export class TextFormatToolbar {
         this.editor.on('blur', () => {
             if (!this._interacting) this.hide()
         })
+    }
+
+    // Reads the font-family of the current selection and syncs it to the font picker.
+    private updateFontSelect() {
+        const family = this.editor.getAttributes('textStyle').fontFamily as string | undefined
+        if (family) this.fontPicker.setValue(family)
     }
 
     // Reads the font-size of the current selection and syncs it to the size input.
@@ -149,6 +164,7 @@ export class TextFormatToolbar {
 
     destroy() {
         clearTimeout(this.interactingTimer)
+        this.fontPicker.destroy()
         this.el.remove()
     }
 }

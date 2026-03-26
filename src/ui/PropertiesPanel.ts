@@ -3,6 +3,8 @@
 // Appearance fields are rendered dynamically based on the object type.
 
 import { BoardObject, PropertyField } from '../board/BoardObject'
+import { loadFont } from '../lib/fonts'
+import { FontPicker } from './FontPicker'
 
 export class PropertiesPanel {
     readonly el: HTMLElement
@@ -137,6 +139,15 @@ export class PropertiesPanel {
                     this.object?.setAppearanceProperty(field.key, Number(input.value))
                 )
                 row.appendChild(input)
+            }
+
+            if (field.type === 'font') {
+                const picker = new FontPicker(field.value, (family) => {
+                    loadFont(family)
+                    this.object?.setAppearanceProperty(field.key, family)
+                })
+                picker.el.classList.add('prop-font-picker')
+                row.appendChild(picker.el)
             }
 
             if (field.type === 'color') {

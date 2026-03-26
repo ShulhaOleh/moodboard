@@ -6,6 +6,8 @@ import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import { FontSize } from './extensions/FontSize'
+import { FontFamily } from './extensions/FontFamily'
+import { loadFont } from '../lib/fonts'
 import { TextFormatToolbar } from '../ui/TextFormatToolbar'
 import { BoardObject, PropertyField } from './BoardObject'
 
@@ -21,6 +23,7 @@ export interface TextBlockData {
     padding: number
     color: string
     background: string
+    fontFamily: string
 }
 
 export class TextBlock implements BoardObject {
@@ -49,6 +52,7 @@ export class TextBlock implements BoardObject {
         this.applyPosition()
         this.applyTransform()
         this.applyTypography()
+        this.applyFontFamily()
         this.applyAppearance()
         if (data.width) this.el.style.width = `${data.width}px`
         if (data.height) this.el.style.height = `${data.height}px`
@@ -70,6 +74,13 @@ export class TextBlock implements BoardObject {
     private applyTypography() {
         this.el.style.fontSize = `${this.data.fontSize}px`
         this.el.style.padding = `${this.data.padding}px`
+    }
+
+    private applyFontFamily() {
+        if (this.data.fontFamily) {
+            loadFont(this.data.fontFamily)
+            this.el.style.fontFamily = this.data.fontFamily
+        }
     }
 
     private applyAppearance() {
@@ -121,6 +132,7 @@ export class TextBlock implements BoardObject {
 
     getAppearanceFields(): PropertyField[] {
         return [
+            { type: 'font', key: 'fontFamily', label: 'Font', value: this.data.fontFamily },
             {
                 type: 'number',
                 key: 'fontSize',
@@ -142,6 +154,7 @@ export class TextBlock implements BoardObject {
     }
 
     setAppearanceProperty(key: string, value: string | number) {
+        if (key === 'fontFamily') this.setFontFamilyBlock(String(value))
         if (key === 'fontSize') this.setFontSize(Number(value))
         if (key === 'color') this.setColor(String(value))
         if (key === 'background') this.setBackground(String(value))
@@ -297,7 +310,7 @@ export class TextBlock implements BoardObject {
         this.contentEl.innerHTML = ''
         this.editorInstance = new Editor({
             element: this.contentEl,
-            extensions: [StarterKit, TextStyle, Color, FontSize],
+            extensions: [StarterKit, TextStyle, Color, FontSize, FontFamily],
             content: this.data.content,
             autofocus: true,
         })
@@ -334,6 +347,11 @@ export class TextBlock implements BoardObject {
         this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape') this.editorInstance?.commands.blur()
         })
+    }
+
+    setFontFamilyBlock(family: string) {
+        this.data.fontFamily = family
+        this.applyFontFamily()
     }
 
     setFontSize(size: number) {
