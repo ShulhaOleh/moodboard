@@ -4,6 +4,7 @@
 import { Editor } from '@tiptap/core'
 import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
+import { ColorPicker } from './ColorPicker'
 
 export class TextFormatToolbar {
     readonly el: HTMLElement
@@ -12,6 +13,7 @@ export class TextFormatToolbar {
     private interactingTimer = 0
     private sizeInput!: HTMLInputElement
     private fontPicker!: FontPicker
+    private colorPicker!: ColorPicker
 
     // True while the user is interacting with the toolbar (mousedown held or color picker open).
     // Used by the editor's blur handler to decide whether to exit edit mode.
@@ -59,12 +61,19 @@ export class TextFormatToolbar {
         )
         italic.style.fontStyle = 'italic'
 
-        const colorInput = document.createElement('input')
-        colorInput.type = 'color'
-        colorInput.title = 'Text color'
-        colorInput.addEventListener('input', () =>
-            this.editor.chain().setColor(colorInput.value).run()
-        )
+        this.colorPicker = new ColorPicker('#000000', (color) => {
+            this.editor.chain().focus().setColor(color).run()
+        })
+        this.colorPicker.el.title = 'Text color'
+        // Popover lives in document.body outside this.el, so track its mousedown separately
+        // to keep the _interacting flag alive while the user adjusts color or alpha.
+        this.colorPicker.popoverEl.addEventListener('mousedown', () => {
+            this._interacting = true
+            clearTimeout(this.interactingTimer)
+            this.interactingTimer = window.setTimeout(() => {
+                this._interacting = false
+            }, 300)
+        })
 
         this.sizeInput = document.createElement('input')
         this.sizeInput.type = 'number'
@@ -82,7 +91,7 @@ export class TextFormatToolbar {
             this.editor.chain().focus().setFontFamily(family).run()
         })
 
-        this.el.append(this.fontPicker.el, bold, italic, colorInput, this.sizeInput)
+        this.el.append(this.fontPicker.el, bold, italic, this.colorPicker.el, this.sizeInput)
 
         // Only prevent default on buttons — inputs need real focus to be usable
         this.el.addEventListener('mousedown', (e) => {
@@ -106,6 +115,7 @@ export class TextFormatToolbar {
                 this.updatePosition()
                 this.updateSizeInput()
                 this.updateFontSelect()
+                this.updateColorPicker()
                 this.show()
             }
         })
@@ -115,6 +125,25 @@ export class TextFormatToolbar {
         this.editor.on('blur', () => {
             if (!this._interacting) this.hide()
         })
+    }
+
+    // Reads the text color of the current selection and syncs it to the color picker.
+    // Prefers the explicit TextStyle mark value; falls back to computed style.
+    private updateColorPicker() {
+        const explicit = this.editor.getAttributes('textStyle').color as string | undefined
+        if (explicit) {
+            this.colorPicker.setValue(explicit)
+            return
+        }
+
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0) return
+        const node = selection.getRangeAt(0).startContainer
+        const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element)
+        if (el) {
+            const computed = window.getComputedStyle(el).color
+            if (computed) this.colorPicker.setValue(computed)
+        }
     }
 
     // Reads the font-family of the current selection and syncs it to the font picker.
@@ -165,6 +194,7 @@ export class TextFormatToolbar {
     destroy() {
         clearTimeout(this.interactingTimer)
         this.fontPicker.destroy()
+        this.colorPicker.destroy()
         this.el.remove()
     }
 }

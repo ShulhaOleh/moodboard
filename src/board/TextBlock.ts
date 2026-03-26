@@ -147,7 +147,7 @@ export class TextBlock implements BoardObject {
                 type: 'color',
                 key: 'background',
                 label: 'Background',
-                value: this.data.background === 'transparent' ? '#ffffff' : this.data.background,
+                value: this.data.background,
                 clearable: true,
             },
         ]

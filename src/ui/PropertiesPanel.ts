@@ -5,6 +5,7 @@
 import { BoardObject, PropertyField } from '../board/BoardObject'
 import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
+import { ColorPicker } from './ColorPicker'
 
 export class PropertiesPanel {
     readonly el: HTMLElement
@@ -151,20 +152,17 @@ export class PropertiesPanel {
             }
 
             if (field.type === 'color') {
-                const input = document.createElement('input')
-                input.type = 'color'
-                input.value = field.value
-                input.addEventListener('input', () =>
-                    this.object?.setAppearanceProperty(field.key, input.value)
-                )
-                row.appendChild(input)
+                const picker = new ColorPicker(field.value, (color) => {
+                    this.object?.setAppearanceProperty(field.key, color)
+                })
+                row.appendChild(picker.el)
 
                 if (field.clearable) {
                     const clear = document.createElement('button')
                     clear.textContent = '✕'
                     clear.addEventListener('click', () => {
                         this.object?.setAppearanceProperty(field.key, 'transparent')
-                        input.value = '#ffffff'
+                        picker.setValue('transparent')
                     })
                     row.appendChild(clear)
                 }
