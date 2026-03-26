@@ -1,6 +1,12 @@
-// Draggable, editable text block with markdown rendering for the board overlay.
+// Draggable, editable text block with rich text editing via TipTap.
+// Content is stored as an HTML string and rendered directly into the content element.
 
-import { marked } from 'marked'
+import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import { FontSize } from './extensions/FontSize'
+import { TextFormatToolbar } from '../ui/TextFormatToolbar'
 import { BoardObject, PropertyField } from './BoardObject'
 
 export interface TextBlockData {
@@ -28,6 +34,7 @@ export class TextBlock implements BoardObject {
     private contentEl: HTMLElement
     private handlesEl: HTMLElement | null = null
     private dragOffset = { x: 0, y: 0 }
+    private editorInstance: Editor | null = null
 
     constructor(container: HTMLElement, data: TextBlockData) {
         this.data = { ...data }
@@ -45,7 +52,7 @@ export class TextBlock implements BoardObject {
         this.applyAppearance()
         if (data.width) this.el.style.width = `${data.width}px`
         if (data.height) this.el.style.height = `${data.height}px`
-        this.renderMarkdown()
+        this.renderContent()
         this.setupInteraction()
 
         container.appendChild(this.el)
@@ -70,8 +77,8 @@ export class TextBlock implements BoardObject {
         this.el.style.background = this.data.background
     }
 
-    private renderMarkdown() {
-        this.contentEl.innerHTML = marked.parse(this.data.content) as string
+    private renderContent() {
+        this.contentEl.innerHTML = this.data.content
     }
 
     private setupInteraction() {
@@ -79,7 +86,10 @@ export class TextBlock implements BoardObject {
             if (e.button !== 0) return
             if (this.editing) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
-            if (!this.selected) this.select()
+            if (!this.selected) {
+                this.select()
+                return // selecting click should not start a drag
+            }
             this.startDrag(e)
         })
 
@@ -186,10 +196,19 @@ export class TextBlock implements BoardObject {
     private startDrag(e: MouseEvent) {
         e.preventDefault()
 
-        this.dragOffset.x = e.clientX - this.data.x
-        this.dragOffset.y = e.clientY - this.data.y
+        const startX = e.clientX
+        const startY = e.clientY
+        let dragging = false
 
         const onMove = (e: MouseEvent) => {
+            if (!dragging) {
+                // Only commit to a drag after the mouse moves a few pixels,
+                // so clicks and double-clicks never accidentally shift the block.
+                if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
+                dragging = true
+                this.dragOffset.x = startX - this.data.x
+                this.dragOffset.y = startY - this.data.y
+            }
             this.data.x = e.clientX - this.dragOffset.x
             this.data.y = e.clientY - this.dragOffset.y
             this.applyPosition()
@@ -262,34 +281,58 @@ export class TextBlock implements BoardObject {
         window.addEventListener('mouseup', onUp)
     }
 
+    // Temporarily resets rotation to 0 for comfortable editing, restores it on exit.
     private startEdit() {
         this.editing = true
+
+        // Handles are useless (and their mousedown listeners have no editing guard)
+        // while the TipTap editor is active, so hide them for the duration.
+        this.handlesEl?.remove()
+        this.handlesEl = null
 
         const savedRotation = this.data.rotation
         this.data.rotation = 0
         this.applyTransform()
 
-        const textarea = document.createElement('textarea')
-        textarea.value = this.data.content
-        textarea.className = 'text-block-editor'
-        textarea.style.fontSize = 'inherit'
-
         this.contentEl.innerHTML = ''
-        this.contentEl.appendChild(textarea)
-        textarea.focus()
-        textarea.select()
+        this.editorInstance = new Editor({
+            element: this.contentEl,
+            extensions: [StarterKit, TextStyle, Color, FontSize],
+            content: this.data.content,
+            autofocus: true,
+        })
 
+        const toolbar = new TextFormatToolbar(this.editorInstance)
+
+        let finished = false
         const finish = () => {
-            this.data.content = textarea.value
+            if (finished) return
+            finished = true
+            this.data.content = this.editorInstance!.getHTML()
+            this.editorInstance!.destroy()
+            this.editorInstance = null
+            toolbar.destroy()
             this.editing = false
             this.data.rotation = savedRotation
             this.applyTransform()
-            this.renderMarkdown()
+            this.contentEl.innerHTML = ''
+            this.renderContent()
+            if (this.selected) this.renderHandles()
         }
 
-        textarea.addEventListener('blur', finish)
-        textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') textarea.blur()
+        // Defer finish so focus has time to settle — the toolbar's inputs and native color
+        // picker both cause editor blur but should not exit edit mode.
+        this.editorInstance.on('blur', () => {
+            setTimeout(() => {
+                if (this.editorInstance?.isFocused) return
+                if (toolbar.isInteracting) return
+                if (toolbar.el.contains(document.activeElement)) return
+                finish()
+            }, 100)
+        })
+
+        this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Escape') this.editorInstance?.commands.blur()
         })
     }
 

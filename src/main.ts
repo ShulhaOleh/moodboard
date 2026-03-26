@@ -33,7 +33,7 @@ const demo = new TextBlock(overlay, {
     y: 100,
     rotation: 0,
     content:
-        '# Hello moodboard\n\nDouble-click to **edit**. Supports _markdown_.\n\n- item one\n- item two',
+        '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
     fontSize: 16,
     padding: 16,
     color: '#333333',
