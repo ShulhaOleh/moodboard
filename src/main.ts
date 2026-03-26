@@ -4,11 +4,16 @@ import { Canvas, FabricText } from 'fabric'
 const app = document.getElementById('app')!
 
 const canvasEl = document.createElement('canvas')
-canvasEl.width = 800
-canvasEl.height = 600
 app.appendChild(canvasEl)
 
-const canvas = new Canvas(canvasEl)
+const canvas = new Canvas(canvasEl, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+})
+
+window.addEventListener('resize', () => {
+    canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight })
+})
 
 const text = new FabricText('moodboard', {
     left: 400,
