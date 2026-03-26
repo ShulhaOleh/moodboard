@@ -8,7 +8,6 @@
     "build": "tsc && vite build",
     "start": "npm run build && vite preview --open",
     "prepare": "husky",
-
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "format": "prettier --write src"
@@ -28,12 +27,13 @@
   },
   "dependencies": {
     "dexie": "^4.3.0",
-    "fabric": "^7.2.0"
+    "fabric": "^7.2.0",
+    "marked": "^17.0.5"
   },
   "lint-staged": {
-      "src/**/*.ts": [
-          "prettier --write",
-          "eslint --fix"
-      ]
+    "src/**/*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

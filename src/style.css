@@ -1,3 +1,5 @@
+/* Global styles, layout, and component styles for the moodboard app. */
+
 @import 'tailwindcss';
 
 * {
@@ -7,9 +9,134 @@
 }
 
 html,
-body,
-#app {
+body {
     width: 100%;
     height: 100%;
+}
+
+/* Text block */
+.text-block {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    user-select: none;
+    width: fit-content;
+    min-width: 120px;
+    overflow-wrap: break-word;
+}
+
+.text-block:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.text-block.is-selected {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Markdown content styles */
+.text-block h1,
+.text-block h2,
+.text-block h3 {
+    font-weight: 600;
+    margin-bottom: 0.4em;
+}
+
+.text-block h1 { font-size: 1.5em; }
+.text-block h2 { font-size: 1.25em; }
+.text-block h3 { font-size: 1.1em; }
+
+.text-block p {
+    margin-bottom: 0.5em;
+}
+
+.text-block p:last-child {
+    margin-bottom: 0;
+}
+
+.text-block ul,
+.text-block ol {
+    padding-left: 1.25em;
+    margin-bottom: 0.5em;
+}
+
+.text-block strong { font-weight: 600; }
+.text-block em { font-style: italic; }
+
+.text-block code {
+    background: #f1f5f9;
+    border-radius: 3px;
+    padding: 0.1em 0.3em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+/* Selection handles container */
+.tb-handles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Resize handle — bottom-right corner */
+.tb-resize {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border: 2px solid #3b82f6;
+    border-radius: 2px;
+    cursor: se-resize;
+    pointer-events: all;
+}
+
+/* Rotation handle — above the block center */
+.tb-rotate {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: 2px solid #3b82f6;
+    border-radius: 50%;
+    cursor: crosshair;
+    pointer-events: all;
+}
+
+.tb-rotate::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 10px;
+    background: #3b82f6;
+}
+
+.text-block-content {
+    height: 100%;
     overflow: hidden;
+}
+
+/* Edit mode */
+.text-block-editor {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: monospace;
+    background: transparent;
+    cursor: text;
 }

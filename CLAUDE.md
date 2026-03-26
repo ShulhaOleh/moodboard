@@ -24,15 +24,20 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - **Dexie** — IndexedDB wrapper for persisting board data locally in the browser.
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
+**Two-layer rendering:** The app uses two layers stacked in `#app`:
+1. A Fabric.js `<canvas>` — for future non-text elements (images, shapes).
+2. An HTML `#overlay` div — for text blocks (`src/board/TextBlock.ts`). Text blocks are HTML elements, not canvas objects, which enables native markdown rendering and text selection. The two layers share the same coordinate space.
+
+This split means z-ordering between canvas objects and text blocks is not possible — text blocks always render above the canvas.
+
 **Deployment:** Vite base path is set to `/moodboard/` — all asset URLs are relative to that.
 
-**Intended module structure** (not yet implemented, planned):
+**Module structure:**
 ```
 src/
-  canvas/    # fabric.js setup, tools, rendering
-  board/     # board state, persistence (Dexie)
-  ui/        # toolbar, panels, DOM interactions
-  store.ts   # app state
+  board/     # board elements (TextBlock)
+  canvas/    # fabric.js setup (not yet created)
+  ui/        # toolbar, panels (not yet created)
   main.ts    # wiring only
 ```
 
@@ -42,3 +47,9 @@ src/
 - No semicolons
 - TypeScript strict mode — `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns` are all errors
 - Pre-commit hook (husky + lint-staged) runs Prettier then ESLint on staged `src/**/*.ts` files
+
+## Comments
+
+- Every file must start with a header comment describing the purpose of the file (not its contents).
+- Write the minimum number of comments necessary — only when the intent isn't obvious from the code.
+- Comments describe *what* and *why*, never *how*.

@@ -1,5 +1,8 @@
+// App entry point — initializes the canvas, HTML overlay, and demo content.
+
 import './style.css'
-import { Canvas, FabricText } from 'fabric'
+import { Canvas } from 'fabric'
+import { TextBlock } from './board/TextBlock'
 
 const app = document.getElementById('app')!
 
@@ -15,14 +18,19 @@ window.addEventListener('resize', () => {
     canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight })
 })
 
-const text = new FabricText('moodboard', {
-    left: 400,
-    top: 300,
-    originX: 'center',
-    originY: 'center',
-    fontSize: 48,
-    fill: '#333',
-})
+// Overlay hosts HTML-based elements (text blocks) layered above the Fabric canvas.
+const overlay = document.createElement('div')
+overlay.id = 'overlay'
+overlay.className = 'absolute inset-0 pointer-events-none'
+app.appendChild(overlay)
 
-canvas.add(text)
-canvas.renderAll()
+new TextBlock(overlay, {
+    id: 'demo',
+    x: 100,
+    y: 100,
+    rotation: 0,
+    content:
+        '# Hello moodboard\n\nDouble-click to **edit**. Supports _markdown_.\n\n- item one\n- item two',
+    fontSize: 16,
+    padding: 16,
+})
