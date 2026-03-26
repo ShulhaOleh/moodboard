@@ -19,3 +19,7 @@ A canvas-based moodboard editor that runs entirely in the browser with local per
 | `npm run start` | Build and open in browser |
 | `npm run lint` | Lint source files |
 | `npm run format` | Format source files |
+
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
