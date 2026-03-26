@@ -3,6 +3,7 @@
 import './style.css'
 import { Canvas } from 'fabric'
 import { TextBlock } from './board/TextBlock'
+import { PropertiesPanel } from './ui/PropertiesPanel'
 
 const app = document.getElementById('app')!
 
@@ -18,13 +19,15 @@ window.addEventListener('resize', () => {
     canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight })
 })
 
+const panel = new PropertiesPanel(app)
+
 // Overlay hosts HTML-based elements (text blocks) layered above the Fabric canvas.
 const overlay = document.createElement('div')
 overlay.id = 'overlay'
 overlay.className = 'absolute inset-0 pointer-events-none'
 app.appendChild(overlay)
 
-new TextBlock(overlay, {
+const demo = new TextBlock(overlay, {
     id: 'demo',
     x: 100,
     y: 100,
@@ -33,4 +36,9 @@ new TextBlock(overlay, {
         '# Hello moodboard\n\nDouble-click to **edit**. Supports _markdown_.\n\n- item one\n- item two',
     fontSize: 16,
     padding: 16,
+    color: '#333333',
+    background: '#ffffff',
 })
+
+demo.onSelect = (obj) => panel.show(obj)
+demo.onDeselect = () => panel.hide()

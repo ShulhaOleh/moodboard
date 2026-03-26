@@ -1,6 +1,7 @@
 // Draggable, editable text block with markdown rendering for the board overlay.
 
 import { marked } from 'marked'
+import { BoardObject, PropertyField } from './BoardObject'
 
 export interface TextBlockData {
     id: string
@@ -12,10 +13,15 @@ export interface TextBlockData {
     content: string
     fontSize: number
     padding: number
+    color: string
+    background: string
 }
 
-export class TextBlock {
+export class TextBlock implements BoardObject {
     readonly el: HTMLElement
+    onSelect: ((obj: BoardObject) => void) | null = null
+    onDeselect: (() => void) | null = null
+    onChange: (() => void) | null = null
     private data: TextBlockData
     private editing = false
     private selected = false
@@ -36,6 +42,7 @@ export class TextBlock {
         this.applyPosition()
         this.applyTransform()
         this.applyTypography()
+        this.applyAppearance()
         if (data.width) this.el.style.width = `${data.width}px`
         if (data.height) this.el.style.height = `${data.height}px`
         this.renderMarkdown()
@@ -56,6 +63,11 @@ export class TextBlock {
     private applyTypography() {
         this.el.style.fontSize = `${this.data.fontSize}px`
         this.el.style.padding = `${this.data.padding}px`
+    }
+
+    private applyAppearance() {
+        this.el.style.color = this.data.color
+        this.el.style.background = this.data.background
     }
 
     private renderMarkdown() {
@@ -84,9 +96,51 @@ export class TextBlock {
         })
     }
 
+    getPosition() {
+        return { x: this.data.x, y: this.data.y }
+    }
+    getSize() {
+        return {
+            width: this.data.width ?? this.el.offsetWidth,
+            height: this.data.height ?? this.el.offsetHeight,
+        }
+    }
+    getRotation() {
+        return this.data.rotation
+    }
+
+    getAppearanceFields(): PropertyField[] {
+        return [
+            {
+                type: 'number',
+                key: 'fontSize',
+                label: 'Font size',
+                value: this.data.fontSize,
+                min: 8,
+                max: 120,
+                step: 1,
+            },
+            { type: 'color', key: 'color', label: 'Color', value: this.data.color },
+            {
+                type: 'color',
+                key: 'background',
+                label: 'Background',
+                value: this.data.background === 'transparent' ? '#ffffff' : this.data.background,
+                clearable: true,
+            },
+        ]
+    }
+
+    setAppearanceProperty(key: string, value: string | number) {
+        if (key === 'fontSize') this.setFontSize(Number(value))
+        if (key === 'color') this.setColor(String(value))
+        if (key === 'background') this.setBackground(String(value))
+    }
+
     private select() {
         this.selected = true
         this.el.classList.add('is-selected')
+        this.onSelect?.(this)
 
         // Fix dimensions so the resize handle has something to work with
         if (!this.data.width) {
@@ -106,6 +160,7 @@ export class TextBlock {
         this.el.classList.remove('is-selected')
         this.handlesEl?.remove()
         this.handlesEl = null
+        this.onDeselect?.()
     }
 
     private renderHandles() {
@@ -138,6 +193,7 @@ export class TextBlock {
             this.data.x = e.clientX - this.dragOffset.x
             this.data.y = e.clientY - this.dragOffset.y
             this.applyPosition()
+            this.onChange?.()
         }
 
         const onUp = () => {
@@ -169,6 +225,7 @@ export class TextBlock {
             this.data.height = Math.max(40, startH + localDy)
             this.el.style.width = `${this.data.width}px`
             this.el.style.height = `${this.data.height}px`
+            this.onChange?.()
         }
 
         const onUp = () => {
@@ -193,6 +250,7 @@ export class TextBlock {
             // +90° offset so 0° points up (handle is above the block)
             this.data.rotation = (angle * 180) / Math.PI + 90
             this.applyTransform()
+            this.onChange?.()
         }
 
         const onUp = () => {
@@ -245,6 +303,35 @@ export class TextBlock {
         this.applyTypography()
     }
 
+    setPosition(x: number, y: number) {
+        this.data.x = x
+        this.data.y = y
+        this.applyPosition()
+    }
+
+    setSize(width: number, height: number) {
+        this.data.width = Math.max(120, width)
+        this.data.height = Math.max(40, height)
+        this.el.style.width = `${this.data.width}px`
+        this.el.style.height = `${this.data.height}px`
+    }
+
+    setRotation(deg: number) {
+        this.data.rotation = deg
+        this.applyTransform()
+    }
+
+    setColor(color: string) {
+        this.data.color = color
+        this.applyAppearance()
+    }
+
+    setBackground(bg: string) {
+        this.data.background = bg
+        this.applyAppearance()
+    }
+
+    // Returns a snapshot of the current block state for persistence.
     getData(): Readonly<TextBlockData> {
         return { ...this.data }
     }
