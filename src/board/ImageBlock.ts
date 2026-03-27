@@ -15,6 +15,7 @@ export interface ImageBlockData {
     objectFit: 'cover' | 'contain' | 'fill'
     opacity: number
     borderRadius: number
+    background: string
 }
 
 export class ImageBlock implements BoardObject {
@@ -73,6 +74,7 @@ export class ImageBlock implements BoardObject {
         this.imgEl.style.objectFit = this.data.objectFit
         this.el.style.opacity = String(this.data.opacity / 100)
         this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
+        this.innerEl.style.background = this.data.background
     }
 
     private setupInteraction() {
@@ -264,6 +266,13 @@ export class ImageBlock implements BoardObject {
                 max: 500,
                 step: 1,
             },
+            {
+                type: 'color',
+                key: 'background',
+                label: 'Background',
+                value: this.data.background,
+                clearable: true,
+            },
         ]
     }
 
@@ -279,6 +288,10 @@ export class ImageBlock implements BoardObject {
         if (key === 'borderRadius') {
             this.data.borderRadius = Number(value)
             this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
+        }
+        if (key === 'background') {
+            this.data.background = String(value)
+            this.innerEl.style.background = this.data.background
         }
     }
 

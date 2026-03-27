@@ -57,6 +57,7 @@ const demoImage = new ImageBlock(overlay, {
     objectFit: 'contain',
     opacity: 100,
     borderRadius: 6,
+    background: 'transparent',
 })
 
 demoImage.onSelect = (obj) => panel.show(obj)
