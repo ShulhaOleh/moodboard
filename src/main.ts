@@ -25,6 +25,26 @@ function addBlock(block: BoardObject) {
     block.onDeselect = () => panel.hide()
 }
 
+function removeBlock(block: BoardObject) {
+    const idx = blocks.indexOf(block)
+    if (idx !== -1) blocks.splice(idx, 1)
+    block.destroy()
+    panel.hide()
+}
+
+panel.onDelete = () => {
+    if (panel.object) removeBlock(panel.object)
+}
+
+// Delete/Backspace removes the selected block unless focus is inside an editable element.
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return
+    const active = document.activeElement as HTMLElement
+    if (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+        return
+    if (panel.object) removeBlock(panel.object)
+})
+
 // Returns a position near the center of the viewport with a slight random offset
 // so multiple objects added in sequence don't stack exactly on top of each other.
 function centerPosition() {

@@ -43,4 +43,5 @@ export interface BoardObject {
     // Returns appearance fields specific to this object type.
     getAppearanceFields(): PropertyField[]
     setAppearanceProperty(key: string, value: string | number): void
+    destroy(): void
 }

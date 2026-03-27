@@ -459,6 +459,11 @@ export class TextBlock implements BoardObject {
         this.applyAppearance()
     }
 
+    destroy() {
+        this.editorInstance?.destroy()
+        this.el.remove()
+    }
+
     // Returns a snapshot of the current block state for persistence.
     getData(): Readonly<TextBlockData> {
         return { ...this.data }

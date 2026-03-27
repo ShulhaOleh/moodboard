@@ -9,7 +9,8 @@ import { ColorPicker } from './ColorPicker'
 
 export class PropertiesPanel {
     readonly el: HTMLElement
-    private object: BoardObject | null = null
+    onDelete: (() => void) | null = null
+    object: BoardObject | null = null
     private appearanceEl: HTMLElement
     private inputs: {
         x: HTMLInputElement
@@ -48,9 +49,13 @@ export class PropertiesPanel {
                 <input type="text" inputmode="numeric" id="prop-rotation" />
             </div>
             <div id="prop-appearance"></div>
+            <button id="prop-delete">Delete</button>
         `
 
         this.appearanceEl = this.el.querySelector('#prop-appearance') as HTMLElement
+        const deleteBtn = this.el.querySelector('#prop-delete') as HTMLButtonElement
+        deleteBtn.addEventListener('click', () => this.onDelete?.())
+
         this.inputs = {
             x: this.el.querySelector('#prop-x') as HTMLInputElement,
             y: this.el.querySelector('#prop-y') as HTMLInputElement,

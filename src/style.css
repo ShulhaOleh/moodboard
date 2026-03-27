@@ -147,6 +147,22 @@ body {
     cursor: pointer;
 }
 
+/* Delete button at the bottom of the properties panel */
+#prop-delete {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    background: none;
+    color: #ef4444;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#prop-delete:hover {
+    background: #fef2f2;
+}
+
 /* Clear button on clearable color fields */
 .prop-row > button {
     font-size: 11px;
