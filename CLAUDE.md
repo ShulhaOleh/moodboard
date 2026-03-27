@@ -24,17 +24,27 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - **Dexie** — IndexedDB wrapper for local persistence (not yet wired up).
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
-**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. Using HTML elements enables native rich text editing and straightforward z-ordering.
+**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY)` when the user pans in explore mode. Block positions are stored in board space (relative to the overlay origin), so `centerPosition()` in `main.ts` must subtract the current pan offset when placing new objects.
 
 **BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`.
 
 **Text editing flow:** Double-clicking a `TextBlock` mounts a TipTap `Editor` instance into the block's content element. A `TextFormatToolbar` (floating above the selection) appears on text selection and is destroyed when editing ends. The block temporarily resets its rotation to 0° during editing, restoring it on exit.
 
-**Selection model:** Each block manages its own selection state and listens on `document` for outside clicks. When switching between blocks, the outgoing block must not fire `onDeselect` (which hides the panel) if the click target is another board object — the incoming `onSelect` owns the panel update. Both `TextBlock` and `ImageBlock` implement this guard using `.closest('.text-block, .image-block')`.
+**Selection model:** Each block manages its own selection state and listens on `document` for outside clicks. `main.ts` owns a `selectedBlocks: Set<BoardObject>` and wires `onSelect`/`onDeselect` in `addBlock()`. Key rules:
+- `onSelect` receives the `MouseEvent` — Ctrl+click adds to selection, plain click replaces it.
+- When switching between blocks, the outgoing block skips `onDeselect` if Ctrl is held or the click is on another board object (guard: `.closest('.text-block, .image-block')`).
+- `markSelected()` / `markDeselected()` update visual state only (no callbacks) — used for multi-select and marquee.
+- Multi-select shows no handles on any block; single selection shows handles and the properties panel.
 
-**Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag. Fonts are loaded on demand both from the properties panel and the inline toolbar.
+**Drag:** Each block fires `onDragMove(dx, dy)` on every drag frame. `main.ts` applies the same delta to all other blocks in `selectedBlocks`, keeping relative positions intact during grouped drag.
 
-**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). When Dexie persistence is wired up, store the Blob and recreate the object URL on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL.
+**Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee.
+
+**Marquee selection:** Dragging on empty board space in edit mode draws a `.marquee` div (`position: fixed`) and on mouseup selects all blocks whose `getBoundingClientRect()` intersects it. Capture the rect before calling `.remove()` — after removal it returns zeros.
+
+**Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag.
+
+**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). When Dexie persistence is wired up, store the Blob (`imageBlob` field) and recreate the object URL on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL.
 
 **Static assets:** Place images in `public/assets/`. Vite serves them at `/moodboard/assets/<filename>` (base path is `/moodboard/`).
 
@@ -47,13 +57,14 @@ src/
     TextBlock.ts      # draggable, resizable, rotatable rich-text block
     ImageBlock.ts     # draggable, resizable, rotatable image block
   ui/
+    AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
     TextFormatToolbar.ts  # floating toolbar shown on text selection
     PropertiesPanel.ts    # fixed side panel; generic over BoardObject
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
-  main.ts             # wiring only — no logic
+  main.ts             # board state: blocks[], selectedBlocks, pan, mode, event wiring
   style.css           # all styles (Tailwind + component styles)
 ```
 
