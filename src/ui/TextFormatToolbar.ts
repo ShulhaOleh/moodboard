@@ -100,6 +100,16 @@ export class TextFormatToolbar {
             this.editor.chain().focus().setFontFamily(family).run()
         })
 
+        const strike = this.createButton('S', () =>
+            this.editor.chain().focus().toggleStrike().run()
+        )
+        strike.style.textDecoration = 'line-through'
+
+        const underline = this.createButton('U', () =>
+            this.editor.chain().focus().toggleUnderline().run()
+        )
+        underline.style.textDecoration = 'underline'
+
         const bulletList = this.createButton('•', () =>
             this.editor.chain().focus().toggleBulletList().run()
         )
@@ -124,6 +134,8 @@ export class TextFormatToolbar {
             this.fontPicker.el,
             bold,
             italic,
+            strike,
+            underline,
             bulletList,
             this.colorPicker.el,
             this.sizeInput,

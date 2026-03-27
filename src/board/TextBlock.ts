@@ -6,6 +6,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
 import TextAlign from '@tiptap/extension-text-align'
+import { Underline } from '@tiptap/extension-underline'
 import { FontSize } from './extensions/FontSize'
 import { FontFamily } from './extensions/FontFamily'
 import { loadFont } from '../lib/fonts'
@@ -337,6 +338,7 @@ export class TextBlock implements BoardObject {
                 FontSize,
                 FontFamily,
                 TextAlign.configure({ types: ['heading', 'paragraph'] }),
+                Underline,
             ],
             content: this.data.content,
             autofocus: true,
