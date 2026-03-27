@@ -31,9 +31,10 @@ export type PropertyField =
 
 export interface BoardObject {
     el: HTMLElement
-    onSelect: ((obj: BoardObject) => void) | null
+    onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null
     onDeselect: (() => void) | null
     onChange: (() => void) | null
+    onDragMove: ((dx: number, dy: number) => void) | null
     getPosition(): { x: number; y: number }
     getSize(): { width: number; height: number }
     getRotation(): number
@@ -43,5 +44,8 @@ export interface BoardObject {
     // Returns appearance fields specific to this object type.
     getAppearanceFields(): PropertyField[]
     setAppearanceProperty(key: string, value: string | number): void
+    // Controls visual selection state without firing callbacks — used by multi-select.
+    markSelected(): void
+    markDeselected(): void
     destroy(): void
 }

@@ -22,9 +22,10 @@ export interface ImageBlockData {
 
 export class ImageBlock implements BoardObject {
     readonly el: HTMLElement
-    onSelect: ((obj: BoardObject) => void) | null = null
+    onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null = null
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
+    onDragMove: ((dx: number, dy: number) => void) | null = null
     private data: ImageBlockData
     private imgEl: HTMLImageElement
     private innerEl: HTMLElement
@@ -84,7 +85,7 @@ export class ImageBlock implements BoardObject {
             if (e.button !== 0) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
             if (!this.selected) {
-                this.select()
+                this.select(e)
                 return
             }
             this.startDrag(e)
@@ -97,28 +98,38 @@ export class ImageBlock implements BoardObject {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
             if (target.closest('.text-block, .image-block')) {
-                this.selected = false
-                this.el.classList.remove('is-selected')
-                this.handlesEl?.remove()
-                this.handlesEl = null
+                // Shift+click on another block adds it to the selection — keep this one selected.
+                if (e.ctrlKey) return
+                this.markDeselected()
             } else {
                 this.deselect()
             }
         })
     }
 
-    private select() {
+    private select(e: MouseEvent) {
         this.selected = true
         this.el.classList.add('is-selected')
-        this.onSelect?.(this)
+        this.onSelect?.(this, e)
         this.renderHandles()
     }
 
-    private deselect() {
+    markSelected() {
+        this.selected = true
+        this.el.classList.add('is-selected')
+        this.handlesEl?.remove()
+        this.handlesEl = null
+    }
+
+    markDeselected() {
         this.selected = false
         this.el.classList.remove('is-selected')
         this.handlesEl?.remove()
         this.handlesEl = null
+    }
+
+    private deselect() {
+        this.markDeselected()
         this.onDeselect?.()
     }
 
@@ -156,9 +167,14 @@ export class ImageBlock implements BoardObject {
                 this.dragOffset.x = startX - this.data.x
                 this.dragOffset.y = startY - this.data.y
             }
-            this.data.x = e.clientX - this.dragOffset.x
-            this.data.y = e.clientY - this.dragOffset.y
+            const newX = e.clientX - this.dragOffset.x
+            const newY = e.clientY - this.dragOffset.y
+            const dx = newX - this.data.x
+            const dy = newY - this.data.y
+            this.data.x = newX
+            this.data.y = newY
             this.applyPosition()
+            this.onDragMove?.(dx, dy)
             this.onChange?.()
         }
 

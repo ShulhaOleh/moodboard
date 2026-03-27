@@ -18,31 +18,116 @@ overlay.className = 'absolute inset-0 pointer-events-none'
 app.appendChild(overlay)
 
 const blocks: BoardObject[] = []
+const selectedBlocks = new Set<BoardObject>()
 
 function addBlock(block: BoardObject) {
     blocks.push(block)
-    block.onSelect = (obj) => panel.show(obj)
-    block.onDeselect = () => panel.hide()
+    block.onDragMove = (dx, dy) => {
+        for (const b of selectedBlocks) {
+            if (b === block) continue
+            const pos = b.getPosition()
+            b.setPosition(pos.x + dx, pos.y + dy)
+        }
+    }
+    block.onSelect = (obj, e) => {
+        if (e.ctrlKey) {
+            selectedBlocks.add(obj)
+            // Remove handles from all — no handles in multi-selection
+            selectedBlocks.forEach((b) => b.markSelected())
+            panel.hide()
+        } else {
+            // Replace selection
+            selectedBlocks.forEach((b) => {
+                if (b !== obj) b.markDeselected()
+            })
+            selectedBlocks.clear()
+            selectedBlocks.add(obj)
+            panel.show(obj)
+        }
+    }
+    block.onDeselect = () => {
+        selectedBlocks.forEach((b) => b.markDeselected())
+        selectedBlocks.clear()
+        panel.hide()
+    }
 }
 
 function removeBlock(block: BoardObject) {
     const idx = blocks.indexOf(block)
     if (idx !== -1) blocks.splice(idx, 1)
+    selectedBlocks.delete(block)
     block.destroy()
-    panel.hide()
+    if (selectedBlocks.size === 0) panel.hide()
 }
 
-panel.onDelete = () => {
-    if (panel.object) removeBlock(panel.object)
+function deleteSelected() {
+    const toDelete = [...selectedBlocks]
+    toDelete.forEach((b) => removeBlock(b))
 }
 
-// Delete/Backspace removes the selected block unless focus is inside an editable element.
+panel.onDelete = () => deleteSelected()
+
+// Delete/Backspace removes selected blocks unless focus is inside an editable element.
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Delete' && e.key !== 'Backspace') return
     const active = document.activeElement as HTMLElement
     if (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
         return
-    if (panel.object) removeBlock(panel.object)
+    deleteSelected()
+})
+
+function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+// Drag on empty board space draws a marquee and selects all blocks it intersects.
+document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return
+    const target = e.target as HTMLElement
+    if (target.closest('.text-block, .image-block, #properties-panel, #add-bar')) return
+
+    const startX = e.clientX
+    const startY = e.clientY
+    let dragging = false
+
+    const marquee = document.createElement('div')
+    marquee.className = 'marquee'
+
+    const onMove = (e: MouseEvent) => {
+        if (!dragging) {
+            if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
+            dragging = true
+            app.appendChild(marquee)
+        }
+        const x = Math.min(startX, e.clientX)
+        const y = Math.min(startY, e.clientY)
+        marquee.style.left = `${x}px`
+        marquee.style.top = `${y}px`
+        marquee.style.width = `${Math.abs(e.clientX - startX)}px`
+        marquee.style.height = `${Math.abs(e.clientY - startY)}px`
+    }
+
+    const onUp = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+        if (!dragging) return
+        const marqueeRect = marquee.getBoundingClientRect()
+        marquee.remove()
+        selectedBlocks.forEach((b) => b.markDeselected())
+        selectedBlocks.clear()
+
+        for (const block of blocks) {
+            if (rectsIntersect(marqueeRect, block.el.getBoundingClientRect())) {
+                selectedBlocks.add(block)
+                block.markSelected()
+            }
+        }
+
+        if (selectedBlocks.size === 0) panel.hide()
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
 })
 
 // Returns a position near the center of the viewport with a slight random offset
