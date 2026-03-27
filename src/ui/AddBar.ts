@@ -40,7 +40,10 @@ export class AddBar {
 
         this.triggerBtn = document.createElement('button')
         this.triggerBtn.className = 'add-bar-btn mode-trigger'
-        this.triggerBtn.addEventListener('click', () => this.toggleDropdown())
+        this.triggerBtn.addEventListener('click', () => {
+            this.dropdownOpen = !this.dropdownOpen
+            this.dropdownEl.classList.toggle('hidden', !this.dropdownOpen)
+        })
 
         this.dropdownEl = document.createElement('div')
         this.dropdownEl.className = 'mode-dropdown hidden'
@@ -119,16 +122,6 @@ export class AddBar {
 
         this.addButtons.forEach((btn) => (btn.disabled = mode !== 'edit'))
         this.onModeChange?.(mode)
-    }
-
-    private toggleDropdown() {
-        if (this.dropdownOpen) this.closeDropdown()
-        else this.openDropdown()
-    }
-
-    private openDropdown() {
-        this.dropdownEl.classList.remove('hidden')
-        this.dropdownOpen = true
     }
 
     private closeDropdown() {
