@@ -25,6 +25,7 @@ export interface TextBlockData {
     padding: number
     color: string
     background: string
+    borderRadius: number
     fontFamily: string
     textAlign: string
 }
@@ -90,6 +91,7 @@ export class TextBlock implements BoardObject {
     private applyAppearance() {
         this.el.style.color = this.data.color
         this.el.style.background = this.data.background
+        this.el.style.borderRadius = `${this.data.borderRadius}px`
     }
 
     private applyTextAlign() {
@@ -187,6 +189,15 @@ export class TextBlock implements BoardObject {
                 value: this.data.background,
                 clearable: true,
             },
+            {
+                type: 'number',
+                key: 'borderRadius',
+                label: 'Radius',
+                value: this.data.borderRadius,
+                min: 0,
+                max: 500,
+                step: 1,
+            },
         ]
     }
 
@@ -196,6 +207,10 @@ export class TextBlock implements BoardObject {
         if (key === 'textAlign') this.setTextAlign(String(value))
         if (key === 'color') this.setColor(String(value))
         if (key === 'background') this.setBackground(String(value))
+        if (key === 'borderRadius') {
+            this.data.borderRadius = Number(value)
+            this.applyAppearance()
+        }
     }
 
     private select() {

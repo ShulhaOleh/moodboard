@@ -41,6 +41,7 @@ const demo = new TextBlock(overlay, {
     background: '#ffffff',
     fontFamily: 'Inter',
     textAlign: 'left',
+    borderRadius: 6,
 })
 
 demo.onSelect = (obj) => panel.show(obj)
