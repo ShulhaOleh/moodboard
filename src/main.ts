@@ -1,28 +1,14 @@
-// App entry point — initializes the canvas, HTML overlay, and demo content.
+// App entry point — initializes the board overlay and demo content.
 
 import './style.css'
-import { Canvas } from 'fabric'
 import { TextBlock } from './board/TextBlock'
 import { ImageBlock } from './board/ImageBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 
 const app = document.getElementById('app')!
 
-const canvasEl = document.createElement('canvas')
-app.appendChild(canvasEl)
-
-const canvas = new Canvas(canvasEl, {
-    width: window.innerWidth,
-    height: window.innerHeight,
-})
-
-window.addEventListener('resize', () => {
-    canvas.setDimensions({ width: window.innerWidth, height: window.innerHeight })
-})
-
 const panel = new PropertiesPanel(app)
 
-// Overlay hosts HTML-based elements (text blocks) layered above the Fabric canvas.
 const overlay = document.createElement('div')
 overlay.id = 'overlay'
 overlay.className = 'absolute inset-0 pointer-events-none'

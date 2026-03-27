@@ -21,15 +21,10 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Key dependencies:**
 - **TipTap** (`@tiptap/core`, `starter-kit`, `extension-text-style`, `extension-color`, `extension-underline`, `extension-text-align`) — rich text editing inside text blocks. Content is stored as HTML strings.
-- **Fabric.js** — canvas layer present but currently unused; all board objects live in the HTML overlay.
 - **Dexie** — IndexedDB wrapper for local persistence (not yet wired up).
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
-**Two-layer rendering:** The app uses two layers stacked in `#app`:
-1. A Fabric.js `<canvas>` — unused, reserved for future work.
-2. An HTML `#overlay` div — hosts all board objects (`TextBlock`, `ImageBlock`). Using HTML elements enables native rich text and avoids canvas serialization.
-
-Z-ordering between canvas objects and HTML overlay objects is not possible — the overlay always renders above the canvas.
+**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. Using HTML elements enables native rich text editing and straightforward z-ordering.
 
 **BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`.
 
