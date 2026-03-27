@@ -143,6 +143,25 @@ export class PropertiesPanel {
             label.textContent = field.label
             row.appendChild(label)
 
+            if (field.type === 'slider') {
+                const slider = document.createElement('input')
+                slider.type = 'range'
+                slider.min = String(field.min)
+                slider.max = String(field.max)
+                slider.step = String(field.step ?? 1)
+                slider.value = String(field.value)
+                slider.className = 'color-picker-alpha-slider'
+                const readout = document.createElement('span')
+                readout.className = 'color-picker-alpha-label'
+                readout.textContent = `${field.value}%`
+                slider.addEventListener('input', () => {
+                    readout.textContent = `${slider.value}%`
+                    this.object?.setAppearanceProperty(field.key, Number(slider.value))
+                })
+                row.appendChild(slider)
+                row.appendChild(readout)
+            }
+
             if (field.type === 'number') {
                 const input = document.createElement('input')
                 input.type = 'number'

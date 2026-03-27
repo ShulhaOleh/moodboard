@@ -66,6 +66,7 @@ body {
     flex-shrink: 0;
 }
 
+
 .prop-row input[type='number'],
 .prop-row input[type='text'] {
     width: 60px;
@@ -115,6 +116,40 @@ body {
 
 .prop-row > button:hover {
     color: #ef4444;
+}
+
+/* Image block */
+.image-block {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+    border: 1px solid transparent;
+    user-select: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.image-block:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.image-block.is-selected {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 1px #3b82f6;
+}
+
+/* Inner wrapper clips the image to the border radius; kept separate from the outer
+   element so that handles positioned outside the bounds are not clipped. */
+.image-block-inner {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.image-block img {
+    display: block;
+    width: 100%;
+    height: 100%;
 }
 
 /* Text block */

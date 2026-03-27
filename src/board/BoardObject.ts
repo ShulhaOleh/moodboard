@@ -10,6 +10,15 @@ export type PropertyField =
           max?: number
           step?: number
       }
+    | {
+          type: 'slider'
+          key: string
+          label: string
+          value: number
+          min: number
+          max: number
+          step?: number
+      }
     | { type: 'color'; key: string; label: string; value: string; clearable?: boolean }
     | { type: 'font'; key: string; label: string; value: string }
     | {

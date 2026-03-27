@@ -1,0 +1,313 @@
+// Draggable, resizable, rotatable image block rendered in the HTML overlay.
+
+import { BoardObject, PropertyField } from './BoardObject'
+
+export interface ImageBlockData {
+    id: string
+    x: number
+    y: number
+    width: number
+    height: number
+    rotation: number
+    // Runtime src — an object URL (from a Blob) or a static asset URL.
+    // When persisting to Dexie, store the Blob separately and recreate this on load.
+    src: string
+    objectFit: 'cover' | 'contain' | 'fill'
+    opacity: number
+    borderRadius: number
+}
+
+export class ImageBlock implements BoardObject {
+    readonly el: HTMLElement
+    onSelect: ((obj: BoardObject) => void) | null = null
+    onDeselect: (() => void) | null = null
+    onChange: (() => void) | null = null
+    private data: ImageBlockData
+    private imgEl: HTMLImageElement
+    private innerEl: HTMLElement
+    private handlesEl: HTMLElement | null = null
+    private selected = false
+    private dragOffset = { x: 0, y: 0 }
+
+    constructor(container: HTMLElement, data: ImageBlockData) {
+        this.data = { ...data }
+
+        this.el = document.createElement('div')
+        this.el.className = 'image-block'
+
+        // Inner wrapper clips the image to the border radius without clipping the
+        // selection handles, which extend outside the block bounds.
+        this.innerEl = document.createElement('div')
+        this.innerEl.className = 'image-block-inner'
+
+        this.imgEl = document.createElement('img')
+        this.imgEl.draggable = false
+        this.innerEl.appendChild(this.imgEl)
+        this.el.appendChild(this.innerEl)
+
+        this.applyPosition()
+        this.applySize()
+        this.applyTransform()
+        this.applyAppearance()
+
+        this.setupInteraction()
+        container.appendChild(this.el)
+    }
+
+    private applyPosition() {
+        this.el.style.left = `${this.data.x}px`
+        this.el.style.top = `${this.data.y}px`
+    }
+
+    private applySize() {
+        this.el.style.width = `${this.data.width}px`
+        this.el.style.height = `${this.data.height}px`
+    }
+
+    private applyTransform() {
+        this.el.style.transform = `rotate(${this.data.rotation}deg)`
+    }
+
+    private applyAppearance() {
+        this.imgEl.src = this.data.src
+        this.imgEl.style.objectFit = this.data.objectFit
+        this.el.style.opacity = String(this.data.opacity / 100)
+        this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
+    }
+
+    private setupInteraction() {
+        this.el.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return
+            if ((e.target as HTMLElement).closest('.tb-handles')) return
+            if (!this.selected) {
+                this.select()
+                return
+            }
+            this.startDrag(e)
+        })
+
+        // Deselect when clicking outside this block.
+        // If the click lands on another board object, skip onDeselect — the incoming
+        // onSelect will update the panel, so firing onDeselect here would hide it.
+        document.addEventListener('mousedown', (e) => {
+            if (!this.selected || this.el.contains(e.target as Node)) return
+            const target = e.target as HTMLElement
+            if (target.closest('.text-block, .image-block')) {
+                this.selected = false
+                this.el.classList.remove('is-selected')
+                this.handlesEl?.remove()
+                this.handlesEl = null
+            } else {
+                this.deselect()
+            }
+        })
+    }
+
+    private select() {
+        this.selected = true
+        this.el.classList.add('is-selected')
+        this.onSelect?.(this)
+        this.renderHandles()
+    }
+
+    private deselect() {
+        this.selected = false
+        this.el.classList.remove('is-selected')
+        this.handlesEl?.remove()
+        this.handlesEl = null
+        this.onDeselect?.()
+    }
+
+    private renderHandles() {
+        this.handlesEl?.remove()
+
+        const handles = document.createElement('div')
+        handles.className = 'tb-handles'
+
+        const resizeHandle = document.createElement('div')
+        resizeHandle.className = 'tb-resize'
+        resizeHandle.addEventListener('mousedown', (e) => this.startResize(e))
+
+        const rotateHandle = document.createElement('div')
+        rotateHandle.className = 'tb-rotate'
+        rotateHandle.addEventListener('mousedown', (e) => this.startRotate(e))
+
+        handles.appendChild(resizeHandle)
+        handles.appendChild(rotateHandle)
+        this.el.appendChild(handles)
+        this.handlesEl = handles
+    }
+
+    private startDrag(e: MouseEvent) {
+        e.preventDefault()
+
+        const startX = e.clientX
+        const startY = e.clientY
+        let dragging = false
+
+        const onMove = (e: MouseEvent) => {
+            if (!dragging) {
+                if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
+                dragging = true
+                this.dragOffset.x = startX - this.data.x
+                this.dragOffset.y = startY - this.data.y
+            }
+            this.data.x = e.clientX - this.dragOffset.x
+            this.data.y = e.clientY - this.dragOffset.y
+            this.applyPosition()
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    private startResize(e: MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const startX = e.clientX
+        const startY = e.clientY
+        const startW = this.data.width
+        const startH = this.data.height
+        const angle = (this.data.rotation * Math.PI) / 180
+
+        const onMove = (e: MouseEvent) => {
+            const dx = e.clientX - startX
+            const dy = e.clientY - startY
+            const localDx = dx * Math.cos(angle) + dy * Math.sin(angle)
+            const localDy = -dx * Math.sin(angle) + dy * Math.cos(angle)
+            this.data.width = Math.max(40, startW + localDx)
+            this.data.height = Math.max(40, startH + localDy)
+            this.applySize()
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    private startRotate(e: MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const rect = this.el.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        const onMove = (e: MouseEvent) => {
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX)
+            this.data.rotation = (angle * 180) / Math.PI + 90
+            this.applyTransform()
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    getPosition() {
+        return { x: this.data.x, y: this.data.y }
+    }
+
+    getSize() {
+        return { width: this.data.width, height: this.data.height }
+    }
+
+    getRotation() {
+        return this.data.rotation
+    }
+
+    getAppearanceFields(): PropertyField[] {
+        return [
+            {
+                type: 'select',
+                key: 'objectFit',
+                label: 'Fit',
+                value: this.data.objectFit,
+                options: [
+                    { value: 'cover', label: 'Cover' },
+                    { value: 'contain', label: 'Contain' },
+                    { value: 'fill', label: 'Fill' },
+                ],
+            },
+            {
+                type: 'slider',
+                key: 'opacity',
+                label: 'Opacity',
+                value: this.data.opacity,
+                min: 0,
+                max: 100,
+                step: 1,
+            },
+            {
+                type: 'number',
+                key: 'borderRadius',
+                label: 'Radius',
+                value: this.data.borderRadius,
+                min: 0,
+                max: 500,
+                step: 1,
+            },
+        ]
+    }
+
+    setAppearanceProperty(key: string, value: string | number) {
+        if (key === 'objectFit') {
+            this.data.objectFit = value as ImageBlockData['objectFit']
+            this.imgEl.style.objectFit = this.data.objectFit
+        }
+        if (key === 'opacity') {
+            this.data.opacity = Number(value)
+            this.el.style.opacity = String(this.data.opacity / 100)
+        }
+        if (key === 'borderRadius') {
+            this.data.borderRadius = Number(value)
+            this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
+        }
+    }
+
+    setPosition(x: number, y: number) {
+        this.data.x = x
+        this.data.y = y
+        this.applyPosition()
+    }
+
+    setSize(width: number, height: number) {
+        this.data.width = Math.max(40, width)
+        this.data.height = Math.max(40, height)
+        this.applySize()
+    }
+
+    setRotation(deg: number) {
+        this.data.rotation = deg
+        this.applyTransform()
+    }
+
+    getData(): Readonly<ImageBlockData> {
+        return { ...this.data }
+    }
+
+    // Must be called when removing the block if src is an object URL, to free memory.
+    destroy() {
+        if (this.data.src.startsWith('blob:')) {
+            URL.revokeObjectURL(this.data.src)
+        }
+        this.el.remove()
+    }
+}

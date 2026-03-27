@@ -120,9 +120,18 @@ export class TextBlock implements BoardObject {
             this.startDrag(e)
         })
 
-        // Deselect when clicking outside this block
+        // Deselect when clicking outside this block.
+        // If the click lands on another board object, skip onDeselect — the incoming
+        // onSelect will update the panel, so firing onDeselect here would hide it.
         document.addEventListener('mousedown', (e) => {
-            if (this.selected && !this.el.contains(e.target as Node)) {
+            if (!this.selected || this.el.contains(e.target as Node)) return
+            const target = e.target as HTMLElement
+            if (target.closest('.text-block, .image-block')) {
+                this.selected = false
+                this.el.classList.remove('is-selected')
+                this.handlesEl?.remove()
+                this.handlesEl = null
+            } else {
                 this.deselect()
             }
         })

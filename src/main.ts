@@ -3,6 +3,7 @@
 import './style.css'
 import { Canvas } from 'fabric'
 import { TextBlock } from './board/TextBlock'
+import { ImageBlock } from './board/ImageBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 
 const app = document.getElementById('app')!
@@ -44,3 +45,19 @@ const demo = new TextBlock(overlay, {
 
 demo.onSelect = (obj) => panel.show(obj)
 demo.onDeselect = () => panel.hide()
+
+const demoImage = new ImageBlock(overlay, {
+    id: 'demo-image',
+    x: 420,
+    y: 100,
+    width: 320,
+    height: 240,
+    rotation: 0,
+    src: '/moodboard/assets/sample.jpg',
+    objectFit: 'contain',
+    opacity: 100,
+    borderRadius: 6,
+})
+
+demoImage.onSelect = (obj) => panel.show(obj)
+demoImage.onDeselect = () => panel.hide()
