@@ -76,6 +76,7 @@ export class ImageBlock implements BoardObject {
         this.imgEl.src = this.data.src
         this.imgEl.style.objectFit = this.data.objectFit
         this.el.style.opacity = String(this.data.opacity / 100)
+        this.el.style.borderRadius = `${this.data.borderRadius}px`
         this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
         this.innerEl.style.background = this.data.background
     }
@@ -305,6 +306,7 @@ export class ImageBlock implements BoardObject {
         }
         if (key === 'borderRadius') {
             this.data.borderRadius = Number(value)
+            this.el.style.borderRadius = `${this.data.borderRadius}px`
             this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
         }
         if (key === 'background') {
