@@ -205,9 +205,24 @@ export class TextFormatToolbar {
     }
 
     // Reads the font-family of the current selection and syncs it to the font picker.
+    // Prefers the explicit TextStyle mark value; falls back to computed style so the
+    // field reflects inherited fonts for unstyled text.
     private updateFontSelect() {
         const family = this.editor.getAttributes('textStyle').fontFamily as string | undefined
-        if (family) this.fontPicker.setValue(family)
+        if (family) {
+            this.fontPicker.setValue(family)
+            return
+        }
+
+        const selection = window.getSelection()
+        if (!selection || selection.rangeCount === 0) return
+        const node = selection.getRangeAt(0).startContainer
+        const el = node.nodeType === Node.TEXT_NODE ? node.parentElement : (node as Element)
+        if (el) {
+            const computed = window.getComputedStyle(el).fontFamily
+            if (computed)
+                this.fontPicker.setValue(computed.split(',')[0].trim().replace(/['"]/g, ''))
+        }
     }
 
     // Reads the font-size of the current selection and syncs it to the size input.
