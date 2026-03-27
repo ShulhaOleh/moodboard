@@ -4,7 +4,7 @@ import './style.css'
 import { TextBlock } from './board/TextBlock'
 import { ImageBlock } from './board/ImageBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
-import { AddBar } from './ui/AddBar'
+import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 
 const app = document.getElementById('app')!
@@ -19,6 +19,24 @@ app.appendChild(overlay)
 
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
+
+let mode: BoardMode = 'edit'
+let panX = 0
+let panY = 0
+
+function applyPan() {
+    overlay.style.transform = `translate(${panX}px, ${panY}px)`
+}
+
+addBar.onModeChange = (newMode) => {
+    mode = newMode
+    app.classList.toggle('explore-mode', mode === 'explore')
+    if (mode === 'edit') return
+    // Deselect everything when switching to explore
+    selectedBlocks.forEach((b) => b.markDeselected())
+    selectedBlocks.clear()
+    panel.hide()
+}
 
 function addBlock(block: BoardObject) {
     blocks.push(block)
@@ -80,16 +98,37 @@ function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
     return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
-// Drag on empty board space draws a marquee and selects all blocks it intersects.
+// Drag on empty board space: pan in explore mode, marquee select in edit mode.
 document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return
     const target = e.target as HTMLElement
-    if (target.closest('.text-block, .image-block, #properties-panel, #add-bar')) return
+    if (target.closest('#properties-panel, #add-bar')) return
+
+    if (mode === 'explore') {
+        e.preventDefault()
+        app.classList.add('panning')
+        const startX = e.clientX - panX
+        const startY = e.clientY - panY
+        const onMove = (e: MouseEvent) => {
+            panX = e.clientX - startX
+            panY = e.clientY - startY
+            applyPan()
+        }
+        const onUp = () => {
+            app.classList.remove('panning')
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+        return
+    }
+
+    if (target.closest('.text-block, .image-block')) return
 
     const startX = e.clientX
     const startY = e.clientY
     let dragging = false
-
     const marquee = document.createElement('div')
     marquee.className = 'marquee'
 
@@ -134,8 +173,8 @@ document.addEventListener('mousedown', (e) => {
 // so multiple objects added in sequence don't stack exactly on top of each other.
 function centerPosition() {
     return {
-        x: Math.round(window.innerWidth / 2 - 150 + (Math.random() - 0.5) * 40),
-        y: Math.round(window.innerHeight / 2 - 100 + (Math.random() - 0.5) * 40),
+        x: Math.round(window.innerWidth / 2 - 150 + (Math.random() - 0.5) * 40) - panX,
+        y: Math.round(window.innerHeight / 2 - 100 + (Math.random() - 0.5) * 40) - panY,
     }
 }
 
