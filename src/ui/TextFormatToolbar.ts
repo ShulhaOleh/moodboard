@@ -99,6 +99,10 @@ export class TextFormatToolbar {
             this.editor.chain().focus().setFontFamily(family).run()
         })
 
+        const bulletList = this.createButton('• List', () =>
+            this.editor.chain().focus().toggleBulletList().run()
+        )
+
         const separator = document.createElement('div')
         separator.className = 'tf-separator'
 
@@ -119,6 +123,7 @@ export class TextFormatToolbar {
             this.fontPicker.el,
             bold,
             italic,
+            bulletList,
             this.colorPicker.el,
             this.sizeInput,
             separator,

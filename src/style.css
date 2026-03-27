@@ -172,6 +172,14 @@ body {
     margin-bottom: 0.5em;
 }
 
+.text-block ul {
+    list-style-type: disc;
+}
+
+.text-block ol {
+    list-style-type: decimal;
+}
+
 .text-block strong {
     font-weight: 600;
 }
