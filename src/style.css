@@ -50,7 +50,12 @@ body {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: #94a3b8;
-    margin-top: 4px;
+}
+
+#prop-appearance {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 
