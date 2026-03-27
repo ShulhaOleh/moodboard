@@ -16,6 +16,8 @@ export interface ImageBlockData {
     opacity: number
     borderRadius: number
     background: string
+    // Kept for future Dexie persistence — recreate src via URL.createObjectURL on load.
+    imageBlob?: Blob
 }
 
 export class ImageBlock implements BoardObject {
