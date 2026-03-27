@@ -45,8 +45,7 @@ export class PropertiesPanel {
             <div class="prop-section">Rotation</div>
             <div class="prop-row">
                 <label>Angle</label>
-                <input type="number" id="prop-rotation" step="1" />
-                <span class="prop-unit">°</span>
+                <input type="text" inputmode="numeric" id="prop-rotation" />
             </div>
             <div id="prop-appearance"></div>
         `
@@ -95,6 +94,10 @@ export class PropertiesPanel {
     private setupCommonEvents() {
         const { x, y, width, height, rotation } = this.inputs
 
+        for (const input of [x, y, width, height]) {
+            input.addEventListener('focus', () => input.select())
+        }
+
         x.addEventListener('input', () =>
             this.object?.setPosition(Number(x.value), Number(y.value))
         )
@@ -107,7 +110,18 @@ export class PropertiesPanel {
         height.addEventListener('input', () =>
             this.object?.setSize(Number(width.value), Number(height.value))
         )
-        rotation.addEventListener('input', () => this.object?.setRotation(Number(rotation.value)))
+        rotation.addEventListener('focus', () => {
+            rotation.value = rotation.value.replace('°', '')
+            rotation.select()
+        })
+        rotation.addEventListener('blur', () => {
+            const val = parseFloat(rotation.value)
+            rotation.value = isNaN(val) ? '0°' : `${Math.round(val)}°`
+        })
+        rotation.addEventListener('input', () => {
+            const val = parseFloat(rotation.value.replace('°', ''))
+            if (!isNaN(val)) this.object?.setRotation(val)
+        })
     }
 
     // Rebuilds the appearance section from scratch on each object selection,
@@ -136,6 +150,7 @@ export class PropertiesPanel {
                 if (field.min !== undefined) input.min = String(field.min)
                 if (field.max !== undefined) input.max = String(field.max)
                 if (field.step !== undefined) input.step = String(field.step)
+                input.addEventListener('focus', () => input.select())
                 input.addEventListener('input', () =>
                     this.object?.setAppearanceProperty(field.key, Number(input.value))
                 )
@@ -207,7 +222,10 @@ export class PropertiesPanel {
         this.inputs.y.value = String(Math.round(pos.y))
         this.inputs.width.value = String(Math.round(size.width))
         this.inputs.height.value = String(Math.round(size.height))
-        this.inputs.rotation.value = String(Math.round(this.object.getRotation()))
+        // Skip sync while the field is focused — the user is mid-edit without the suffix
+        if (document.activeElement !== this.inputs.rotation) {
+            this.inputs.rotation.value = `${Math.round(this.object.getRotation())}°`
+        }
     }
 
     hide() {

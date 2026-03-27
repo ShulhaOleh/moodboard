@@ -92,6 +92,7 @@ export class TextFormatToolbar {
         this.sizeInput.addEventListener('change', () =>
             this.editor.chain().focus().setFontSize(`${this.sizeInput.value}px`).run()
         )
+        this.sizeInput.addEventListener('focus', () => this.sizeInput.select())
         this.sizeInput.addEventListener('blur', () => this.editor.commands.focus())
 
         this.fontPicker = new FontPicker('Inter', (family) => {
@@ -99,7 +100,7 @@ export class TextFormatToolbar {
             this.editor.chain().focus().setFontFamily(family).run()
         })
 
-        const bulletList = this.createButton('• List', () =>
+        const bulletList = this.createButton('•', () =>
             this.editor.chain().focus().toggleBulletList().run()
         )
 
