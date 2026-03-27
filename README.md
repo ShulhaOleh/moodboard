@@ -1,11 +1,10 @@
 # moodboard
 
-A canvas-based moodboard editor that runs entirely in the browser with local persistence.
+A moodboard editor that runs entirely in the browser with local persistence.
 
 ## Stack
 
 - **TypeScript** — strict mode, no framework
-- **Fabric.js** — canvas rendering and interaction
 - **TipTap** — rich text editing with per-character formatting
 - **Dexie** — IndexedDB wrapper for local storage
 - **Tailwind CSS** — utility-first styling
