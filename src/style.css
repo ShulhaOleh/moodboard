@@ -453,3 +453,10 @@ body {
     overflow: hidden;
 }
 
+.text-block-content.is-empty::before {
+    content: 'Double-click to edit…';
+    display: block;
+    color: color-mix(in srgb, currentColor 35%, transparent);
+    pointer-events: none;
+}
+

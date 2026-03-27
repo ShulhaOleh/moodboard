@@ -98,6 +98,14 @@ export class TextBlock implements BoardObject {
 
     private renderContent() {
         this.contentEl.innerHTML = this.data.content
+        this.updateEmptyState()
+    }
+
+    private updateEmptyState() {
+        const tmp = document.createElement('div')
+        tmp.innerHTML = this.data.content
+        const isEmpty = tmp.textContent?.trim() === ''
+        this.contentEl.classList.toggle('is-empty', isEmpty)
     }
 
     private setupInteraction() {
@@ -329,6 +337,7 @@ export class TextBlock implements BoardObject {
         this.applyTransform()
 
         this.contentEl.innerHTML = ''
+        this.contentEl.classList.remove('is-empty')
         this.editorInstance = new Editor({
             element: this.contentEl,
             extensions: [
