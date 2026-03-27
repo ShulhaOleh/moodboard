@@ -6,6 +6,13 @@ import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
 import { ColorPicker } from './ColorPicker'
 
+const ALIGN_OPTIONS = [
+    { value: 'left', label: 'Left' },
+    { value: 'center', label: 'Center' },
+    { value: 'right', label: 'Right' },
+    { value: 'justify', label: 'Justify' },
+]
+
 export class TextFormatToolbar {
     readonly el: HTMLElement
     private editor: Editor
@@ -14,7 +21,6 @@ export class TextFormatToolbar {
     private sizeInput!: HTMLInputElement
     private fontPicker!: FontPicker
     private colorPicker!: ColorPicker
-
     // True while the user is interacting with the toolbar (mousedown held or color picker open).
     // Used by the editor's blur handler to decide whether to exit edit mode.
     get isInteracting() {
@@ -51,6 +57,8 @@ export class TextFormatToolbar {
         this.buildUI()
         this.setupSelectionTracking()
     }
+
+    private alignSelect!: HTMLSelectElement
 
     private buildUI() {
         const bold = this.createButton('B', () => this.editor.chain().focus().toggleBold().run())
@@ -91,11 +99,36 @@ export class TextFormatToolbar {
             this.editor.chain().focus().setFontFamily(family).run()
         })
 
-        this.el.append(this.fontPicker.el, bold, italic, this.colorPicker.el, this.sizeInput)
+        const separator = document.createElement('div')
+        separator.className = 'tf-separator'
 
-        // Only prevent default on buttons — inputs need real focus to be usable
+        this.alignSelect = document.createElement('select')
+        this.alignSelect.className = 'tf-align-select'
+        for (const opt of ALIGN_OPTIONS) {
+            const option = document.createElement('option')
+            option.value = opt.value
+            option.textContent = opt.label
+            this.alignSelect.appendChild(option)
+        }
+        this.alignSelect.addEventListener('change', () => {
+            this.editor.chain().focus().setTextAlign(this.alignSelect.value).run()
+        })
+        this.alignSelect.addEventListener('blur', () => this.editor.commands.focus())
+
+        this.el.append(
+            this.fontPicker.el,
+            bold,
+            italic,
+            this.colorPicker.el,
+            this.sizeInput,
+            separator,
+            this.alignSelect
+        )
+
+        // Only prevent default on buttons — inputs and selects need real focus to be usable
         this.el.addEventListener('mousedown', (e) => {
-            if ((e.target as HTMLElement).tagName !== 'INPUT') e.preventDefault()
+            const tag = (e.target as HTMLElement).tagName
+            if (tag !== 'INPUT' && tag !== 'SELECT') e.preventDefault()
         })
     }
 
@@ -116,6 +149,7 @@ export class TextFormatToolbar {
                 this.updateSizeInput()
                 this.updateFontSelect()
                 this.updateColorPicker()
+                this.updateAlignSelect()
                 this.show()
             }
         })
@@ -144,6 +178,12 @@ export class TextFormatToolbar {
             const computed = window.getComputedStyle(el).color
             if (computed) this.colorPicker.setValue(computed)
         }
+    }
+
+    // Reads the text-align of the current paragraph and syncs it to the align select.
+    private updateAlignSelect() {
+        const align = this.editor.getAttributes('paragraph').textAlign as string | undefined
+        this.alignSelect.value = align ?? 'left'
     }
 
     // Reads the font-family of the current selection and syncs it to the font picker.

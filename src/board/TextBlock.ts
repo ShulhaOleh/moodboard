@@ -5,6 +5,7 @@ import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
+import TextAlign from '@tiptap/extension-text-align'
 import { FontSize } from './extensions/FontSize'
 import { FontFamily } from './extensions/FontFamily'
 import { loadFont } from '../lib/fonts'
@@ -24,6 +25,7 @@ export interface TextBlockData {
     color: string
     background: string
     fontFamily: string
+    textAlign: string
 }
 
 export class TextBlock implements BoardObject {
@@ -54,6 +56,7 @@ export class TextBlock implements BoardObject {
         this.applyTypography()
         this.applyFontFamily()
         this.applyAppearance()
+        this.applyTextAlign()
         if (data.width) this.el.style.width = `${data.width}px`
         if (data.height) this.el.style.height = `${data.height}px`
         this.renderContent()
@@ -86,6 +89,10 @@ export class TextBlock implements BoardObject {
     private applyAppearance() {
         this.el.style.color = this.data.color
         this.el.style.background = this.data.background
+    }
+
+    private applyTextAlign() {
+        this.el.style.textAlign = this.data.textAlign
     }
 
     private renderContent() {
@@ -142,6 +149,18 @@ export class TextBlock implements BoardObject {
                 max: 120,
                 step: 1,
             },
+            {
+                type: 'select',
+                key: 'textAlign',
+                label: 'Align',
+                value: this.data.textAlign,
+                options: [
+                    { value: 'left', label: 'Left' },
+                    { value: 'center', label: 'Center' },
+                    { value: 'right', label: 'Right' },
+                    { value: 'justify', label: 'Justify' },
+                ],
+            },
             { type: 'color', key: 'color', label: 'Color', value: this.data.color },
             {
                 type: 'color',
@@ -156,6 +175,7 @@ export class TextBlock implements BoardObject {
     setAppearanceProperty(key: string, value: string | number) {
         if (key === 'fontFamily') this.setFontFamilyBlock(String(value))
         if (key === 'fontSize') this.setFontSize(Number(value))
+        if (key === 'textAlign') this.setTextAlign(String(value))
         if (key === 'color') this.setColor(String(value))
         if (key === 'background') this.setBackground(String(value))
     }
@@ -310,7 +330,14 @@ export class TextBlock implements BoardObject {
         this.contentEl.innerHTML = ''
         this.editorInstance = new Editor({
             element: this.contentEl,
-            extensions: [StarterKit, TextStyle, Color, FontSize, FontFamily],
+            extensions: [
+                StarterKit,
+                TextStyle,
+                Color,
+                FontSize,
+                FontFamily,
+                TextAlign.configure({ types: ['heading', 'paragraph'] }),
+            ],
             content: this.data.content,
             autofocus: true,
         })
@@ -362,6 +389,11 @@ export class TextBlock implements BoardObject {
     setPadding(px: number) {
         this.data.padding = px
         this.applyTypography()
+    }
+
+    setTextAlign(align: string) {
+        this.data.textAlign = align
+        this.applyTextAlign()
     }
 
     setPosition(x: number, y: number) {

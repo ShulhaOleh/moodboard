@@ -142,6 +142,22 @@ export class PropertiesPanel {
                 row.appendChild(input)
             }
 
+            if (field.type === 'select') {
+                const select = document.createElement('select')
+                select.className = 'prop-select'
+                for (const option of field.options) {
+                    const opt = document.createElement('option')
+                    opt.value = option.value
+                    opt.textContent = option.label
+                    if (option.value === field.value) opt.selected = true
+                    select.appendChild(opt)
+                }
+                select.addEventListener('change', () => {
+                    this.object?.setAppearanceProperty(field.key, select.value)
+                })
+                row.appendChild(select)
+            }
+
             if (field.type === 'font') {
                 const picker = new FontPicker(field.value, (family) => {
                     loadFont(family)

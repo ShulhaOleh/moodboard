@@ -12,6 +12,13 @@ export type PropertyField =
       }
     | { type: 'color'; key: string; label: string; value: string; clearable?: boolean }
     | { type: 'font'; key: string; label: string; value: string }
+    | {
+          type: 'select'
+          key: string
+          label: string
+          value: string
+          options: { value: string; label: string }[]
+      }
 
 export interface BoardObject {
     el: HTMLElement
