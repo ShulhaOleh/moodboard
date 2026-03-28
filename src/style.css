@@ -14,6 +14,39 @@ body {
     height: 100%;
 }
 
+/* Zoom widget — slider + percentage label, bottom-left */
+#zoom-widget {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    z-index: 100;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 4px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    pointer-events: all;
+    user-select: none;
+}
+
+#zoom-widget input[type='range'] {
+    width: 80px;
+    cursor: pointer;
+    accent-color: #64748b;
+}
+
+#zoom-label {
+    font-size: 12px;
+    color: #64748b;
+    width: 36px;
+    text-align: left;
+    flex-shrink: 0;
+}
+
 /* Marquee selection rectangle */
 .marquee {
     position: fixed;

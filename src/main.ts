@@ -17,15 +17,42 @@ overlay.id = 'overlay'
 overlay.className = 'absolute inset-0 pointer-events-none'
 app.appendChild(overlay)
 
+const zoomWidget = document.createElement('div')
+zoomWidget.id = 'zoom-widget'
+
+const zoomSlider = document.createElement('input')
+zoomSlider.type = 'range'
+zoomSlider.min = '10'
+zoomSlider.max = '400'
+zoomSlider.step = '1'
+zoomSlider.value = '100'
+zoomSlider.addEventListener('input', () => {
+    const newZoom = Number(zoomSlider.value) / 100
+    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
+    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
+    zoom = newZoom
+    applyTransform()
+    zoomLabel.textContent = `${Math.round(zoom * 100)}%`
+})
+
+const zoomLabel = document.createElement('span')
+zoomLabel.id = 'zoom-label'
+zoomLabel.textContent = '100%'
+
+zoomWidget.append(zoomSlider, zoomLabel)
+app.appendChild(zoomWidget)
+
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
 
 let mode: BoardMode = 'edit'
 let panX = 0
 let panY = 0
+let zoom = 1
 
-function applyPan() {
-    overlay.style.transform = `translate(${panX}px, ${panY}px)`
+function applyTransform() {
+    overlay.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`
+    overlay.style.transformOrigin = '0 0'
 }
 
 addBar.onModeChange = (newMode) => {
@@ -37,6 +64,23 @@ addBar.onModeChange = (newMode) => {
     selectedBlocks.clear()
     panel.hide()
 }
+
+// Ctrl+scroll zooms the canvas, centered on the cursor position.
+document.addEventListener(
+    'wheel',
+    (e) => {
+        if (!e.ctrlKey) return
+        e.preventDefault()
+        const newZoom = Math.min(4, Math.max(0.1, zoom * Math.pow(0.999, e.deltaY)))
+        panX = e.clientX - (e.clientX - panX) * (newZoom / zoom)
+        panY = e.clientY - (e.clientY - panY) * (newZoom / zoom)
+        zoom = newZoom
+        applyTransform()
+        zoomLabel.textContent = `${Math.round(zoom * 100)}%`
+        zoomSlider.value = String(Math.round(zoom * 100))
+    },
+    { passive: false }
+)
 
 function addBlock(block: BoardObject) {
     blocks.push(block)
@@ -102,7 +146,7 @@ function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
 document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return
     const target = e.target as HTMLElement
-    if (target.closest('#properties-panel, #add-bar')) return
+    if (target.closest('#properties-panel, #add-bar, #zoom-widget')) return
 
     if (mode === 'explore') {
         e.preventDefault()
@@ -112,7 +156,7 @@ document.addEventListener('mousedown', (e) => {
         const onMove = (e: MouseEvent) => {
             panX = e.clientX - startX
             panY = e.clientY - startY
-            applyPan()
+            applyTransform()
         }
         const onUp = () => {
             app.classList.remove('panning')
@@ -173,8 +217,8 @@ document.addEventListener('mousedown', (e) => {
 // so multiple objects added in sequence don't stack exactly on top of each other.
 function centerPosition() {
     return {
-        x: Math.round(window.innerWidth / 2 - 150 + (Math.random() - 0.5) * 40) - panX,
-        y: Math.round(window.innerHeight / 2 - 100 + (Math.random() - 0.5) * 40) - panY,
+        x: Math.round((window.innerWidth / 2 - panX) / zoom - 150 + (Math.random() - 0.5) * 40),
+        y: Math.round((window.innerHeight / 2 - panY) / zoom - 100 + (Math.random() - 0.5) * 40),
     }
 }
 
