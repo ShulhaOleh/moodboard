@@ -65,19 +65,27 @@ addBar.onModeChange = (newMode) => {
     panel.hide()
 }
 
-// Ctrl+scroll zooms the canvas, centered on the cursor position.
+// Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.
 document.addEventListener(
     'wheel',
     (e) => {
-        if (!e.ctrlKey) return
         e.preventDefault()
-        const newZoom = Math.min(4, Math.max(0.1, zoom * Math.pow(0.999, e.deltaY)))
-        panX = e.clientX - (e.clientX - panX) * (newZoom / zoom)
-        panY = e.clientY - (e.clientY - panY) * (newZoom / zoom)
-        zoom = newZoom
-        applyTransform()
-        zoomLabel.textContent = `${Math.round(zoom * 100)}%`
-        zoomSlider.value = String(Math.round(zoom * 100))
+        if (e.ctrlKey) {
+            const newZoom = Math.min(4, Math.max(0.1, zoom * Math.pow(0.999, e.deltaY)))
+            panX = e.clientX - (e.clientX - panX) * (newZoom / zoom)
+            panY = e.clientY - (e.clientY - panY) * (newZoom / zoom)
+            zoom = newZoom
+            applyTransform()
+            zoomLabel.textContent = `${Math.round(zoom * 100)}%`
+            zoomSlider.value = String(Math.round(zoom * 100))
+        } else if (e.shiftKey) {
+            panX -= e.deltaY
+            applyTransform()
+        } else {
+            panX -= e.deltaX
+            panY -= e.deltaY
+            applyTransform()
+        }
     },
     { passive: false }
 )
