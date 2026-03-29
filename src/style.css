@@ -183,6 +183,17 @@ body {
     flex-shrink: 0;
 }
 
+/* Drag-and-drop highlight */
+#app.drag-over::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    border: 3px dashed #6366f1;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 9999;
+}
+
 /* Explore mode — blocks are non-interactive, cursor reflects pan state */
 #app.explore-mode .text-block,
 #app.explore-mode .image-block {

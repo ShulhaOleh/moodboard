@@ -137,6 +137,48 @@ function deleteSelected() {
 
 panel.onDelete = () => deleteSelected()
 
+// Drag-and-drop images from the OS onto the board.
+app.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer?.types.includes('Files')) return
+    e.preventDefault()
+    app.classList.add('drag-over')
+})
+
+app.addEventListener('dragleave', (e) => {
+    if ((e.relatedTarget as Node | null) && app.contains(e.relatedTarget as Node)) return
+    app.classList.remove('drag-over')
+})
+
+app.addEventListener('drop', (e) => {
+    e.preventDefault()
+    app.classList.remove('drag-over')
+    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'))
+    files.forEach((file, i) => {
+        const x = Math.round((e.clientX - panX) / zoom - 160 + i * 20)
+        const y = Math.round((e.clientY - panY) / zoom - 120 + i * 20)
+        addBlock(
+            new ImageBlock(overlay, {
+                id: crypto.randomUUID(),
+                x,
+                y,
+                width: 320,
+                height: 240,
+                rotation: 0,
+                src: URL.createObjectURL(file),
+                imageBlob: file,
+                objectFit: 'contain',
+                opacity: 100,
+                borderRadius: 6,
+                background: 'transparent',
+                shadowColor: '',
+                shadowBlur: 0,
+                shadowX: 0,
+                shadowY: 0,
+            })
+        )
+    })
+})
+
 // Delete/Backspace removes selected blocks unless focus is inside an editable element.
 document.addEventListener('keydown', (e) => {
     if (e.key !== 'Delete' && e.key !== 'Backspace') return
