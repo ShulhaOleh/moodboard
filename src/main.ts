@@ -255,7 +255,7 @@ addBar.onAddText = () => {
     )
 }
 
-addBar.onAddImage = (blob) => {
+addBar.onAddImage = () => {
     const { x, y } = centerPosition()
     addBlock(
         new ImageBlock(overlay, {
@@ -265,8 +265,7 @@ addBar.onAddImage = (blob) => {
             width: 320,
             height: 240,
             rotation: 0,
-            src: URL.createObjectURL(blob),
-            imageBlob: blob,
+            src: '',
             objectFit: 'contain',
             opacity: 100,
             borderRadius: 6,

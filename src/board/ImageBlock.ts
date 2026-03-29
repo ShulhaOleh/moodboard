@@ -77,7 +77,15 @@ export class ImageBlock implements BoardObject {
     }
 
     private applyAppearance() {
-        this.imgEl.src = this.data.src
+        if (this.data.src) {
+            this.imgEl.src = this.data.src
+            this.imgEl.style.display = ''
+            this.innerEl.classList.remove('image-block-empty')
+        } else {
+            this.imgEl.src = ''
+            this.imgEl.style.display = 'none'
+            this.innerEl.classList.add('image-block-empty')
+        }
         this.imgEl.style.objectFit = this.data.objectFit
         this.el.style.opacity = String(this.data.opacity / 100)
         this.el.style.borderRadius = `${this.data.borderRadius}px`
@@ -349,7 +357,7 @@ export class ImageBlock implements BoardObject {
         if (key === 'src') {
             if (this.data.src.startsWith('blob:')) URL.revokeObjectURL(this.data.src)
             this.data.src = String(value)
-            this.imgEl.src = this.data.src
+            this.applyAppearance()
         }
         if (key === 'objectFit') {
             this.data.objectFit = value as ImageBlockData['objectFit']

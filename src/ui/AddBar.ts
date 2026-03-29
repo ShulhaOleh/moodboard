@@ -22,10 +22,9 @@ const MODES: { mode: BoardMode; label: string; icon: string }[] = [
 export class AddBar {
     readonly el: HTMLElement
     onAddText: (() => void) | null = null
-    onAddImage: ((blob: Blob) => void) | null = null
+    onAddImage: (() => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
 
-    private fileInput: HTMLInputElement
     private triggerBtn: HTMLButtonElement
     private dropdownEl: HTMLElement
     private addButtons: HTMLButtonElement[]
@@ -83,21 +82,11 @@ export class AddBar {
                 <path d="M3 14l4-4 3 3 2-2 5 5"/>
             </svg>`
         )
-        imageBtn.addEventListener('click', () => this.fileInput.click())
+        imageBtn.addEventListener('click', () => this.onAddImage?.())
 
         this.addButtons = [textBtn, imageBtn]
 
-        this.fileInput = document.createElement('input')
-        this.fileInput.type = 'file'
-        this.fileInput.accept = 'image/*'
-        this.fileInput.style.display = 'none'
-        this.fileInput.addEventListener('change', () => {
-            const file = this.fileInput.files?.[0]
-            if (file) this.onAddImage?.(file)
-            this.fileInput.value = ''
-        })
-
-        this.el.append(textBtn, imageBtn, this.fileInput)
+        this.el.append(textBtn, imageBtn)
         container.appendChild(this.el)
 
         document.addEventListener('mousedown', (e) => {
