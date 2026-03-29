@@ -1,57 +1,60 @@
-// Draggable, resizable, rotatable image block rendered in the HTML overlay.
+// Draggable, resizable, rotatable geometric shape block rendered as an inline SVG.
 
 import { BoardObject, PropertyField } from './BoardObject'
 
-export interface ImageBlockData {
+export type ShapeType = 'rectangle' | 'ellipse' | 'triangle'
+
+export interface ShapeBlockData {
     id: string
     x: number
     y: number
     width: number
     height: number
     rotation: number
-    // Runtime src — an object URL (from a Blob) or a static asset URL.
-    // When persisting to Dexie, store the Blob separately and recreate this on load.
-    src: string
-    objectFit: 'cover' | 'contain' | 'fill'
-    opacity: number
+    shape: ShapeType
+    fill: string
+    stroke: string
+    strokeWidth: number
+    // Only applies to rectangle shapes.
     borderRadius: number
-    background: string
+    opacity: number
     shadowColor: string
     shadowBlur: number
     shadowX: number
     shadowY: number
-    // Kept for future Dexie persistence — recreate src via URL.createObjectURL on load.
-    imageBlob?: Blob
 }
 
-export class ImageBlock implements BoardObject {
+export class ShapeBlock implements BoardObject {
     readonly el: HTMLElement
     onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null = null
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
     onDragMove: ((dx: number, dy: number) => void) | null = null
-    private data: ImageBlockData
-    private imgEl: HTMLImageElement
-    private innerEl: HTMLElement
+    private data: ShapeBlockData
+    private svgEl: SVGSVGElement
+    private shapeEl: SVGElement
     private handlesEl: HTMLElement | null = null
     private selected = false
     private dragOffset = { x: 0, y: 0 }
 
-    constructor(container: HTMLElement, data: ImageBlockData) {
+    constructor(container: HTMLElement, data: ShapeBlockData) {
         this.data = { ...data }
 
         this.el = document.createElement('div')
-        this.el.className = 'image-block'
+        this.el.className = 'shape-block'
 
-        // Inner wrapper clips the image to the border radius without clipping the
-        // selection handles, which extend outside the block bounds.
-        this.innerEl = document.createElement('div')
-        this.innerEl.className = 'image-block-inner'
+        this.svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        this.svgEl.setAttribute('width', '100%')
+        this.svgEl.setAttribute('height', '100%')
+        // viewBox maps 0-100 units to the element's actual dimensions.
+        // preserveAspectRatio none allows the shape to stretch freely.
+        this.svgEl.setAttribute('viewBox', '0 0 100 100')
+        this.svgEl.setAttribute('preserveAspectRatio', 'none')
+        this.svgEl.style.overflow = 'visible'
 
-        this.imgEl = document.createElement('img')
-        this.imgEl.draggable = false
-        this.innerEl.appendChild(this.imgEl)
-        this.el.appendChild(this.innerEl)
+        this.shapeEl = this.createShapeEl(this.data.shape)
+        this.svgEl.appendChild(this.shapeEl)
+        this.el.appendChild(this.svgEl)
 
         this.applyPosition()
         this.applySize()
@@ -60,6 +63,39 @@ export class ImageBlock implements BoardObject {
 
         this.setupInteraction()
         container.appendChild(this.el)
+    }
+
+    private createShapeEl(shape: ShapeType): SVGElement {
+        let el: SVGElement
+        switch (shape) {
+            case 'rectangle': {
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+                rect.setAttribute('x', '0')
+                rect.setAttribute('y', '0')
+                rect.setAttribute('width', '100')
+                rect.setAttribute('height', '100')
+                el = rect
+                break
+            }
+            case 'ellipse': {
+                const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
+                ellipse.setAttribute('cx', '50')
+                ellipse.setAttribute('cy', '50')
+                ellipse.setAttribute('rx', '50')
+                ellipse.setAttribute('ry', '50')
+                el = ellipse
+                break
+            }
+            case 'triangle': {
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+                polygon.setAttribute('points', '50,0 100,100 0,100')
+                el = polygon
+                break
+            }
+        }
+        // Keep stroke width in screen pixels regardless of how the SVG is scaled.
+        el.setAttribute('vector-effect', 'non-scaling-stroke')
+        return el
     }
 
     private applyPosition() {
@@ -77,23 +113,24 @@ export class ImageBlock implements BoardObject {
     }
 
     private applyAppearance() {
-        if (this.data.src) {
-            this.imgEl.src = this.data.src
-            this.imgEl.style.display = ''
-            this.innerEl.classList.remove('image-block-empty')
-        } else {
-            this.imgEl.src = ''
-            this.imgEl.style.display = 'none'
-            this.innerEl.classList.add('image-block-empty')
+        this.shapeEl.setAttribute('fill', this.data.fill || 'none')
+        this.shapeEl.setAttribute('stroke', this.data.stroke || 'none')
+        this.shapeEl.setAttribute('stroke-width', String(this.data.strokeWidth))
+        if (this.data.shape === 'rectangle') {
+            this.shapeEl.setAttribute('rx', String(this.data.borderRadius))
         }
-        this.imgEl.style.objectFit = this.data.objectFit
         this.el.style.opacity = String(this.data.opacity / 100)
-        this.el.style.borderRadius = `${this.data.borderRadius}px`
-        this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
-        this.innerEl.style.background = this.data.background
-        this.el.style.boxShadow = this.data.shadowColor
-            ? `${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor}`
+        this.el.style.filter = this.data.shadowColor
+            ? `drop-shadow(${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor})`
             : 'none'
+    }
+
+    // Replaces the SVG child element when the shape type changes.
+    private rebuildShape() {
+        this.shapeEl.remove()
+        this.shapeEl = this.createShapeEl(this.data.shape)
+        this.svgEl.appendChild(this.shapeEl)
+        this.applyAppearance()
     }
 
     private setupInteraction() {
@@ -107,14 +144,10 @@ export class ImageBlock implements BoardObject {
             this.startDrag(e)
         })
 
-        // Deselect when clicking outside this block.
-        // If the click lands on another board object, skip onDeselect — the incoming
-        // onSelect will update the panel, so firing onDeselect here would hide it.
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
             if (target.closest('.text-block, .image-block, .shape-block')) {
-                // Shift+click on another block adds it to the selection — keep this one selected.
                 if (e.ctrlKey) return
                 this.markDeselected()
             } else {
@@ -163,8 +196,7 @@ export class ImageBlock implements BoardObject {
         rotateHandle.className = 'tb-rotate'
         rotateHandle.addEventListener('mousedown', (e) => this.startRotate(e))
 
-        handles.appendChild(resizeHandle)
-        handles.appendChild(rotateHandle)
+        handles.append(resizeHandle, rotateHandle)
         this.el.appendChild(handles)
         this.handlesEl = handles
     }
@@ -218,8 +250,8 @@ export class ImageBlock implements BoardObject {
             const dy = e.clientY - startY
             const localDx = dx * Math.cos(angle) + dy * Math.sin(angle)
             const localDy = -dx * Math.sin(angle) + dy * Math.cos(angle)
-            this.data.width = Math.max(40, startW + localDx)
-            this.data.height = Math.max(40, startH + localDy)
+            this.data.width = Math.max(20, startW + localDx)
+            this.data.height = Math.max(20, startH + localDy)
             this.applySize()
             this.onChange?.()
         }
@@ -270,26 +302,50 @@ export class ImageBlock implements BoardObject {
     }
 
     getAppearanceFields(): PropertyField[] {
-        return [
-            {
-                type: 'text',
-                key: 'src',
-                label: 'Source',
-                value: this.data.src,
-                placeholder: '/path/to/image.jpg',
-                allowFilePick: true,
-            },
+        const fields: PropertyField[] = [
             {
                 type: 'select',
-                key: 'objectFit',
-                label: 'Fit',
-                value: this.data.objectFit,
+                key: 'shape',
+                label: 'Shape',
+                value: this.data.shape,
                 options: [
-                    { value: 'cover', label: 'Cover' },
-                    { value: 'contain', label: 'Contain' },
-                    { value: 'fill', label: 'Fill' },
+                    { value: 'rectangle', label: 'Rectangle' },
+                    { value: 'ellipse', label: 'Ellipse' },
+                    { value: 'triangle', label: 'Triangle' },
                 ],
             },
+            { type: 'color', key: 'fill', label: 'Fill', value: this.data.fill, clearable: true },
+            {
+                type: 'color',
+                key: 'stroke',
+                label: 'Stroke',
+                value: this.data.stroke,
+                clearable: true,
+            },
+            {
+                type: 'number',
+                key: 'strokeWidth',
+                label: 'Stroke W',
+                value: this.data.strokeWidth,
+                min: 0,
+                max: 40,
+                step: 1,
+            },
+        ]
+
+        if (this.data.shape === 'rectangle') {
+            fields.push({
+                type: 'number',
+                key: 'borderRadius',
+                label: 'Radius',
+                value: this.data.borderRadius,
+                min: 0,
+                max: 50,
+                step: 1,
+            })
+        }
+
+        fields.push(
             {
                 type: 'slider',
                 key: 'opacity',
@@ -298,22 +354,6 @@ export class ImageBlock implements BoardObject {
                 min: 0,
                 max: 100,
                 step: 1,
-            },
-            {
-                type: 'number',
-                key: 'borderRadius',
-                label: 'Radius',
-                value: this.data.borderRadius,
-                min: 0,
-                max: 500,
-                step: 1,
-            },
-            {
-                type: 'color',
-                key: 'background',
-                label: 'Background',
-                value: this.data.background,
-                clearable: true,
             },
             { type: 'section', label: 'Shadow' },
             {
@@ -349,32 +389,38 @@ export class ImageBlock implements BoardObject {
                 min: 0,
                 max: 80,
                 step: 1,
-            },
-        ]
+            }
+        )
+
+        return fields
     }
 
     setAppearanceProperty(key: string, value: string | number) {
-        if (key === 'src') {
-            if (this.data.src.startsWith('blob:')) URL.revokeObjectURL(this.data.src)
-            this.data.src = String(value)
-            this.applyAppearance()
+        if (key === 'shape') {
+            this.data.shape = value as ShapeType
+            this.rebuildShape()
         }
-        if (key === 'objectFit') {
-            this.data.objectFit = value as ImageBlockData['objectFit']
-            this.imgEl.style.objectFit = this.data.objectFit
+        if (key === 'fill') {
+            this.data.fill = String(value)
+            this.shapeEl.setAttribute('fill', this.data.fill || 'none')
+        }
+        if (key === 'stroke') {
+            this.data.stroke = String(value)
+            this.shapeEl.setAttribute('stroke', this.data.stroke || 'none')
+        }
+        if (key === 'strokeWidth') {
+            this.data.strokeWidth = Number(value)
+            this.shapeEl.setAttribute('stroke-width', String(this.data.strokeWidth))
+        }
+        if (key === 'borderRadius') {
+            this.data.borderRadius = Number(value)
+            if (this.data.shape === 'rectangle') {
+                this.shapeEl.setAttribute('rx', String(this.data.borderRadius))
+            }
         }
         if (key === 'opacity') {
             this.data.opacity = Number(value)
             this.el.style.opacity = String(this.data.opacity / 100)
-        }
-        if (key === 'borderRadius') {
-            this.data.borderRadius = Number(value)
-            this.el.style.borderRadius = `${this.data.borderRadius}px`
-            this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
-        }
-        if (key === 'background') {
-            this.data.background = String(value)
-            this.innerEl.style.background = this.data.background
         }
         if (key === 'shadowColor') {
             this.data.shadowColor = String(value)
@@ -401,8 +447,8 @@ export class ImageBlock implements BoardObject {
     }
 
     setSize(width: number, height: number) {
-        this.data.width = Math.max(40, width)
-        this.data.height = Math.max(40, height)
+        this.data.width = Math.max(20, width)
+        this.data.height = Math.max(20, height)
         this.applySize()
     }
 
@@ -411,15 +457,7 @@ export class ImageBlock implements BoardObject {
         this.applyTransform()
     }
 
-    getData(): Readonly<ImageBlockData> {
-        return { ...this.data }
-    }
-
-    // Must be called when removing the block if src is an object URL, to free memory.
     destroy() {
-        if (this.data.src.startsWith('blob:')) {
-            URL.revokeObjectURL(this.data.src)
-        }
         this.el.remove()
     }
 }

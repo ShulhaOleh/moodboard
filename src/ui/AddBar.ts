@@ -1,5 +1,7 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
+import { ShapeType } from '../board/ShapeBlock'
+
 export type BoardMode = 'edit' | 'explore'
 
 const MODES: { mode: BoardMode; label: string; icon: string }[] = [
@@ -19,33 +21,63 @@ const MODES: { mode: BoardMode; label: string; icon: string }[] = [
     },
 ]
 
+const SHAPES: { shape: ShapeType; label: string; icon: string }[] = [
+    {
+        shape: 'rectangle',
+        label: 'Rectangle',
+        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="5" width="14" height="10" rx="2"/></svg>`,
+    },
+    {
+        shape: 'ellipse',
+        label: 'Ellipse',
+        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><ellipse cx="10" cy="10" rx="7" ry="5"/></svg>`,
+    },
+    {
+        shape: 'triangle',
+        label: 'Triangle',
+        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,3 18,18 2,18"/></svg>`,
+    },
+]
+
+const CHEVRON = `<svg class="mode-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>`
+
 export class AddBar {
     readonly el: HTMLElement
     onAddText: (() => void) | null = null
     onAddImage: (() => void) | null = null
+    onAddShape: ((shape: ShapeType) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
 
-    private triggerBtn: HTMLButtonElement
-    private dropdownEl: HTMLElement
+    private modeTriggerBtn: HTMLButtonElement
+    private modeDropdownEl: HTMLElement
+    private modeDropdownOpen = false
+
+    private shapeIconBtn: HTMLButtonElement
+    private shapeChevronBtn: HTMLButtonElement
+    private shapeDropdownEl: HTMLElement
+    private shapeDropdownOpen = false
+    private selectedShape: ShapeType = 'rectangle'
+
     private addButtons: HTMLButtonElement[]
-    private dropdownOpen = false
 
     constructor(container: HTMLElement) {
         this.el = document.createElement('div')
         this.el.id = 'add-bar'
 
+        // ── Mode picker ────────────────────────────────────────────────────────
         const modePicker = document.createElement('div')
         modePicker.className = 'mode-picker'
 
-        this.triggerBtn = document.createElement('button')
-        this.triggerBtn.className = 'add-bar-btn mode-trigger'
-        this.triggerBtn.addEventListener('click', () => {
-            this.dropdownOpen = !this.dropdownOpen
-            this.dropdownEl.classList.toggle('hidden', !this.dropdownOpen)
+        this.modeTriggerBtn = document.createElement('button')
+        this.modeTriggerBtn.className = 'add-bar-btn mode-trigger'
+        this.modeTriggerBtn.addEventListener('click', () => {
+            this.modeDropdownOpen = !this.modeDropdownOpen
+            this.modeDropdownEl.classList.toggle('hidden', !this.modeDropdownOpen)
+            if (this.modeDropdownOpen) this.closeShapeDropdown()
         })
 
-        this.dropdownEl = document.createElement('div')
-        this.dropdownEl.className = 'mode-dropdown hidden'
+        this.modeDropdownEl = document.createElement('div')
+        this.modeDropdownEl.className = 'mode-dropdown hidden'
 
         for (const { mode, label, icon } of MODES) {
             const option = document.createElement('button')
@@ -54,18 +86,19 @@ export class AddBar {
             option.innerHTML = `${icon}<span>${label}</span>`
             option.addEventListener('click', () => {
                 this.setMode(mode)
-                this.closeDropdown()
+                this.closeModeDropdown()
             })
-            this.dropdownEl.appendChild(option)
+            this.modeDropdownEl.appendChild(option)
         }
 
-        modePicker.append(this.triggerBtn, this.dropdownEl)
+        modePicker.append(this.modeTriggerBtn, this.modeDropdownEl)
         this.el.appendChild(modePicker)
 
         const divider = document.createElement('div')
         divider.className = 'add-bar-divider'
         this.el.appendChild(divider)
 
+        // ── Add buttons ────────────────────────────────────────────────────────
         const textBtn = this.makeButton(
             'Text',
             `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
@@ -84,28 +117,75 @@ export class AddBar {
         )
         imageBtn.addEventListener('click', () => this.onAddImage?.())
 
-        this.addButtons = [textBtn, imageBtn]
+        // ── Shape split-button ─────────────────────────────────────────────────
+        // Left part: icon — adds the current shape immediately.
+        // Right part: chevron — opens the shape-type dropdown.
+        const shapePicker = document.createElement('div')
+        shapePicker.className = 'mode-picker'
 
-        this.el.append(textBtn, imageBtn)
+        const shapeSplitBtn = document.createElement('div')
+        shapeSplitBtn.className = 'shape-split-btn'
+
+        this.shapeIconBtn = document.createElement('button')
+        this.shapeIconBtn.className = 'shape-icon-btn'
+        this.shapeIconBtn.addEventListener('click', () => {
+            this.closeShapeDropdown()
+            this.onAddShape?.(this.selectedShape)
+        })
+
+        this.shapeChevronBtn = document.createElement('button')
+        this.shapeChevronBtn.className = 'shape-chevron-btn'
+        this.shapeChevronBtn.innerHTML = CHEVRON
+        this.shapeChevronBtn.title = 'Choose shape'
+        this.shapeChevronBtn.addEventListener('click', () => {
+            this.shapeDropdownOpen = !this.shapeDropdownOpen
+            this.shapeDropdownEl.classList.toggle('hidden', !this.shapeDropdownOpen)
+            if (this.shapeDropdownOpen) this.closeModeDropdown()
+        })
+
+        this.shapeDropdownEl = document.createElement('div')
+        this.shapeDropdownEl.className = 'mode-dropdown hidden'
+
+        for (const { shape, label, icon } of SHAPES) {
+            const option = document.createElement('button')
+            option.className = 'mode-option'
+            option.dataset.shape = shape
+            option.innerHTML = `${icon}<span>${label}</span>`
+            option.addEventListener('click', () => {
+                this.selectedShape = shape
+                this.updateShapeTrigger()
+                this.closeShapeDropdown()
+                this.onAddShape?.(shape)
+            })
+            this.shapeDropdownEl.appendChild(option)
+        }
+
+        shapeSplitBtn.append(this.shapeIconBtn, this.shapeChevronBtn)
+        shapePicker.append(shapeSplitBtn, this.shapeDropdownEl)
+
+        this.addButtons = [textBtn, imageBtn, this.shapeIconBtn, this.shapeChevronBtn]
+        this.el.append(textBtn, imageBtn, shapePicker)
         container.appendChild(this.el)
 
         document.addEventListener('mousedown', (e) => {
-            if (this.dropdownOpen && !this.el.contains(e.target as Node)) {
-                this.closeDropdown()
+            if (!this.el.contains(e.target as Node)) {
+                this.closeModeDropdown()
+                this.closeShapeDropdown()
             }
         })
 
         this.setMode('edit')
+        this.updateShapeTrigger()
     }
 
     setMode(mode: BoardMode) {
         const def = MODES.find((m) => m.mode === mode)!
 
-        this.triggerBtn.innerHTML = `${def.icon}<svg class="mode-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>`
-        this.triggerBtn.title = def.label
-        this.triggerBtn.classList.toggle('is-active', mode !== 'edit')
+        this.modeTriggerBtn.innerHTML = `${def.icon}${CHEVRON}`
+        this.modeTriggerBtn.title = def.label
+        this.modeTriggerBtn.classList.toggle('is-active', mode !== 'edit')
 
-        this.dropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
+        this.modeDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
             opt.classList.toggle('is-active', (opt as HTMLElement).dataset.mode === mode)
         })
 
@@ -113,9 +193,27 @@ export class AddBar {
         this.onModeChange?.(mode)
     }
 
-    private closeDropdown() {
-        this.dropdownEl.classList.add('hidden')
-        this.dropdownOpen = false
+    private updateShapeTrigger() {
+        const def = SHAPES.find((s) => s.shape === this.selectedShape)!
+        this.shapeIconBtn.innerHTML = def.icon
+        this.shapeIconBtn.title = def.label
+
+        this.shapeDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
+            opt.classList.toggle(
+                'is-active',
+                (opt as HTMLElement).dataset.shape === this.selectedShape
+            )
+        })
+    }
+
+    private closeModeDropdown() {
+        this.modeDropdownEl.classList.add('hidden')
+        this.modeDropdownOpen = false
+    }
+
+    private closeShapeDropdown() {
+        this.shapeDropdownEl.classList.add('hidden')
+        this.shapeDropdownOpen = false
     }
 
     private makeButton(label: string, iconSvg: string): HTMLButtonElement {

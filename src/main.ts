@@ -3,6 +3,7 @@
 import './style.css'
 import { TextBlock } from './board/TextBlock'
 import { ImageBlock } from './board/ImageBlock'
+import { ShapeBlock } from './board/ShapeBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
@@ -221,7 +222,7 @@ document.addEventListener('mousedown', (e) => {
         return
     }
 
-    if (target.closest('.text-block, .image-block')) return
+    if (target.closest('.text-block, .image-block, .shape-block')) return
 
     const startX = e.clientX
     const startY = e.clientY
@@ -315,6 +316,30 @@ addBar.onAddImage = () => {
             opacity: 100,
             borderRadius: 6,
             background: 'transparent',
+            shadowColor: '',
+            shadowBlur: 0,
+            shadowX: 0,
+            shadowY: 0,
+        })
+    )
+}
+
+addBar.onAddShape = (shape) => {
+    const { x, y } = centerPosition()
+    addBlock(
+        new ShapeBlock(overlay, {
+            id: crypto.randomUUID(),
+            x,
+            y,
+            width: 160,
+            height: 160,
+            rotation: 0,
+            shape,
+            fill: '#c4b5fd',
+            stroke: '',
+            strokeWidth: 0,
+            borderRadius: 8,
+            opacity: 100,
             shadowColor: '',
             shadowBlur: 0,
             shadowX: 0,

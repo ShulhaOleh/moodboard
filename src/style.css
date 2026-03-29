@@ -166,6 +166,67 @@ body {
     color: var(--color-surface);
 }
 
+/* Shape split-button — icon button adds the current shape; chevron opens the type picker.
+   Mirrors the Figma toolbar pattern: a normal tool button with a tiny companion dropdown arrow. */
+.shape-split-btn {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.shape-icon-btn {
+    height: 32px;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-text-faint);
+}
+
+.shape-icon-btn:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+}
+
+.shape-icon-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.shape-chevron-btn {
+    height: 32px;
+    width: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--color-text-placeholder);
+    padding: 0;
+}
+
+.shape-chevron-btn .mode-chevron {
+    width: 7px !important;
+    height: 7px !important;
+}
+
+.shape-chevron-btn:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text-faint);
+}
+
+.shape-icon-btn:disabled,
+.shape-chevron-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
 .mode-chevron {
     width: 8px !important;
     height: 8px !important;
@@ -220,6 +281,11 @@ body {
     width: 16px;
     height: 16px;
     flex-shrink: 0;
+}
+
+.mode-option[data-shape] svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* Drag-and-drop highlight */
@@ -619,6 +685,24 @@ body {
 
 .prop-row > button:hover {
     color: var(--color-danger);
+}
+
+/* Shape block */
+.shape-block {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+    border: 1px solid transparent;
+    user-select: none;
+}
+
+.shape-block:hover {
+    border-color: var(--color-border-strong);
+}
+
+.shape-block.is-selected {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Image block */
