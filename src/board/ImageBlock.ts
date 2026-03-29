@@ -264,6 +264,14 @@ export class ImageBlock implements BoardObject {
     getAppearanceFields(): PropertyField[] {
         return [
             {
+                type: 'text',
+                key: 'src',
+                label: 'Source',
+                value: this.data.src,
+                placeholder: '/path/to/image.jpg',
+                allowFilePick: true,
+            },
+            {
                 type: 'select',
                 key: 'objectFit',
                 label: 'Fit',
@@ -338,6 +346,11 @@ export class ImageBlock implements BoardObject {
     }
 
     setAppearanceProperty(key: string, value: string | number) {
+        if (key === 'src') {
+            if (this.data.src.startsWith('blob:')) URL.revokeObjectURL(this.data.src)
+            this.data.src = String(value)
+            this.imgEl.src = this.data.src
+        }
         if (key === 'objectFit') {
             this.data.objectFit = value as ImageBlockData['objectFit']
             this.imgEl.style.objectFit = this.data.objectFit

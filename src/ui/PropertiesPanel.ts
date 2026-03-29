@@ -189,6 +189,39 @@ export class PropertiesPanel {
                 row.appendChild(input)
             }
 
+            if (field.type === 'text') {
+                const input = document.createElement('input')
+                input.type = 'text'
+                input.className = 'prop-text-wide'
+                input.value = field.value
+                if (field.placeholder) input.placeholder = field.placeholder
+                input.addEventListener('focus', () => input.select())
+                input.addEventListener('change', () =>
+                    this.object?.setAppearanceProperty(field.key, input.value)
+                )
+                row.appendChild(input)
+
+                if (field.allowFilePick) {
+                    const fileInput = document.createElement('input')
+                    fileInput.type = 'file'
+                    fileInput.accept = 'image/*'
+                    fileInput.className = 'hidden'
+                    const browseBtn = document.createElement('button')
+                    browseBtn.textContent = '…'
+                    browseBtn.title = 'Browse file'
+                    browseBtn.addEventListener('click', () => fileInput.click())
+                    fileInput.addEventListener('change', () => {
+                        const file = fileInput.files?.[0]
+                        if (!file) return
+                        const url = URL.createObjectURL(file)
+                        input.value = url
+                        this.object?.setAppearanceProperty(field.key, url)
+                    })
+                    row.appendChild(browseBtn)
+                    row.appendChild(fileInput)
+                }
+            }
+
             if (field.type === 'select') {
                 const select = document.createElement('select')
                 select.className = 'prop-select'

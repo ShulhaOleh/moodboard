@@ -21,6 +21,14 @@ export type PropertyField =
           step?: number
       }
     | { type: 'color'; key: string; label: string; value: string; clearable?: boolean }
+    | {
+          type: 'text'
+          key: string
+          label: string
+          value: string
+          placeholder?: string
+          allowFilePick?: boolean
+      }
     | { type: 'font'; key: string; label: string; value: string }
     | {
           type: 'select'
