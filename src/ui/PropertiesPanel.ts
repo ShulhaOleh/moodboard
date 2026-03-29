@@ -24,6 +24,7 @@ export class PropertiesPanel {
     private docked = true
     private tabEl: HTMLElement
     private snapPreviewEl: HTMLElement
+    private expandBtnEl: HTMLElement
 
     constructor(container: HTMLElement) {
         this.el = document.createElement('div')
@@ -33,6 +34,7 @@ export class PropertiesPanel {
             <div class="panel-header">
                 <div class="panel-drag-handle"></div>
                 <button class="panel-undock-btn" title="Pop out">↗</button>
+                <button class="panel-collapse-btn" title="Hide panel">›</button>
             </div>
             <div class="panel-content">
                 <div class="panel-common-props">
@@ -147,12 +149,24 @@ export class PropertiesPanel {
             window.addEventListener('mouseup', onUp)
         })
 
-        // Right-edge tab — visible only when panel is floating, click re-docks.
+        const collapseBtn = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
+        collapseBtn.addEventListener('click', () => this.setCollapsed(true))
+
+        // Right-edge tab — re-docks floating panel.
         this.tabEl = document.createElement('div')
         this.tabEl.className = 'panel-dock-tab hidden'
-        this.tabEl.title = 'Dock panel to right'
         this.tabEl.addEventListener('click', () => this.setDocked(true))
         this.tabEl.addEventListener('mousedown', (e) => e.stopPropagation())
+
+        // Mirror of the collapse button, fixed at the same screen position.
+        // Visible only when the panel is docked and collapsed, so there is always
+        // a button at that location regardless of panel state.
+        this.expandBtnEl = document.createElement('button')
+        this.expandBtnEl.className = 'panel-expand-btn hidden'
+        this.expandBtnEl.title = 'Show panel'
+        this.expandBtnEl.textContent = '‹'
+        this.expandBtnEl.addEventListener('click', () => this.setCollapsed(false))
+        this.expandBtnEl.addEventListener('mousedown', (e) => e.stopPropagation())
 
         // Ghost preview of the docked position, shown while dragging near the right edge.
         this.snapPreviewEl = document.createElement('div')
@@ -160,6 +174,7 @@ export class PropertiesPanel {
 
         container.appendChild(this.el)
         container.appendChild(this.tabEl)
+        container.appendChild(this.expandBtnEl)
         container.appendChild(this.snapPreviewEl)
         this.setupCommonEvents()
         this.setupResizeHandles()
@@ -437,13 +452,16 @@ export class PropertiesPanel {
         this.docked = docked
         if (docked) {
             this.el.classList.add('docked')
+            this.el.classList.remove('docked-collapsed')
             this.el.style.left = ''
             this.el.style.top = ''
             this.el.style.right = ''
             this.el.style.height = ''
             this.tabEl.classList.add('hidden')
+            this.expandBtnEl.classList.add('hidden')
         } else {
-            this.el.classList.remove('docked')
+            this.el.classList.remove('docked', 'docked-collapsed')
+            this.expandBtnEl.classList.add('hidden')
             // Clear any inline position so CSS default (top/right 16px) takes over;
             // the drag handler will override with explicit px coords immediately after.
             this.el.style.left = ''
@@ -493,6 +511,11 @@ export class PropertiesPanel {
                 { once: true }
             )
         }
+    }
+
+    private setCollapsed(collapsed: boolean) {
+        this.el.classList.toggle('docked-collapsed', collapsed)
+        this.expandBtnEl.classList.toggle('hidden', !collapsed)
     }
 
     // Binds to a board object. Appearance fields are rebuilt for the new type,

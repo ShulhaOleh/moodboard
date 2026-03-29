@@ -316,6 +316,69 @@ body {
     display: none;
 }
 
+.panel-collapse-btn {
+    flex-shrink: 0;
+    margin-left: 4px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: white;
+    color: #64748b;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.panel-collapse-btn:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+/* Button is only useful when docked */
+#properties-panel:not(.docked) .panel-collapse-btn {
+    display: none;
+}
+
+/* Collapsed docked state — slides panel off the right edge */
+#properties-panel.docked.docked-collapsed {
+    transform: translateX(calc(100% + 8px));
+}
+
+/* Mirror button — sits outside the panel at the same position as the collapse button,
+   visible only when the docked panel is collapsed. */
+.panel-expand-btn {
+    position: absolute;
+    top: 14px;   /* panel top (8) + header padding (6) */
+    right: 16px; /* panel right (8) + header padding (8) */
+    z-index: 101;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: white;
+    color: #64748b;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+    pointer-events: all;
+}
+
+.panel-expand-btn:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.panel-expand-btn.hidden {
+    display: none;
+}
+
 /* Resize handles */
 .panel-resize-left,
 .panel-resize-right,
