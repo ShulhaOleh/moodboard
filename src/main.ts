@@ -39,7 +39,7 @@ const zoomLabel = document.createElement('span')
 zoomLabel.id = 'zoom-label'
 zoomLabel.textContent = '100%'
 
-zoomWidget.append(zoomSlider, zoomLabel)
+zoomWidget.append(zoomLabel, zoomSlider)
 app.appendChild(zoomWidget)
 
 const blocks: BoardObject[] = []
