@@ -223,6 +223,8 @@ body {
     flex-direction: column;
     gap: 10px;
     min-width: 180px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
     pointer-events: all;
     cursor: move;
     user-select: none;

@@ -64,6 +64,10 @@ export class PropertiesPanel {
             rotation: this.el.querySelector('#prop-rotation') as HTMLInputElement,
         }
 
+        // Prevent wheel events from reaching the board's pan/zoom handler while the
+        // panel itself can still scroll.
+        this.el.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
+
         // stopPropagation prevents the board's "click outside → deselect" listener from firing.
         // Drag is only initiated when clicking the panel background, not its inputs.
         this.el.addEventListener('mousedown', (e) => {
