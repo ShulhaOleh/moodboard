@@ -208,29 +208,159 @@ body {
     cursor: grabbing;
 }
 
-/* Properties panel */
+/* Properties panel — floating state (default) */
 #properties-panel {
     position: absolute;
     top: 16px;
-    left: 16px;
+    right: 16px;
     z-index: 100;
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 12px;
+    padding: 0 12px 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    min-width: 180px;
+    min-width: 200px;
     max-height: calc(100vh - 32px);
     overflow-y: auto;
     pointer-events: all;
-    cursor: move;
     user-select: none;
 }
 
+/* Docked state — full-height panel pinned to the right with margin */
+#properties-panel.docked {
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    left: auto !important;
+    width: 220px;
+    height: auto;
+    max-height: none;
+}
+
 #properties-panel.hidden {
+    display: none;
+}
+
+/* Panel header — drag handle + undock button */
+.panel-header {
+    position: sticky;
+    top: 0;
+    margin: 0 -12px;
+    padding: 6px 8px 6px 0;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    z-index: 1;
+}
+
+.panel-header {
+    border-radius: 8px 8px 0 0;
+}
+
+.panel-drag-handle {
+    flex: 1;
+    height: 28px;
+    cursor: move;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.panel-drag-handle::before {
+    content: '';
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: #cbd5e1;
+}
+
+#properties-panel.docked .panel-drag-handle {
+    display: none;
+}
+
+
+.panel-undock-btn {
+    flex-shrink: 0;
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: white;
+    color: #64748b;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.panel-undock-btn:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+/* Button is only useful when docked */
+#properties-panel:not(.docked) .panel-undock-btn {
+    display: none;
+}
+
+/* Snap-to-dock ghost preview, shown while dragging near the right edge */
+.panel-snap-preview {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    bottom: 8px;
+    width: 220px;
+    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.06);
+    border: 2px dashed rgba(99, 102, 241, 0.25);
+    pointer-events: none;
+    z-index: 99;
+}
+
+.panel-snap-preview.hidden {
+    display: none;
+}
+
+/* Right-edge tab — shown when panel is floating, click re-docks */
+.panel-dock-tab {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 99;
+    width: 20px;
+    height: 48px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.panel-dock-tab::before {
+    content: '›';
+}
+
+.panel-dock-tab:hover {
+    background: #f8fafc;
+    color: #334155;
+}
+
+.panel-dock-tab.hidden {
     display: none;
 }
 

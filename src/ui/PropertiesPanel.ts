@@ -19,12 +19,19 @@ export class PropertiesPanel {
         height: HTMLInputElement
         rotation: HTMLInputElement
     }
+    private docked = true
+    private tabEl: HTMLElement
+    private snapPreviewEl: HTMLElement
 
     constructor(container: HTMLElement) {
         this.el = document.createElement('div')
         this.el.id = 'properties-panel'
-        this.el.className = 'hidden'
+        this.el.className = 'hidden docked'
         this.el.innerHTML = `
+            <div class="panel-header">
+                <div class="panel-drag-handle"></div>
+                <button class="panel-undock-btn" title="Pop out">↗</button>
+            </div>
             <div class="prop-section">Position</div>
             <div class="prop-row">
                 <label>X</label>
@@ -69,34 +76,73 @@ export class PropertiesPanel {
         this.el.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
 
         // stopPropagation prevents the board's "click outside → deselect" listener from firing.
-        // Drag is only initiated when clicking the panel background, not its inputs.
-        this.el.addEventListener('mousedown', (e) => {
-            e.stopPropagation()
-            if ((e.target as HTMLElement) !== this.el) return
+        this.el.addEventListener('mousedown', (e) => e.stopPropagation())
 
-            const startX = e.clientX - this.el.offsetLeft
-            const startY = e.clientY - this.el.offsetTop
+        const undockBtn = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
+        undockBtn.addEventListener('click', () => {
+            this.setDocked(false)
+            this.el.style.left = ''
+            this.el.style.top = ''
+            this.el.style.right = ''
+        })
+
+        const handleEl = this.el.querySelector('.panel-drag-handle') as HTMLElement
+        handleEl.addEventListener('mousedown', (e) => {
+            if (this.docked) this.setDocked(false)
+
+            // getBoundingClientRect gives viewport coords matching clientX/Y,
+            // avoiding stale offsetLeft after a class/style change.
+            const rect = this.el.getBoundingClientRect()
+            this.el.style.left = `${rect.left}px`
+            this.el.style.top = `${rect.top}px`
+            this.el.style.right = 'auto'
+
+            const cursorOffsetX = e.clientX - rect.left
+            const cursorOffsetY = e.clientY - rect.top
 
             const margin = 8
+            const snapThreshold = 60
+            let inSnapZone = false
             const onMove = (e: MouseEvent) => {
                 const maxX = window.innerWidth - this.el.offsetWidth - margin
                 const maxY = window.innerHeight - this.el.offsetHeight - margin
-                const x = Math.min(Math.max(margin, e.clientX - startX), maxX)
-                const y = Math.min(Math.max(margin, e.clientY - startY), maxY)
+                const x = Math.min(Math.max(margin, e.clientX - cursorOffsetX), maxX)
+                const y = Math.min(Math.max(margin, e.clientY - cursorOffsetY), maxY)
                 this.el.style.left = `${x}px`
                 this.el.style.top = `${y}px`
+
+                const entering = x + this.el.offsetWidth >= window.innerWidth - snapThreshold
+                if (entering !== inSnapZone) {
+                    inSnapZone = entering
+                    this.snapPreviewEl.classList.toggle('hidden', !inSnapZone)
+                }
             }
 
             const onUp = () => {
                 window.removeEventListener('mousemove', onMove)
                 window.removeEventListener('mouseup', onUp)
+                this.snapPreviewEl.classList.add('hidden')
+                if (inSnapZone) this.setDocked(true)
             }
 
             window.addEventListener('mousemove', onMove)
             window.addEventListener('mouseup', onUp)
         })
 
+        // Right-edge tab — visible only when panel is floating, click re-docks.
+        this.tabEl = document.createElement('div')
+        this.tabEl.className = 'panel-dock-tab hidden'
+        this.tabEl.title = 'Dock panel to right'
+        this.tabEl.addEventListener('click', () => this.setDocked(true))
+        this.tabEl.addEventListener('mousedown', (e) => e.stopPropagation())
+
+        // Ghost preview of the docked position, shown while dragging near the right edge.
+        this.snapPreviewEl = document.createElement('div')
+        this.snapPreviewEl.className = 'panel-snap-preview hidden'
+
         container.appendChild(this.el)
+        container.appendChild(this.tabEl)
+        container.appendChild(this.snapPreviewEl)
         this.setupCommonEvents()
     }
 
@@ -272,6 +318,23 @@ export class PropertiesPanel {
         }
     }
 
+    private setDocked(docked: boolean) {
+        this.docked = docked
+        if (docked) {
+            this.el.classList.add('docked')
+            this.el.style.left = ''
+            this.el.style.top = ''
+            this.el.style.right = ''
+            this.tabEl.classList.add('hidden')
+        } else {
+            this.el.classList.remove('docked')
+            // Inline position is set by the drag handler immediately after this call.
+            if (!this.el.classList.contains('hidden')) {
+                this.tabEl.classList.remove('hidden')
+            }
+        }
+    }
+
     // Binds to a board object. Appearance fields are rebuilt for the new type,
     // then onChange keeps inputs in sync as the user drags or resizes.
     show(object: BoardObject) {
@@ -280,6 +343,7 @@ export class PropertiesPanel {
         this.sync()
         object.onChange = () => this.sync()
         this.el.classList.remove('hidden')
+        if (!this.docked) this.tabEl.classList.remove('hidden')
     }
 
     private sync() {
@@ -301,5 +365,6 @@ export class PropertiesPanel {
         if (this.object) this.object.onChange = null
         this.object = null
         this.el.classList.add('hidden')
+        this.tabEl.classList.add('hidden')
     }
 }
