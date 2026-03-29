@@ -57,6 +57,14 @@ export class PropertiesPanel {
             </div>
             <div id="prop-appearance"></div>
             <button id="prop-delete">Delete</button>
+            <div class="panel-resize-left"></div>
+            <div class="panel-resize-right"></div>
+            <div class="panel-resize-top"></div>
+            <div class="panel-resize-bottom"></div>
+            <div class="panel-resize-tl"></div>
+            <div class="panel-resize-tr"></div>
+            <div class="panel-resize-br"></div>
+            <div class="panel-resize-bl"></div>
         `
 
         this.appearanceEl = this.el.querySelector('#prop-appearance') as HTMLElement
@@ -114,6 +122,9 @@ export class PropertiesPanel {
                 const entering = x + this.el.offsetWidth >= window.innerWidth - snapThreshold
                 if (entering !== inSnapZone) {
                     inSnapZone = entering
+                    if (inSnapZone) {
+                        this.snapPreviewEl.style.width = `${this.el.offsetWidth}px`
+                    }
                     this.snapPreviewEl.classList.toggle('hidden', !inSnapZone)
                 }
             }
@@ -144,6 +155,7 @@ export class PropertiesPanel {
         container.appendChild(this.tabEl)
         container.appendChild(this.snapPreviewEl)
         this.setupCommonEvents()
+        this.setupResizeHandles()
     }
 
     private setupCommonEvents() {
@@ -318,6 +330,96 @@ export class PropertiesPanel {
         }
     }
 
+    private setupResizeHandles() {
+        const minW = 180
+        const minH = 120
+
+        const startLeftResize = (e: MouseEvent) => {
+            e.stopPropagation()
+            const startX = e.clientX
+            const startW = this.el.offsetWidth
+            const startLeft = this.el.getBoundingClientRect().left
+            const onMove = (e: MouseEvent) => {
+                const w = Math.max(minW, startW - (e.clientX - startX))
+                this.el.style.width = `${w}px`
+                if (!this.docked) {
+                    this.el.style.left = `${startLeft + startW - w}px`
+                    this.el.style.right = 'auto'
+                }
+            }
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove)
+                window.removeEventListener('mouseup', onUp)
+            }
+            window.addEventListener('mousemove', onMove)
+            window.addEventListener('mouseup', onUp)
+        }
+
+        const startRightResize = (e: MouseEvent) => {
+            e.stopPropagation()
+            const startX = e.clientX
+            const startW = this.el.offsetWidth
+            const onMove = (e: MouseEvent) => {
+                const w = Math.max(minW, startW + (e.clientX - startX))
+                this.el.style.width = `${w}px`
+            }
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove)
+                window.removeEventListener('mouseup', onUp)
+            }
+            window.addEventListener('mousemove', onMove)
+            window.addEventListener('mouseup', onUp)
+        }
+
+        const startTopResize = (e: MouseEvent) => {
+            e.stopPropagation()
+            const startY = e.clientY
+            const startH = this.el.offsetHeight
+            const startTop = this.el.getBoundingClientRect().top
+            const onMove = (e: MouseEvent) => {
+                const h = Math.max(minH, startH - (e.clientY - startY))
+                this.el.style.height = `${h}px`
+                this.el.style.top = `${startTop + startH - h}px`
+            }
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove)
+                window.removeEventListener('mouseup', onUp)
+            }
+            window.addEventListener('mousemove', onMove)
+            window.addEventListener('mouseup', onUp)
+        }
+
+        const startBottomResize = (e: MouseEvent) => {
+            e.stopPropagation()
+            const startY = e.clientY
+            const startH = this.el.offsetHeight
+            const onMove = (e: MouseEvent) => {
+                const h = Math.max(minH, startH + (e.clientY - startY))
+                this.el.style.height = `${h}px`
+            }
+            const onUp = () => {
+                window.removeEventListener('mousemove', onMove)
+                window.removeEventListener('mouseup', onUp)
+            }
+            window.addEventListener('mousemove', onMove)
+            window.addEventListener('mouseup', onUp)
+        }
+
+        const wire = (sel: string, ...fns: Array<(e: MouseEvent) => void>) => {
+            const el = this.el.querySelector(sel) as HTMLElement
+            el.addEventListener('mousedown', (e) => fns.forEach((fn) => fn(e)))
+        }
+
+        wire('.panel-resize-left', startLeftResize)
+        wire('.panel-resize-right', startRightResize)
+        wire('.panel-resize-top', startTopResize)
+        wire('.panel-resize-bottom', startBottomResize)
+        wire('.panel-resize-tl', startLeftResize, startTopResize)
+        wire('.panel-resize-tr', startRightResize, startTopResize)
+        wire('.panel-resize-br', startRightResize, startBottomResize)
+        wire('.panel-resize-bl', startLeftResize, startBottomResize)
+    }
+
     private setDocked(docked: boolean) {
         this.docked = docked
         if (docked) {
@@ -325,6 +427,7 @@ export class PropertiesPanel {
             this.el.style.left = ''
             this.el.style.top = ''
             this.el.style.right = ''
+            this.el.style.height = ''
             this.tabEl.classList.add('hidden')
         } else {
             this.el.classList.remove('docked')

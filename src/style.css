@@ -310,13 +310,53 @@ body {
     display: none;
 }
 
+/* Resize handles */
+.panel-resize-left,
+.panel-resize-right,
+.panel-resize-top,
+.panel-resize-bottom,
+.panel-resize-tl,
+.panel-resize-tr,
+.panel-resize-br,
+.panel-resize-bl {
+    position: absolute;
+    z-index: 10;
+}
+
+.panel-resize-left  { left: 0; top: 12px; bottom: 12px; width: 5px; cursor: ew-resize; }
+.panel-resize-right { right: 0; top: 12px; bottom: 12px; width: 5px; cursor: ew-resize; }
+.panel-resize-top   { top: 0; left: 12px; right: 12px; height: 5px; cursor: ns-resize; }
+.panel-resize-bottom{ bottom: 0; left: 12px; right: 12px; height: 5px; cursor: ns-resize; }
+
+.panel-resize-tl { top: 0; left: 0;  width: 12px; height: 12px; cursor: nwse-resize; }
+.panel-resize-tr { top: 0; right: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+.panel-resize-br { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+.panel-resize-bl { bottom: 0; left: 0;  width: 12px; height: 12px; cursor: nesw-resize; }
+
+.panel-resize-left:hover, .panel-resize-right:hover,
+.panel-resize-top:hover,  .panel-resize-bottom:hover,
+.panel-resize-tl:hover, .panel-resize-tr:hover,
+.panel-resize-br:hover, .panel-resize-bl:hover {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+/* Right, top, and their corners are floating-only */
+#properties-panel.docked .panel-resize-right,
+#properties-panel.docked .panel-resize-top,
+#properties-panel.docked .panel-resize-bottom,
+#properties-panel.docked .panel-resize-tl,
+#properties-panel.docked .panel-resize-tr,
+#properties-panel.docked .panel-resize-br,
+#properties-panel.docked .panel-resize-bl {
+    display: none;
+}
+
 /* Snap-to-dock ghost preview, shown while dragging near the right edge */
 .panel-snap-preview {
     position: absolute;
     right: 8px;
     top: 8px;
     bottom: 8px;
-    width: 220px;
     border-radius: 8px;
     background: rgba(99, 102, 241, 0.06);
     border: 2px dashed rgba(99, 102, 241, 0.25);
