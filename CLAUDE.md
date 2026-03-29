@@ -24,7 +24,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - **Dexie** — IndexedDB wrapper for local persistence (not yet wired up).
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
-**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY)` when the user pans in explore mode. Block positions are stored in board space (relative to the overlay origin), so `centerPosition()` in `main.ts` must subtract the current pan offset when placing new objects.
+**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget (slider + label) in the bottom-left mirrors the scroll-wheel zoom.
 
 **BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`.
 
@@ -44,7 +44,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag.
 
-**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). When Dexie persistence is wired up, store the Blob (`imageBlob` field) and recreate the object URL on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL.
+**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). When Dexie persistence is wired up, store the Blob (`imageBlob` field) and recreate the object URL on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL. Drag-and-drop of image files from the OS onto `#app` is handled in `main.ts` — drop position is converted from client coords using `(clientX - panX) / zoom`.
 
 **Static assets:** Place images in `public/assets/`. Vite serves them at `/moodboard/assets/<filename>` (base path is `/moodboard/`).
 
