@@ -13,6 +13,7 @@ export class PropertiesPanel {
     object: BoardObject | null = null
     private appearanceEl: HTMLElement
     private commonPropsEl: HTMLElement
+    private deleteBtnEl: HTMLButtonElement
     private inputs: {
         x: HTMLInputElement
         y: HTMLInputElement
@@ -74,8 +75,8 @@ export class PropertiesPanel {
 
         this.appearanceEl = this.el.querySelector('#prop-appearance') as HTMLElement
         this.commonPropsEl = this.el.querySelector('.panel-common-props') as HTMLElement
-        const deleteBtn = this.el.querySelector('#prop-delete') as HTMLButtonElement
-        deleteBtn.addEventListener('click', () => this.onDelete?.())
+        this.deleteBtnEl = this.el.querySelector('#prop-delete') as HTMLButtonElement
+        this.deleteBtnEl.addEventListener('click', () => this.onDelete?.())
 
         this.inputs = {
             x: this.el.querySelector('#prop-x') as HTMLInputElement,
@@ -95,13 +96,11 @@ export class PropertiesPanel {
         const undockBtn = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
         undockBtn.addEventListener('click', () => {
             this.setDocked(false)
-            this.el.style.left = ''
-            this.el.style.top = ''
-            this.el.style.right = ''
         })
 
         const handleEl = this.el.querySelector('.panel-drag-handle') as HTMLElement
         handleEl.addEventListener('mousedown', (e) => {
+            this.el.classList.add('panel-no-transition')
             if (this.docked) this.setDocked(false)
 
             // getBoundingClientRect gives viewport coords matching clientX/Y,
@@ -131,14 +130,16 @@ export class PropertiesPanel {
                     if (inSnapZone) {
                         this.snapPreviewEl.style.width = `${this.el.offsetWidth}px`
                     }
-                    this.snapPreviewEl.classList.toggle('hidden', !inSnapZone)
+                    this.snapPreviewEl.classList.toggle('is-visible', inSnapZone)
                 }
             }
 
             const onUp = () => {
                 window.removeEventListener('mousemove', onMove)
                 window.removeEventListener('mouseup', onUp)
-                this.snapPreviewEl.classList.add('hidden')
+                this.snapPreviewEl.classList.remove('is-visible')
+                // Remove no-transition before setDocked so the snap plays the FLIP animation.
+                this.el.classList.remove('panel-no-transition')
                 if (inSnapZone) this.setDocked(true)
             }
 
@@ -155,7 +156,7 @@ export class PropertiesPanel {
 
         // Ghost preview of the docked position, shown while dragging near the right edge.
         this.snapPreviewEl = document.createElement('div')
-        this.snapPreviewEl.className = 'panel-snap-preview hidden'
+        this.snapPreviewEl.className = 'panel-snap-preview'
 
         container.appendChild(this.el)
         container.appendChild(this.tabEl)
@@ -427,6 +428,12 @@ export class PropertiesPanel {
     }
 
     private setDocked(docked: boolean) {
+        // FLIP animation: record current visual rect before applying the state change.
+        const animating =
+            !this.el.classList.contains('panel-no-transition') &&
+            !this.el.classList.contains('hidden')
+        const first = animating ? this.el.getBoundingClientRect() : null
+
         this.docked = docked
         if (docked) {
             this.el.classList.add('docked')
@@ -437,10 +444,54 @@ export class PropertiesPanel {
             this.tabEl.classList.add('hidden')
         } else {
             this.el.classList.remove('docked')
-            // Inline position is set by the drag handler immediately after this call.
+            // Clear any inline position so CSS default (top/right 16px) takes over;
+            // the drag handler will override with explicit px coords immediately after.
+            this.el.style.left = ''
+            this.el.style.top = ''
+            this.el.style.right = ''
             if (!this.el.classList.contains('hidden')) {
                 this.tabEl.classList.remove('hidden')
             }
+        }
+
+        if (!first) return
+        const last = this.el.getBoundingClientRect()
+        if (last.width === 0 || last.height === 0) return
+
+        const dx = first.left - last.left
+        const dy = first.top - last.top
+        const scaleX = first.width / last.width
+        const scaleY = first.height / last.height
+
+        // When undocking, resize handles that were hidden by .docked suddenly appear.
+        // Keep them invisible until the FLIP animation finishes so they don't flash in.
+        let hiddenHandles: HTMLElement[] = []
+        if (!docked) {
+            hiddenHandles = Array.from(
+                this.el.querySelectorAll<HTMLElement>(
+                    '.panel-resize-top, .panel-resize-tl, .panel-resize-tr, ' +
+                        '.panel-resize-right, .panel-resize-bottom, .panel-resize-br, .panel-resize-bl'
+                )
+            )
+            hiddenHandles.forEach((h) => (h.style.visibility = 'hidden'))
+        }
+
+        // Apply the inverted transform so it visually starts at the old position/size.
+        this.el.classList.add('panel-no-transition')
+        this.el.style.transformOrigin = '0 0'
+        this.el.style.transform = `translate(${dx}px, ${dy}px) scaleX(${scaleX}) scaleY(${scaleY})`
+        void this.el.offsetHeight // force reflow to commit the starting state
+
+        // Animate to the natural (new) position.
+        this.el.classList.remove('panel-no-transition')
+        this.el.style.transform = ''
+
+        if (hiddenHandles.length > 0) {
+            this.el.addEventListener(
+                'transitionend',
+                () => hiddenHandles.forEach((h) => (h.style.visibility = '')),
+                { once: true }
+            )
         }
     }
 
@@ -449,6 +500,7 @@ export class PropertiesPanel {
     show(object: BoardObject) {
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
+        this.deleteBtnEl.style.display = object.omitCommonProps ? 'none' : ''
         this.renderAppearanceFields(object.getAppearanceFields())
         this.sync()
         object.onChange = () => this.sync()
