@@ -368,6 +368,7 @@ body {
     cursor: pointer;
     line-height: 1;
     pointer-events: all;
+    user-select: none;
 }
 
 .panel-expand-btn:hover {
