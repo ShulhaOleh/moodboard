@@ -44,6 +44,8 @@ export interface BoardObject {
     onDeselect: (() => void) | null
     onChange: (() => void) | null
     onDragMove: ((dx: number, dy: number) => void) | null
+    // When true, the panel hides the Position/Size/Rotation fields for this object.
+    readonly omitCommonProps?: true
     getPosition(): { x: number; y: number }
     getSize(): { width: number; height: number }
     getRotation(): number

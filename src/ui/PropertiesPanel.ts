@@ -12,6 +12,7 @@ export class PropertiesPanel {
     onDelete: (() => void) | null = null
     object: BoardObject | null = null
     private appearanceEl: HTMLElement
+    private commonPropsEl: HTMLElement
     private inputs: {
         x: HTMLInputElement
         y: HTMLInputElement
@@ -33,28 +34,30 @@ export class PropertiesPanel {
                 <button class="panel-undock-btn" title="Pop out">↗</button>
             </div>
             <div class="panel-content">
-                <div class="prop-section">Position</div>
-                <div class="prop-row">
-                    <label>X</label>
-                    <input type="number" id="prop-x" step="1" />
-                </div>
-                <div class="prop-row">
-                    <label>Y</label>
-                    <input type="number" id="prop-y" step="1" />
-                </div>
-                <div class="prop-section">Size</div>
-                <div class="prop-row">
-                    <label>W</label>
-                    <input type="number" id="prop-width" min="1" step="1" />
-                </div>
-                <div class="prop-row">
-                    <label>H</label>
-                    <input type="number" id="prop-height" min="1" step="1" />
-                </div>
-                <div class="prop-section">Rotation</div>
-                <div class="prop-row">
-                    <label>Angle</label>
-                    <input type="text" inputmode="numeric" id="prop-rotation" />
+                <div class="panel-common-props">
+                    <div class="prop-section">Position</div>
+                    <div class="prop-row">
+                        <label>X</label>
+                        <input type="number" id="prop-x" step="1" />
+                    </div>
+                    <div class="prop-row">
+                        <label>Y</label>
+                        <input type="number" id="prop-y" step="1" />
+                    </div>
+                    <div class="prop-section">Size</div>
+                    <div class="prop-row">
+                        <label>W</label>
+                        <input type="number" id="prop-width" min="1" step="1" />
+                    </div>
+                    <div class="prop-row">
+                        <label>H</label>
+                        <input type="number" id="prop-height" min="1" step="1" />
+                    </div>
+                    <div class="prop-section">Rotation</div>
+                    <div class="prop-row">
+                        <label>Angle</label>
+                        <input type="text" inputmode="numeric" id="prop-rotation" />
+                    </div>
                 </div>
                 <div id="prop-appearance"></div>
                 <button id="prop-delete">Delete</button>
@@ -70,6 +73,7 @@ export class PropertiesPanel {
         `
 
         this.appearanceEl = this.el.querySelector('#prop-appearance') as HTMLElement
+        this.commonPropsEl = this.el.querySelector('.panel-common-props') as HTMLElement
         const deleteBtn = this.el.querySelector('#prop-delete') as HTMLButtonElement
         deleteBtn.addEventListener('click', () => this.onDelete?.())
 
@@ -444,6 +448,7 @@ export class PropertiesPanel {
     // then onChange keeps inputs in sync as the user drags or resizes.
     show(object: BoardObject) {
         this.object = object
+        this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.renderAppearanceFields(object.getAppearanceFields())
         this.sync()
         object.onChange = () => this.sync()

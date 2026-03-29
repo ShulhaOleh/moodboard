@@ -6,10 +6,13 @@ import { ImageBlock } from './board/ImageBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
+import { CanvasBoard } from './board/CanvasBoard'
 
 const app = document.getElementById('app')!
 
 const panel = new PropertiesPanel(app)
+const canvasBoard = new CanvasBoard(app)
+panel.show(canvasBoard)
 const addBar = new AddBar(app)
 
 const overlay = document.createElement('div')
@@ -62,7 +65,7 @@ addBar.onModeChange = (newMode) => {
     // Deselect everything when switching to explore
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
-    panel.hide()
+    panel.show(canvasBoard)
 }
 
 // Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.
@@ -104,7 +107,7 @@ function addBlock(block: BoardObject) {
             selectedBlocks.add(obj)
             // Remove handles from all — no handles in multi-selection
             selectedBlocks.forEach((b) => b.markSelected())
-            panel.hide()
+            panel.show(canvasBoard)
         } else {
             // Replace selection
             selectedBlocks.forEach((b) => {
@@ -118,7 +121,7 @@ function addBlock(block: BoardObject) {
     block.onDeselect = () => {
         selectedBlocks.forEach((b) => b.markDeselected())
         selectedBlocks.clear()
-        panel.hide()
+        panel.show(canvasBoard)
     }
 }
 
@@ -127,7 +130,7 @@ function removeBlock(block: BoardObject) {
     if (idx !== -1) blocks.splice(idx, 1)
     selectedBlocks.delete(block)
     block.destroy()
-    if (selectedBlocks.size === 0) panel.hide()
+    if (selectedBlocks.size === 0) panel.show(canvasBoard)
 }
 
 function deleteSelected() {
@@ -256,7 +259,7 @@ document.addEventListener('mousedown', (e) => {
             }
         }
 
-        if (selectedBlocks.size === 0) panel.hide()
+        if (selectedBlocks.size === 0) panel.show(canvasBoard)
     }
 
     window.addEventListener('mousemove', onMove)
