@@ -532,6 +532,7 @@ body {
     color: var(--color-text-placeholder);
 }
 
+.panel-common-props,
 #prop-appearance {
     display: flex;
     flex-direction: column;
