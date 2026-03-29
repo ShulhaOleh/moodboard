@@ -247,6 +247,10 @@ addBar.onAddText = () => {
             fontFamily: 'Inter',
             textAlign: 'left',
             borderRadius: 6,
+            shadowColor: '',
+            shadowBlur: 0,
+            shadowX: 0,
+            shadowY: 0,
         })
     )
 }
@@ -267,6 +271,10 @@ addBar.onAddImage = (blob) => {
             opacity: 100,
             borderRadius: 6,
             background: 'transparent',
+            shadowColor: '',
+            shadowBlur: 0,
+            shadowX: 0,
+            shadowY: 0,
         })
     )
 }
@@ -287,6 +295,10 @@ addBlock(
         fontFamily: 'Inter',
         textAlign: 'left',
         borderRadius: 6,
+        shadowColor: '',
+        shadowBlur: 20,
+        shadowX: 0,
+        shadowY: 4,
     })
 )
 
@@ -303,5 +315,9 @@ addBlock(
         opacity: 100,
         borderRadius: 6,
         background: 'transparent',
+        shadowColor: '',
+        shadowBlur: 20,
+        shadowX: 0,
+        shadowY: 4,
     })
 )

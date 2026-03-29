@@ -1,6 +1,7 @@
 // Shared interface for all objects that can be placed on the board.
 
 export type PropertyField =
+    | { type: 'section'; label: string }
     | {
           type: 'number'
           key: string

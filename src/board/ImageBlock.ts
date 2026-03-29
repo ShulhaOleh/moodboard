@@ -16,6 +16,10 @@ export interface ImageBlockData {
     opacity: number
     borderRadius: number
     background: string
+    shadowColor: string
+    shadowBlur: number
+    shadowX: number
+    shadowY: number
     // Kept for future Dexie persistence — recreate src via URL.createObjectURL on load.
     imageBlob?: Blob
 }
@@ -79,6 +83,9 @@ export class ImageBlock implements BoardObject {
         this.el.style.borderRadius = `${this.data.borderRadius}px`
         this.innerEl.style.borderRadius = `${this.data.borderRadius}px`
         this.innerEl.style.background = this.data.background
+        this.el.style.boxShadow = this.data.shadowColor
+            ? `${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor}`
+            : 'none'
     }
 
     private setupInteraction() {
@@ -292,6 +299,41 @@ export class ImageBlock implements BoardObject {
                 value: this.data.background,
                 clearable: true,
             },
+            { type: 'section', label: 'Shadow' },
+            {
+                type: 'color',
+                key: 'shadowColor',
+                label: 'Color',
+                value: this.data.shadowColor,
+                clearable: true,
+            },
+            {
+                type: 'number',
+                key: 'shadowX',
+                label: 'Shadow X',
+                value: this.data.shadowX,
+                min: -100,
+                max: 100,
+                step: 1,
+            },
+            {
+                type: 'number',
+                key: 'shadowY',
+                label: 'Shadow Y',
+                value: this.data.shadowY,
+                min: -100,
+                max: 100,
+                step: 1,
+            },
+            {
+                type: 'slider',
+                key: 'shadowBlur',
+                label: 'Shadow blur',
+                value: this.data.shadowBlur,
+                min: 0,
+                max: 80,
+                step: 1,
+            },
         ]
     }
 
@@ -312,6 +354,22 @@ export class ImageBlock implements BoardObject {
         if (key === 'background') {
             this.data.background = String(value)
             this.innerEl.style.background = this.data.background
+        }
+        if (key === 'shadowColor') {
+            this.data.shadowColor = String(value)
+            this.applyAppearance()
+        }
+        if (key === 'shadowX') {
+            this.data.shadowX = Number(value)
+            this.applyAppearance()
+        }
+        if (key === 'shadowY') {
+            this.data.shadowY = Number(value)
+            this.applyAppearance()
+        }
+        if (key === 'shadowBlur') {
+            this.data.shadowBlur = Number(value)
+            this.applyAppearance()
         }
     }
 

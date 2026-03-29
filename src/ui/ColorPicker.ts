@@ -12,7 +12,7 @@ interface RGBA {
 function parseColor(value: string): RGBA {
     const m = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/)
     if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] !== undefined ? +m[4] : 1 }
-    if (value === 'transparent') return { r: 0, g: 0, b: 0, a: 0 }
+    if (value === 'transparent' || value === '') return { r: 0, g: 0, b: 0, a: 0 }
     if (value.startsWith('#')) {
         let h = value.slice(1)
         if (h.length === 3)

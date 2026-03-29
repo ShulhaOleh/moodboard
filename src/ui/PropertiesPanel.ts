@@ -141,6 +141,14 @@ export class PropertiesPanel {
         this.appearanceEl.appendChild(section)
 
         for (const field of fields) {
+            if (field.type === 'section') {
+                const sec = document.createElement('div')
+                sec.className = 'prop-section'
+                sec.textContent = field.label
+                this.appearanceEl.appendChild(sec)
+                continue
+            }
+
             const row = document.createElement('div')
             row.className = 'prop-row'
 
