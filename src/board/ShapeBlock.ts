@@ -2,7 +2,7 @@
 
 import { BoardObject, PropertyField } from './BoardObject'
 
-export type ShapeType = 'rectangle' | 'ellipse' | 'triangle'
+export type ShapeType = 'rectangle' | 'ellipse' | 'polygon' | 'star'
 
 export interface ShapeBlockData {
     id: string
@@ -15,8 +15,12 @@ export interface ShapeBlockData {
     fill: string
     stroke: string
     strokeWidth: number
-    // Only applies to rectangle shapes.
+    // Only applies to rectangle.
     borderRadius: number
+    // Only applies to polygon — number of sides (3–12).
+    sides: number
+    // Only applies to star — number of points (3–12).
+    starPoints: number
     opacity: number
     shadowColor: string
     shadowBlur: number
@@ -46,8 +50,6 @@ export class ShapeBlock implements BoardObject {
         this.svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         this.svgEl.setAttribute('width', '100%')
         this.svgEl.setAttribute('height', '100%')
-        // viewBox maps 0-100 units to the element's actual dimensions.
-        // preserveAspectRatio none allows the shape to stretch freely.
         this.svgEl.setAttribute('viewBox', '0 0 100 100')
         this.svgEl.setAttribute('preserveAspectRatio', 'none')
         this.svgEl.style.overflow = 'visible'
@@ -67,6 +69,7 @@ export class ShapeBlock implements BoardObject {
 
     private createShapeEl(shape: ShapeType): SVGElement {
         let el: SVGElement
+
         switch (shape) {
             case 'rectangle': {
                 const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -86,16 +89,46 @@ export class ShapeBlock implements BoardObject {
                 el = ellipse
                 break
             }
-            case 'triangle': {
+            case 'polygon': {
                 const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-                polygon.setAttribute('points', '50,0 100,100 0,100')
+                polygon.setAttribute('points', this.computePolygonPoints(this.data.sides))
                 el = polygon
                 break
             }
+            case 'star': {
+                const star = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+                star.setAttribute('points', this.computeStarPoints(this.data.starPoints))
+                el = star
+                break
+            }
         }
-        // Keep stroke width in screen pixels regardless of how the SVG is scaled.
+
+        // Keeps stroke width constant in screen pixels regardless of SVG scaling.
         el.setAttribute('vector-effect', 'non-scaling-stroke')
         return el
+    }
+
+    // Computes points for a regular N-sided polygon inscribed in a circle.
+    private computePolygonPoints(sides: number): string {
+        const pts: string[] = []
+        for (let i = 0; i < sides; i++) {
+            const angle = (i * 2 * Math.PI) / sides - Math.PI / 2
+            pts.push(`${50 + 48 * Math.cos(angle)},${50 + 48 * Math.sin(angle)}`)
+        }
+        return pts.join(' ')
+    }
+
+    // Computes points for an N-pointed star with a fixed inner-radius ratio.
+    private computeStarPoints(points: number): string {
+        const pts: string[] = []
+        const outerR = 48
+        const innerR = outerR * 0.4
+        for (let i = 0; i < points * 2; i++) {
+            const angle = (i * Math.PI) / points - Math.PI / 2
+            const r = i % 2 === 0 ? outerR : innerR
+            pts.push(`${50 + r * Math.cos(angle)},${50 + r * Math.sin(angle)}`)
+        }
+        return pts.join(' ')
     }
 
     private applyPosition() {
@@ -116,16 +149,23 @@ export class ShapeBlock implements BoardObject {
         this.shapeEl.setAttribute('fill', this.data.fill || 'none')
         this.shapeEl.setAttribute('stroke', this.data.stroke || 'none')
         this.shapeEl.setAttribute('stroke-width', String(this.data.strokeWidth))
+
         if (this.data.shape === 'rectangle') {
             this.shapeEl.setAttribute('rx', String(this.data.borderRadius))
         }
+        if (this.data.shape === 'polygon') {
+            this.shapeEl.setAttribute('points', this.computePolygonPoints(this.data.sides))
+        }
+        if (this.data.shape === 'star') {
+            this.shapeEl.setAttribute('points', this.computeStarPoints(this.data.starPoints))
+        }
+
         this.el.style.opacity = String(this.data.opacity / 100)
         this.el.style.filter = this.data.shadowColor
             ? `drop-shadow(${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor})`
             : 'none'
     }
 
-    // Replaces the SVG child element when the shape type changes.
     private rebuildShape() {
         this.shapeEl.remove()
         this.shapeEl = this.createShapeEl(this.data.shape)
@@ -147,7 +187,7 @@ export class ShapeBlock implements BoardObject {
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
-            if (target.closest('.text-block, .image-block, .shape-block')) {
+            if (target.closest('.text-block, .image-block, .shape-block, .line-block')) {
                 if (e.ctrlKey) return
                 this.markDeselected()
             } else {
@@ -311,10 +351,14 @@ export class ShapeBlock implements BoardObject {
                 options: [
                     { value: 'rectangle', label: 'Rectangle' },
                     { value: 'ellipse', label: 'Ellipse' },
-                    { value: 'triangle', label: 'Triangle' },
+                    { value: 'polygon', label: 'Polygon' },
+                    { value: 'star', label: 'Star' },
                 ],
             },
             { type: 'color', key: 'fill', label: 'Fill', value: this.data.fill, clearable: true },
+        ]
+
+        fields.push(
             {
                 type: 'color',
                 key: 'stroke',
@@ -330,8 +374,8 @@ export class ShapeBlock implements BoardObject {
                 min: 0,
                 max: 40,
                 step: 1,
-            },
-        ]
+            }
+        )
 
         if (this.data.shape === 'rectangle') {
             fields.push({
@@ -341,6 +385,28 @@ export class ShapeBlock implements BoardObject {
                 value: this.data.borderRadius,
                 min: 0,
                 max: 50,
+                step: 1,
+            })
+        }
+        if (this.data.shape === 'polygon') {
+            fields.push({
+                type: 'number',
+                key: 'sides',
+                label: 'Sides',
+                value: this.data.sides,
+                min: 3,
+                max: 12,
+                step: 1,
+            })
+        }
+        if (this.data.shape === 'star') {
+            fields.push({
+                type: 'number',
+                key: 'starPoints',
+                label: 'Points',
+                value: this.data.starPoints,
+                min: 3,
+                max: 12,
                 step: 1,
             })
         }
@@ -417,6 +483,14 @@ export class ShapeBlock implements BoardObject {
             if (this.data.shape === 'rectangle') {
                 this.shapeEl.setAttribute('rx', String(this.data.borderRadius))
             }
+        }
+        if (key === 'sides') {
+            this.data.sides = Number(value)
+            this.shapeEl.setAttribute('points', this.computePolygonPoints(this.data.sides))
+        }
+        if (key === 'starPoints') {
+            this.data.starPoints = Number(value)
+            this.shapeEl.setAttribute('points', this.computeStarPoints(this.data.starPoints))
         }
         if (key === 'opacity') {
             this.data.opacity = Number(value)

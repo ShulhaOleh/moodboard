@@ -4,6 +4,7 @@ import './style.css'
 import { TextBlock } from './board/TextBlock'
 import { ImageBlock } from './board/ImageBlock'
 import { ShapeBlock } from './board/ShapeBlock'
+import { LineBlock } from './board/LineBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
@@ -222,7 +223,7 @@ document.addEventListener('mousedown', (e) => {
         return
     }
 
-    if (target.closest('.text-block, .image-block, .shape-block')) return
+    if (target.closest('.text-block, .image-block, .shape-block, .line-block')) return
 
     const startX = e.clientX
     const startY = e.clientY
@@ -326,6 +327,23 @@ addBar.onAddImage = () => {
 
 addBar.onAddShape = (shape) => {
     const { x, y } = centerPosition()
+    if (shape === 'line' || shape === 'arrow') {
+        addBlock(
+            new LineBlock(overlay, {
+                id: crypto.randomUUID(),
+                x1: x,
+                y1: y + 80,
+                x2: x + 200,
+                y2: y + 80,
+                stroke: '#7c3aed',
+                strokeWidth: 2,
+                opacity: 100,
+                startPoint: 'none',
+                endPoint: shape === 'arrow' ? 'triangle-arrow' : 'none',
+            })
+        )
+        return
+    }
     addBlock(
         new ShapeBlock(overlay, {
             id: crypto.randomUUID(),
@@ -339,6 +357,8 @@ addBar.onAddShape = (shape) => {
             stroke: '',
             strokeWidth: 0,
             borderRadius: 8,
+            sides: 5,
+            starPoints: 5,
             opacity: 100,
             shadowColor: '',
             shadowBlur: 0,

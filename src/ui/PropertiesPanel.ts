@@ -523,7 +523,7 @@ export class PropertiesPanel {
     show(object: BoardObject) {
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
-        this.deleteBtnEl.style.display = object.omitCommonProps ? 'none' : ''
+        this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
         this.renderAppearanceFields(object.getAppearanceFields())
         this.sync()
         object.onChange = () => this.sync()

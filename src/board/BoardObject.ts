@@ -46,6 +46,8 @@ export interface BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null
     // When true, the panel hides the Position/Size/Rotation fields for this object.
     readonly omitCommonProps?: true
+    // When true, the panel hides the Delete button for this object.
+    readonly hideDelete?: true
     getPosition(): { x: number; y: number }
     getSize(): { width: number; height: number }
     getRotation(): number

@@ -1,8 +1,8 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
-import { ShapeType } from '../board/ShapeBlock'
-
 export type BoardMode = 'edit' | 'explore'
+
+export type DrawableShape = 'rectangle' | 'line' | 'arrow' | 'ellipse' | 'polygon' | 'star'
 
 const MODES: { mode: BoardMode; label: string; icon: string }[] = [
     {
@@ -21,11 +21,21 @@ const MODES: { mode: BoardMode; label: string; icon: string }[] = [
     },
 ]
 
-const SHAPES: { shape: ShapeType; label: string; icon: string }[] = [
+const SHAPES: { shape: DrawableShape; label: string; icon: string }[] = [
     {
         shape: 'rectangle',
         label: 'Rectangle',
         icon: `<svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="5" width="14" height="10" rx="2"/></svg>`,
+    },
+    {
+        shape: 'line',
+        label: 'Line',
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="10" x2="18" y2="10"/></svg>`,
+    },
+    {
+        shape: 'arrow',
+        label: 'Arrow',
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2,10 L15,10 M11,6 L15,10 L11,14"/></svg>`,
     },
     {
         shape: 'ellipse',
@@ -33,9 +43,14 @@ const SHAPES: { shape: ShapeType; label: string; icon: string }[] = [
         icon: `<svg viewBox="0 0 20 20" fill="currentColor"><ellipse cx="10" cy="10" rx="7" ry="5"/></svg>`,
     },
     {
-        shape: 'triangle',
-        label: 'Triangle',
-        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,3 18,18 2,18"/></svg>`,
+        shape: 'polygon',
+        label: 'Polygon',
+        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,7.5 15.5,17 4.5,17 2,7.5"/></svg>`,
+    },
+    {
+        shape: 'star',
+        label: 'Star',
+        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 12.2,7.8 18.5,8.2 13.8,12.3 15.4,18.5 10,15.1 4.6,18.5 6.2,12.3 1.5,8.2 7.8,7.8"/></svg>`,
     },
 ]
 
@@ -45,7 +60,7 @@ export class AddBar {
     readonly el: HTMLElement
     onAddText: (() => void) | null = null
     onAddImage: (() => void) | null = null
-    onAddShape: ((shape: ShapeType) => void) | null = null
+    onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
 
     private modeTriggerBtn: HTMLButtonElement
@@ -56,7 +71,7 @@ export class AddBar {
     private shapeChevronBtn: HTMLButtonElement
     private shapeDropdownEl: HTMLElement
     private shapeDropdownOpen = false
-    private selectedShape: ShapeType = 'rectangle'
+    private selectedShape: DrawableShape = 'rectangle'
 
     private addButtons: HTMLButtonElement[]
 

@@ -113,7 +113,7 @@ export class ImageBlock implements BoardObject {
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
-            if (target.closest('.text-block, .image-block, .shape-block')) {
+            if (target.closest('.text-block, .image-block, .shape-block, .line-block')) {
                 // Shift+click on another block adds it to the selection — keep this one selected.
                 if (e.ctrlKey) return
                 this.markDeselected()

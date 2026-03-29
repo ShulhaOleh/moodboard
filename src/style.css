@@ -687,6 +687,32 @@ body {
     color: var(--color-danger);
 }
 
+/* Line / Arrow block */
+.line-block {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+}
+
+.line-block svg {
+    pointer-events: none;
+    overflow: visible;
+}
+
+/* Endpoint handle — shown when the line is selected */
+.line-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 2px solid var(--color-accent);
+    pointer-events: all;
+    cursor: crosshair;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
 /* Shape block */
 .shape-block {
     position: absolute;
