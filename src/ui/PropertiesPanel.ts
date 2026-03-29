@@ -32,31 +32,33 @@ export class PropertiesPanel {
                 <div class="panel-drag-handle"></div>
                 <button class="panel-undock-btn" title="Pop out">↗</button>
             </div>
-            <div class="prop-section">Position</div>
-            <div class="prop-row">
-                <label>X</label>
-                <input type="number" id="prop-x" step="1" />
+            <div class="panel-content">
+                <div class="prop-section">Position</div>
+                <div class="prop-row">
+                    <label>X</label>
+                    <input type="number" id="prop-x" step="1" />
+                </div>
+                <div class="prop-row">
+                    <label>Y</label>
+                    <input type="number" id="prop-y" step="1" />
+                </div>
+                <div class="prop-section">Size</div>
+                <div class="prop-row">
+                    <label>W</label>
+                    <input type="number" id="prop-width" min="1" step="1" />
+                </div>
+                <div class="prop-row">
+                    <label>H</label>
+                    <input type="number" id="prop-height" min="1" step="1" />
+                </div>
+                <div class="prop-section">Rotation</div>
+                <div class="prop-row">
+                    <label>Angle</label>
+                    <input type="text" inputmode="numeric" id="prop-rotation" />
+                </div>
+                <div id="prop-appearance"></div>
+                <button id="prop-delete">Delete</button>
             </div>
-            <div class="prop-row">
-                <label>Y</label>
-                <input type="number" id="prop-y" step="1" />
-            </div>
-            <div class="prop-section">Size</div>
-            <div class="prop-row">
-                <label>W</label>
-                <input type="number" id="prop-width" min="1" step="1" />
-            </div>
-            <div class="prop-row">
-                <label>H</label>
-                <input type="number" id="prop-height" min="1" step="1" />
-            </div>
-            <div class="prop-section">Rotation</div>
-            <div class="prop-row">
-                <label>Angle</label>
-                <input type="text" inputmode="numeric" id="prop-rotation" />
-            </div>
-            <div id="prop-appearance"></div>
-            <button id="prop-delete">Delete</button>
             <div class="panel-resize-left"></div>
             <div class="panel-resize-right"></div>
             <div class="panel-resize-top"></div>
