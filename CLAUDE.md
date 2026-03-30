@@ -26,13 +26,15 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget (slider + label) in the bottom-left mirrors the scroll-wheel zoom.
 
-**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`.
+**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`, `text`, `section`. Two optional flags: `omitCommonProps` hides Position/Size/Rotation fields; `hideDelete` hides the Delete button — both used by `CanvasBoard`, which is a pseudo-object shown in the panel when nothing is selected.
+
+**Block types:** `TextBlock` (rich text via TipTap), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation).
 
 **Text editing flow:** Double-clicking a `TextBlock` mounts a TipTap `Editor` instance into the block's content element. A `TextFormatToolbar` (floating above the selection) appears on text selection and is destroyed when editing ends. The block temporarily resets its rotation to 0° during editing, restoring it on exit.
 
 **Selection model:** Each block manages its own selection state and listens on `document` for outside clicks. `main.ts` owns a `selectedBlocks: Set<BoardObject>` and wires `onSelect`/`onDeselect` in `addBlock()`. Key rules:
 - `onSelect` receives the `MouseEvent` — Ctrl+click adds to selection, plain click replaces it.
-- When switching between blocks, the outgoing block skips `onDeselect` if Ctrl is held or the click is on another board object (guard: `.closest('.text-block, .image-block')`).
+- When switching between blocks, the outgoing block skips `onDeselect` if Ctrl is held or the click is on another board object (guard: `.closest('.text-block, .image-block, .shape-block, .line-block')`).
 - `markSelected()` / `markDeselected()` update visual state only (no callbacks) — used for multi-select and marquee.
 - Multi-select shows no handles on any block; single selection shows handles and the properties panel.
 
@@ -54,8 +56,11 @@ src/
   board/
     extensions/       # custom TipTap extensions (FontSize, FontFamily)
     BoardObject.ts    # shared interface + PropertyField discriminated union
+    CanvasBoard.ts    # pseudo-object for canvas background (shown when nothing selected)
     TextBlock.ts      # draggable, resizable, rotatable rich-text block
     ImageBlock.ts     # draggable, resizable, rotatable image block
+    ShapeBlock.ts     # draggable, resizable, rotatable SVG shape block
+    LineBlock.ts      # line/arrow block with two draggable endpoints
   ui/
     AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
     TextFormatToolbar.ts  # floating toolbar shown on text selection
