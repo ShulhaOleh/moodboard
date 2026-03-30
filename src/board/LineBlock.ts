@@ -43,7 +43,6 @@ const POINT_STYLE_OPTIONS = [
 
 export class LineBlock implements BoardObject {
     readonly el: HTMLElement
-    readonly omitCommonProps = true as const
     onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null = null
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
@@ -185,9 +184,8 @@ export class LineBlock implements BoardObject {
             }
             case 'line-arrow': {
                 // Open V centered at the endpoint — vertex points outward, branches extend inward.
-                // markerWidth=3: 10 viewBox units → 3 strokeWidths; stroke-width 3.5 ≈ 1 strokeWidth.
-                marker.setAttribute('markerWidth', '3')
-                marker.setAttribute('markerHeight', '3')
+                marker.setAttribute('markerWidth', '2')
+                marker.setAttribute('markerHeight', '2')
                 marker.setAttribute('refX', '5')
                 shape = document.createElementNS(ns, 'path')
                 shape.setAttribute('d', isStart ? 'M 9 1 L 1 5 L 9 9' : 'M 1 1 L 9 5 L 1 9')
@@ -200,8 +198,8 @@ export class LineBlock implements BoardObject {
             }
             case 'triangle-arrow': {
                 // Filled triangle centered at the endpoint — tip extends outward, base extends inward.
-                marker.setAttribute('markerWidth', '3')
-                marker.setAttribute('markerHeight', '3')
+                marker.setAttribute('markerWidth', '2')
+                marker.setAttribute('markerHeight', '2')
                 marker.setAttribute('refX', '5')
                 shape = document.createElementNS(ns, 'path')
                 shape.setAttribute('d', isStart ? 'M 10 1 L 0 5 L 10 9 Z' : 'M 0 1 L 10 5 L 0 9 Z')
@@ -210,8 +208,8 @@ export class LineBlock implements BoardObject {
             }
             case 'reversed-triangle': {
                 // Reversed filled triangle centered at the endpoint — tip extends inward, base outward.
-                marker.setAttribute('markerWidth', '3')
-                marker.setAttribute('markerHeight', '3')
+                marker.setAttribute('markerWidth', '2')
+                marker.setAttribute('markerHeight', '2')
                 marker.setAttribute('refX', '5')
                 shape = document.createElementNS(ns, 'path')
                 shape.setAttribute('d', isStart ? 'M 0 1 L 10 5 L 0 9 Z' : 'M 10 1 L 0 5 L 10 9 Z')
@@ -220,8 +218,8 @@ export class LineBlock implements BoardObject {
             }
             case 'circle-arrow': {
                 // Decorative circle centered at the endpoint.
-                marker.setAttribute('markerWidth', '4')
-                marker.setAttribute('markerHeight', '4')
+                marker.setAttribute('markerWidth', '2.5')
+                marker.setAttribute('markerHeight', '2.5')
                 shape = document.createElementNS(ns, 'circle')
                 shape.setAttribute('cx', '5')
                 shape.setAttribute('cy', '5')
@@ -232,8 +230,8 @@ export class LineBlock implements BoardObject {
             }
             case 'diamond-arrow': {
                 // Decorative diamond centered at the endpoint.
-                marker.setAttribute('markerWidth', '4')
-                marker.setAttribute('markerHeight', '4')
+                marker.setAttribute('markerWidth', '2.5')
+                marker.setAttribute('markerHeight', '2.5')
                 shape = document.createElementNS(ns, 'path')
                 shape.setAttribute('d', 'M 5 0 L 10 5 L 5 10 L 0 5 Z')
                 shape.setAttribute('fill', color)
@@ -430,7 +428,9 @@ export class LineBlock implements BoardObject {
     }
 
     getRotation() {
-        return 0
+        return (
+            (Math.atan2(this.data.y2 - this.data.y1, this.data.x2 - this.data.x1) * 180) / Math.PI
+        )
     }
 
     setPosition(x: number, y: number) {
@@ -444,12 +444,32 @@ export class LineBlock implements BoardObject {
         this.applyLayout()
     }
 
-    setSize() {
-        // Size is determined entirely by the endpoint positions.
+    setSize(width: number, height: number) {
+        const cx = (this.data.x1 + this.data.x2) / 2
+        const cy = (this.data.y1 + this.data.y2) / 2
+        const innerW = Math.max(0, width - PADDING * 2)
+        const innerH = Math.max(0, height - PADDING * 2)
+        const sx = this.data.x2 >= this.data.x1 ? 1 : -1
+        const sy = this.data.y2 >= this.data.y1 ? 1 : -1
+        this.data.x1 = cx - (innerW / 2) * sx
+        this.data.y1 = cy - (innerH / 2) * sy
+        this.data.x2 = cx + (innerW / 2) * sx
+        this.data.y2 = cy + (innerH / 2) * sy
+        this.applyLayout()
+        this.onChange?.()
     }
 
-    setRotation() {
-        // Rotation is determined entirely by the endpoint positions.
+    setRotation(deg: number) {
+        const rad = (deg * Math.PI) / 180
+        const cx = (this.data.x1 + this.data.x2) / 2
+        const cy = (this.data.y1 + this.data.y2) / 2
+        const len = Math.hypot(this.data.x2 - this.data.x1, this.data.y2 - this.data.y1) / 2
+        this.data.x1 = cx - len * Math.cos(rad)
+        this.data.y1 = cy - len * Math.sin(rad)
+        this.data.x2 = cx + len * Math.cos(rad)
+        this.data.y2 = cy + len * Math.sin(rad)
+        this.applyLayout()
+        this.onChange?.()
     }
 
     getAppearanceFields(): PropertyField[] {
