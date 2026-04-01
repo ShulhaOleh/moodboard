@@ -1338,10 +1338,15 @@ body {
     align-items: center;
     justify-content: center;
     border-radius: 3px;
-    font-size: 11px;
     color: var(--color-text-placeholder);
     opacity: 0;
     padding: 0;
+}
+
+.layer-vis-btn svg,
+.layer-lock-btn svg {
+    width: 13px;
+    height: 13px;
 }
 .layer-row:hover .layer-vis-btn,
 .layer-row:hover .layer-lock-btn,
