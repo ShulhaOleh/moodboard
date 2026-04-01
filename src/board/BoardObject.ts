@@ -48,6 +48,16 @@ export interface BoardObject {
     onDragStart: (() => void) | null
     // Fired before any setter (setPosition, setSize, setRotation, setAppearanceProperty) applies a change.
     onBeforePropertyChange: (() => void) | null
+    // Fired when visibility or lock state changes — used by LayersPanel to update the row without a full refresh.
+    onLayerChange: (() => void) | null
+    // Human-readable label shown in the Layers panel.
+    readonly layerLabel: string
+    // When false the block is hidden (display:none) and excluded from selection.
+    visible: boolean
+    // When true the block cannot be dragged or selected.
+    locked: boolean
+    setVisible(v: boolean): void
+    setLocked(v: boolean): void
     // When true, the panel hides the Position/Size/Rotation fields for this object.
     readonly omitCommonProps?: true
     // When true, the panel hides the Delete button for this object.

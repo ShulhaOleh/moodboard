@@ -42,6 +42,10 @@ export class TextBlock implements BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null = null
     onDragStart: (() => void) | null = null
     onBeforePropertyChange: (() => void) | null = null
+    onLayerChange: (() => void) | null = null
+    readonly layerLabel = 'Text'
+    visible = true
+    locked = false
     private data: TextBlockData
     private editing = false
     private selected = false
@@ -123,6 +127,7 @@ export class TextBlock implements BoardObject {
     private setupInteraction() {
         this.el.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return
+            if (this.locked) return
             if (this.editing) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
             if (!this.selected) {
@@ -540,6 +545,18 @@ export class TextBlock implements BoardObject {
     setBackground(bg: string) {
         this.data.background = bg
         this.applyAppearance()
+    }
+
+    setVisible(v: boolean) {
+        this.visible = v
+        this.el.style.display = v ? '' : 'none'
+        this.onLayerChange?.()
+    }
+
+    setLocked(v: boolean) {
+        this.locked = v
+        this.el.style.pointerEvents = v ? 'none' : ''
+        this.onLayerChange?.()
     }
 
     destroy() {

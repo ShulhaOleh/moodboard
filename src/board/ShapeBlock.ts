@@ -36,6 +36,18 @@ export class ShapeBlock implements BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null = null
     onDragStart: (() => void) | null = null
     onBeforePropertyChange: (() => void) | null = null
+    onLayerChange: (() => void) | null = null
+    visible = true
+    locked = false
+    get layerLabel(): string {
+        const names: Record<string, string> = {
+            rectangle: 'Rectangle',
+            ellipse: 'Ellipse',
+            polygon: 'Polygon',
+            star: 'Star',
+        }
+        return names[this.data.shape] ?? 'Shape'
+    }
     private data: ShapeBlockData
     private svgEl: SVGSVGElement
     private shapeEl: SVGElement
@@ -178,6 +190,7 @@ export class ShapeBlock implements BoardObject {
     private setupInteraction() {
         this.el.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return
+            if (this.locked) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
             if (!this.selected) {
                 this.select(e)
@@ -542,6 +555,18 @@ export class ShapeBlock implements BoardObject {
 
     getData(): Readonly<ShapeBlockData> {
         return { ...this.data }
+    }
+
+    setVisible(v: boolean) {
+        this.visible = v
+        this.el.style.display = v ? '' : 'none'
+        this.onLayerChange?.()
+    }
+
+    setLocked(v: boolean) {
+        this.locked = v
+        this.el.style.pointerEvents = v ? 'none' : ''
+        this.onLayerChange?.()
     }
 
     destroy() {

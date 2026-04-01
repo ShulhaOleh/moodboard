@@ -49,6 +49,10 @@ export class LineBlock implements BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null = null
     onDragStart: (() => void) | null = null
     onBeforePropertyChange: (() => void) | null = null
+    onLayerChange: (() => void) | null = null
+    readonly layerLabel = 'Line'
+    visible = true
+    locked = false
     private data: LineBlockData
     private svgEl: SVGSVGElement
     private defsEl: SVGDefsElement
@@ -279,6 +283,7 @@ export class LineBlock implements BoardObject {
     private setupInteraction() {
         this.hitEl.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return
+            if (this.locked) return
             if (!this.selected) {
                 this.select(e as unknown as MouseEvent)
                 return
@@ -550,6 +555,18 @@ export class LineBlock implements BoardObject {
 
     getData(): Readonly<LineBlockData> {
         return { ...this.data }
+    }
+
+    setVisible(v: boolean) {
+        this.visible = v
+        this.el.style.display = v ? '' : 'none'
+        this.onLayerChange?.()
+    }
+
+    setLocked(v: boolean) {
+        this.locked = v
+        this.el.style.pointerEvents = v ? 'none' : ''
+        this.onLayerChange?.()
     }
 
     destroy() {

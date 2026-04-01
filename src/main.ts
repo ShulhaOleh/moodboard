@@ -6,6 +6,7 @@ import { ImageBlock, ImageBlockData } from './board/ImageBlock'
 import { ShapeBlock, ShapeBlockData } from './board/ShapeBlock'
 import { LineBlock, LineBlockData } from './board/LineBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
+import { LayersPanel } from './ui/LayersPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
@@ -19,6 +20,10 @@ type BlockSnapshot =
 const app = document.getElementById('app')!
 
 const panel = new PropertiesPanel(app)
+const layersPanel = new LayersPanel(app)
+// Keep the zoom widget from overlapping the docked layers panel.
+layersPanel.onDockChange = (docked) => app.classList.toggle('layers-panel-docked', docked)
+app.classList.add('layers-panel-docked') // docked by default
 const canvasBoard = new CanvasBoard(app)
 panel.show(canvasBoard)
 const addBar = new AddBar(app)
@@ -176,6 +181,7 @@ function paste() {
 
     if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
     else if (selectedBlocks.size > 1) panel.show(canvasBoard)
+    layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
 addBar.onModeChange = (newMode) => {
@@ -186,6 +192,7 @@ addBar.onModeChange = (newMode) => {
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
     panel.show(canvasBoard)
+    layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
 // Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.
@@ -244,20 +251,25 @@ function addBlock(block: BoardObject) {
             selectedBlocks.add(obj)
             panel.show(obj)
         }
+        layersPanel.notifySelectionChanged(selectedBlocks)
     }
     block.onDeselect = () => {
         selectedBlocks.forEach((b) => b.markDeselected())
         selectedBlocks.clear()
         panel.show(canvasBoard)
+        layersPanel.notifySelectionChanged(selectedBlocks)
     }
+    layersPanel.refresh(blocks, selectedBlocks)
 }
 
 function removeBlock(block: BoardObject) {
+    block.onLayerChange = null
     const idx = blocks.indexOf(block)
     if (idx !== -1) blocks.splice(idx, 1)
     selectedBlocks.delete(block)
     block.destroy()
     if (selectedBlocks.size === 0) panel.show(canvasBoard)
+    layersPanel.refresh(blocks, selectedBlocks)
 }
 
 function deleteSelected() {
@@ -268,6 +280,35 @@ function deleteSelected() {
 }
 
 panel.onDelete = () => deleteSelected()
+
+layersPanel.onSelectBlock = (block) => {
+    selectedBlocks.forEach((b) => {
+        if (b !== block) b.markDeselected()
+    })
+    selectedBlocks.clear()
+    selectedBlocks.add(block)
+    block.markSelected()
+    panel.show(block)
+    layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
+    if (fromIdx === targetIdx) return
+    pushHistory()
+    const insertAt =
+        fromIdx < targetIdx
+            ? edge === 'top'
+                ? targetIdx
+                : targetIdx - 1
+            : edge === 'top'
+              ? targetIdx + 1
+              : targetIdx
+    const [block] = blocks.splice(fromIdx, 1)
+    blocks.splice(insertAt, 0, block)
+    // Reorder DOM to match the new array order — last element is topmost (frontmost).
+    blocks.forEach((b) => overlay.appendChild(b.el))
+    layersPanel.refresh(blocks, selectedBlocks)
+}
 
 // Drag-and-drop images from the OS onto the board.
 app.addEventListener('dragover', (e) => {
@@ -361,7 +402,7 @@ function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
 document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return
     const target = e.target as HTMLElement
-    if (target.closest('#properties-panel, #add-bar, #zoom-widget')) return
+    if (target.closest('#properties-panel, #layers-panel, #add-bar, #zoom-widget')) return
 
     if (mode === 'explore') {
         e.preventDefault()
@@ -422,6 +463,7 @@ document.addEventListener('mousedown', (e) => {
         }
 
         if (selectedBlocks.size === 0) panel.show(canvasBoard)
+        layersPanel.notifySelectionChanged(selectedBlocks)
     }
 
     window.addEventListener('mousemove', onMove)

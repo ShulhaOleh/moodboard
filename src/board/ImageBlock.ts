@@ -32,6 +32,10 @@ export class ImageBlock implements BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null = null
     onDragStart: (() => void) | null = null
     onBeforePropertyChange: (() => void) | null = null
+    onLayerChange: (() => void) | null = null
+    readonly layerLabel = 'Image'
+    visible = true
+    locked = false
     private data: ImageBlockData
     private imgEl: HTMLImageElement
     private innerEl: HTMLElement
@@ -101,6 +105,7 @@ export class ImageBlock implements BoardObject {
     private setupInteraction() {
         this.el.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return
+            if (this.locked) return
             if ((e.target as HTMLElement).closest('.tb-handles')) return
             if (!this.selected) {
                 this.select(e)
@@ -422,6 +427,18 @@ export class ImageBlock implements BoardObject {
 
     getData(): Readonly<ImageBlockData> {
         return { ...this.data }
+    }
+
+    setVisible(v: boolean) {
+        this.visible = v
+        this.el.style.display = v ? '' : 'none'
+        this.onLayerChange?.()
+    }
+
+    setLocked(v: boolean) {
+        this.locked = v
+        this.el.style.pointerEvents = v ? 'none' : ''
+        this.onLayerChange?.()
     }
 
     // Must be called when removing the block if src is an object URL, to free memory.

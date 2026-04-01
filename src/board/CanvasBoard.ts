@@ -13,6 +13,10 @@ export class CanvasBoard implements BoardObject {
     onDragMove = null
     onDragStart = null
     onBeforePropertyChange = null
+    onLayerChange = null
+    readonly layerLabel = 'Canvas'
+    visible = true
+    locked = false
 
     private bg: string
 
@@ -32,6 +36,8 @@ export class CanvasBoard implements BoardObject {
     setPosition() {}
     setSize() {}
     setRotation() {}
+    setVisible() {}
+    setLocked() {}
     markSelected() {}
     markDeselected() {}
     destroy() {}
