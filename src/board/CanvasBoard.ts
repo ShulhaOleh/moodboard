@@ -11,6 +11,8 @@ export class CanvasBoard implements BoardObject {
     onDeselect = null
     onChange: (() => void) | null = null
     onDragMove = null
+    onDragStart = null
+    onBeforePropertyChange = null
 
     private bg: string
 

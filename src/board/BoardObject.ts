@@ -44,6 +44,10 @@ export interface BoardObject {
     onDeselect: (() => void) | null
     onChange: (() => void) | null
     onDragMove: ((dx: number, dy: number) => void) | null
+    // Fired once when a drag/resize/rotate gesture commits (threshold exceeded or handle pressed).
+    onDragStart: (() => void) | null
+    // Fired before any setter (setPosition, setSize, setRotation, setAppearanceProperty) applies a change.
+    onBeforePropertyChange: (() => void) | null
     // When true, the panel hides the Position/Size/Rotation fields for this object.
     readonly omitCommonProps?: true
     // When true, the panel hides the Delete button for this object.

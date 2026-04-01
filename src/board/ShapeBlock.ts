@@ -34,6 +34,8 @@ export class ShapeBlock implements BoardObject {
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
     onDragMove: ((dx: number, dy: number) => void) | null = null
+    onDragStart: (() => void) | null = null
+    onBeforePropertyChange: (() => void) | null = null
     private data: ShapeBlockData
     private svgEl: SVGSVGElement
     private shapeEl: SVGElement
@@ -252,6 +254,7 @@ export class ShapeBlock implements BoardObject {
             if (!dragging) {
                 if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
                 dragging = true
+                this.onDragStart?.()
                 this.dragOffset.x = startX - this.data.x
                 this.dragOffset.y = startY - this.data.y
             }
@@ -278,6 +281,7 @@ export class ShapeBlock implements BoardObject {
     private startResize(e: MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
+        this.onDragStart?.()
 
         const startX = e.clientX
         const startY = e.clientY
@@ -308,6 +312,7 @@ export class ShapeBlock implements BoardObject {
     private startRotate(e: MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
+        this.onDragStart?.()
 
         const rect = this.el.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
@@ -462,6 +467,7 @@ export class ShapeBlock implements BoardObject {
     }
 
     setAppearanceProperty(key: string, value: string | number) {
+        this.onBeforePropertyChange?.()
         if (key === 'shape') {
             this.data.shape = value as ShapeType
             this.rebuildShape()
@@ -515,20 +521,27 @@ export class ShapeBlock implements BoardObject {
     }
 
     setPosition(x: number, y: number) {
+        this.onBeforePropertyChange?.()
         this.data.x = x
         this.data.y = y
         this.applyPosition()
     }
 
     setSize(width: number, height: number) {
+        this.onBeforePropertyChange?.()
         this.data.width = Math.max(20, width)
         this.data.height = Math.max(20, height)
         this.applySize()
     }
 
     setRotation(deg: number) {
+        this.onBeforePropertyChange?.()
         this.data.rotation = deg
         this.applyTransform()
+    }
+
+    getData(): Readonly<ShapeBlockData> {
+        return { ...this.data }
     }
 
     destroy() {

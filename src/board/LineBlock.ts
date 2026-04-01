@@ -47,6 +47,8 @@ export class LineBlock implements BoardObject {
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
     onDragMove: ((dx: number, dy: number) => void) | null = null
+    onDragStart: (() => void) | null = null
+    onBeforePropertyChange: (() => void) | null = null
     private data: LineBlockData
     private svgEl: SVGSVGElement
     private defsEl: SVGDefsElement
@@ -366,6 +368,7 @@ export class LineBlock implements BoardObject {
             if (!dragging) {
                 if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
                 dragging = true
+                this.onDragStart?.()
             }
             const dx = e.clientX - prevX
             const dy = e.clientY - prevY
@@ -391,6 +394,7 @@ export class LineBlock implements BoardObject {
 
     private startEndpointDrag(e: MouseEvent, point: 1 | 2) {
         e.preventDefault()
+        this.onDragStart?.()
 
         const onMove = (e: MouseEvent) => {
             if (point === 1) {
@@ -434,6 +438,7 @@ export class LineBlock implements BoardObject {
     }
 
     setPosition(x: number, y: number) {
+        this.onBeforePropertyChange?.()
         const curr = this.getPosition()
         const dx = x - curr.x
         const dy = y - curr.y
@@ -445,6 +450,7 @@ export class LineBlock implements BoardObject {
     }
 
     setSize(width: number, height: number) {
+        this.onBeforePropertyChange?.()
         const cx = (this.data.x1 + this.data.x2) / 2
         const cy = (this.data.y1 + this.data.y2) / 2
         const innerW = Math.max(0, width - PADDING * 2)
@@ -460,6 +466,7 @@ export class LineBlock implements BoardObject {
     }
 
     setRotation(deg: number) {
+        this.onBeforePropertyChange?.()
         const rad = (deg * Math.PI) / 180
         const cx = (this.data.x1 + this.data.x2) / 2
         const cy = (this.data.y1 + this.data.y2) / 2
@@ -518,6 +525,7 @@ export class LineBlock implements BoardObject {
     }
 
     setAppearanceProperty(key: string, value: string | number) {
+        this.onBeforePropertyChange?.()
         if (key === 'stroke') {
             this.data.stroke = String(value)
             this.applyAppearance()
@@ -538,6 +546,10 @@ export class LineBlock implements BoardObject {
             this.data.endPoint = value as PointStyle
             this.applyAppearance()
         }
+    }
+
+    getData(): Readonly<LineBlockData> {
+        return { ...this.data }
     }
 
     destroy() {

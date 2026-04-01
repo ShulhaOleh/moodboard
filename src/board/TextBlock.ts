@@ -40,6 +40,8 @@ export class TextBlock implements BoardObject {
     onDeselect: (() => void) | null = null
     onChange: (() => void) | null = null
     onDragMove: ((dx: number, dy: number) => void) | null = null
+    onDragStart: (() => void) | null = null
+    onBeforePropertyChange: (() => void) | null = null
     private data: TextBlockData
     private editing = false
     private selected = false
@@ -244,6 +246,7 @@ export class TextBlock implements BoardObject {
     }
 
     setAppearanceProperty(key: string, value: string | number) {
+        this.onBeforePropertyChange?.()
         if (key === 'fontFamily') this.setFontFamilyBlock(String(value))
         if (key === 'fontSize') this.setFontSize(Number(value))
         if (key === 'textAlign') this.setTextAlign(String(value))
@@ -341,6 +344,7 @@ export class TextBlock implements BoardObject {
                 // so clicks and double-clicks never accidentally shift the block.
                 if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
                 dragging = true
+                this.onDragStart?.()
                 this.dragOffset.x = startX - this.data.x
                 this.dragOffset.y = startY - this.data.y
             }
@@ -367,6 +371,7 @@ export class TextBlock implements BoardObject {
     private startResize(e: MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
+        this.onDragStart?.()
 
         const startX = e.clientX
         const startY = e.clientY
@@ -399,6 +404,7 @@ export class TextBlock implements BoardObject {
     private startRotate(e: MouseEvent) {
         e.preventDefault()
         e.stopPropagation()
+        this.onDragStart?.()
 
         const rect = this.el.getBoundingClientRect()
         const centerX = rect.left + rect.width / 2
@@ -506,12 +512,14 @@ export class TextBlock implements BoardObject {
     }
 
     setPosition(x: number, y: number) {
+        this.onBeforePropertyChange?.()
         this.data.x = x
         this.data.y = y
         this.applyPosition()
     }
 
     setSize(width: number, height: number) {
+        this.onBeforePropertyChange?.()
         this.data.width = Math.max(120, width)
         this.data.height = Math.max(40, height)
         this.el.style.width = `${this.data.width}px`
@@ -519,6 +527,7 @@ export class TextBlock implements BoardObject {
     }
 
     setRotation(deg: number) {
+        this.onBeforePropertyChange?.()
         this.data.rotation = deg
         this.applyTransform()
     }

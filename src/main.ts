@@ -1,14 +1,20 @@
 // App entry point — initializes the board overlay and wires up UI components.
 
 import './style.css'
-import { TextBlock } from './board/TextBlock'
-import { ImageBlock } from './board/ImageBlock'
-import { ShapeBlock } from './board/ShapeBlock'
-import { LineBlock } from './board/LineBlock'
+import { TextBlock, TextBlockData } from './board/TextBlock'
+import { ImageBlock, ImageBlockData } from './board/ImageBlock'
+import { ShapeBlock, ShapeBlockData } from './board/ShapeBlock'
+import { LineBlock, LineBlockData } from './board/LineBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
+
+type BlockSnapshot =
+    | { type: 'text'; data: TextBlockData }
+    | { type: 'image'; data: ImageBlockData }
+    | { type: 'shape'; data: ShapeBlockData }
+    | { type: 'line'; data: LineBlockData }
 
 const app = document.getElementById('app')!
 
@@ -49,6 +55,11 @@ app.appendChild(zoomWidget)
 
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
+const history: BlockSnapshot[][] = []
+const clipboard: BlockSnapshot[] = []
+let pasteCount = 0
+// Tracks whether a property-change burst is in progress to avoid duplicate history entries.
+let propertyChangeActive = false
 
 let mode: BoardMode = 'edit'
 let panX = 0
@@ -58,6 +69,113 @@ let zoom = 1
 function applyTransform() {
     overlay.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`
     overlay.style.transformOrigin = '0 0'
+}
+
+function snapshotBlock(block: BoardObject): BlockSnapshot {
+    if (block instanceof TextBlock) return { type: 'text', data: { ...block.getData() } }
+    if (block instanceof ImageBlock) return { type: 'image', data: { ...block.getData() } }
+    if (block instanceof ShapeBlock) return { type: 'shape', data: { ...block.getData() } }
+    if (block instanceof LineBlock) return { type: 'line', data: { ...block.getData() } }
+    throw new Error('Unknown block type')
+}
+
+function pushHistory() {
+    history.push(blocks.map(snapshotBlock))
+}
+
+function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
+    switch (snap.type) {
+        case 'text':
+            return new TextBlock(overlay, snap.data)
+        case 'image':
+            return new ImageBlock(overlay, snap.data)
+        case 'shape':
+            return new ShapeBlock(overlay, snap.data)
+        case 'line':
+            return new LineBlock(overlay, snap.data)
+    }
+}
+
+function undo() {
+    const state = history.pop()
+    if (!state) return
+    for (const b of [...blocks]) removeBlock(b)
+    for (const snap of state) addBlock(blockFromSnapshot(snap))
+}
+
+function copySelected() {
+    if (selectedBlocks.size === 0) return
+    clipboard.length = 0
+    for (const b of selectedBlocks) clipboard.push(snapshotBlock(b))
+    pasteCount = 0
+}
+
+function paste() {
+    if (clipboard.length === 0) return
+    pushHistory()
+    pasteCount++
+    const offset = pasteCount * 20
+
+    selectedBlocks.forEach((b) => b.markDeselected())
+    selectedBlocks.clear()
+
+    for (const snap of clipboard) {
+        let newSnap: BlockSnapshot
+        if (snap.type === 'line') {
+            newSnap = {
+                type: 'line',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x1: snap.data.x1 + offset,
+                    y1: snap.data.y1 + offset,
+                    x2: snap.data.x2 + offset,
+                    y2: snap.data.y2 + offset,
+                },
+            }
+        } else if (snap.type === 'image') {
+            const src = snap.data.imageBlob
+                ? URL.createObjectURL(snap.data.imageBlob)
+                : snap.data.src
+            newSnap = {
+                type: 'image',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x: snap.data.x + offset,
+                    y: snap.data.y + offset,
+                    src,
+                },
+            }
+        } else if (snap.type === 'text') {
+            newSnap = {
+                type: 'text',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x: snap.data.x + offset,
+                    y: snap.data.y + offset,
+                },
+            }
+        } else {
+            newSnap = {
+                type: 'shape',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x: snap.data.x + offset,
+                    y: snap.data.y + offset,
+                },
+            }
+        }
+        const b = blockFromSnapshot(newSnap)
+        addBlock(b)
+        selectedBlocks.add(b)
+        b.markSelected()
+    }
+
+    if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+    else if (selectedBlocks.size > 1) panel.show(canvasBoard)
 }
 
 addBar.onModeChange = (newMode) => {
@@ -97,6 +215,13 @@ document.addEventListener(
 
 function addBlock(block: BoardObject) {
     blocks.push(block)
+    block.onDragStart = () => pushHistory()
+    block.onBeforePropertyChange = () => {
+        if (!propertyChangeActive) {
+            pushHistory()
+            propertyChangeActive = true
+        }
+    }
     block.onDragMove = (dx, dy) => {
         for (const b of selectedBlocks) {
             if (b === block) continue
@@ -136,6 +261,8 @@ function removeBlock(block: BoardObject) {
 }
 
 function deleteSelected() {
+    if (selectedBlocks.size === 0) return
+    pushHistory()
     const toDelete = [...selectedBlocks]
     toDelete.forEach((b) => removeBlock(b))
 }
@@ -158,6 +285,7 @@ app.addEventListener('drop', (e) => {
     e.preventDefault()
     app.classList.remove('drag-over')
     const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'))
+    if (files.length > 0) pushHistory()
     files.forEach((file, i) => {
         const x = Math.round((e.clientX - panX) / zoom - 160 + i * 20)
         const y = Math.round((e.clientY - panY) / zoom - 120 + i * 20)
@@ -184,13 +312,45 @@ app.addEventListener('drop', (e) => {
     })
 })
 
-// Delete/Backspace removes selected blocks unless focus is inside an editable element.
+// Reset the property-change burst flag at the end of any mouse interaction.
+document.addEventListener('mouseup', () => {
+    propertyChangeActive = false
+})
+
+// Keyboard shortcuts: delete, undo, copy, cut, paste.
 document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Delete' && e.key !== 'Backspace') return
     const active = document.activeElement as HTMLElement
-    if (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+    const inEditable =
+        active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'
+
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !inEditable) {
+        deleteSelected()
         return
-    deleteSelected()
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'z' && !inEditable) {
+            e.preventDefault()
+            undo()
+            return
+        }
+        if (e.key === 'c' && !inEditable) {
+            e.preventDefault()
+            copySelected()
+            return
+        }
+        if (e.key === 'x' && !inEditable) {
+            e.preventDefault()
+            copySelected()
+            deleteSelected()
+            return
+        }
+        if (e.key === 'v' && !inEditable) {
+            e.preventDefault()
+            paste()
+            return
+        }
+    }
 })
 
 function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
@@ -278,6 +438,7 @@ function centerPosition() {
 }
 
 addBar.onAddText = () => {
+    pushHistory()
     const { x, y } = centerPosition()
     addBlock(
         new TextBlock(overlay, {
@@ -303,6 +464,7 @@ addBar.onAddText = () => {
 }
 
 addBar.onAddImage = () => {
+    pushHistory()
     const { x, y } = centerPosition()
     addBlock(
         new ImageBlock(overlay, {
@@ -326,6 +488,7 @@ addBar.onAddImage = () => {
 }
 
 addBar.onAddShape = (shape) => {
+    pushHistory()
     const { x, y } = centerPosition()
     if (shape === 'line' || shape === 'arrow') {
         addBlock(
