@@ -32,9 +32,10 @@ export class PropertiesPanel {
         this.el.className = 'hidden docked'
         this.el.innerHTML = `
             <div class="panel-header">
-                <div class="panel-drag-handle"></div>
                 <button class="panel-undock-btn" title="Pop out">↗</button>
+                <span class="layers-title">Properties</span>
                 <button class="panel-collapse-btn" title="Hide panel">›</button>
+                <div class="panel-drag-handle"></div>
             </div>
             <div class="panel-content">
                 <div class="panel-common-props">
