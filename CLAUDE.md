@@ -24,9 +24,14 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - **Dexie** — IndexedDB wrapper for local persistence (not yet wired up).
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
-**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget (slider + label) in the bottom-left mirrors the scroll-wheel zoom.
+**Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget (slider + label) in the bottom-left mirrors the scroll-wheel zoom. Its `left` position is driven by `--layers-panel-offset` CSS variable, updated by `LayersPanel.updateOffset()` whenever the panel docks, undocks, collapses, or resizes.
 
-**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`, `text`, `section`. Two optional flags: `omitCommonProps` hides Position/Size/Rotation fields; `hideDelete` hides the Delete button — both used by `CanvasBoard`, which is a pseudo-object shown in the panel when nothing is selected.
+**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`, `text`, `section`. Optional flags: `omitCommonProps` hides Position/Size/Rotation fields; `hideDelete` hides the Delete button; `hideName` hides the name field — all three used by `CanvasBoard`. Beyond geometry and appearance, the interface also carries:
+- `onDragStart` — fired once when a drag/resize/rotate gesture commits (threshold passed or handle pressed); used by `main.ts` to push a history snapshot.
+- `onBeforePropertyChange` — fired before the first setter call per mouse interaction burst; `main.ts` uses a `propertyChangeActive` flag (reset on `mouseup`) to push exactly one history entry per property-panel drag.
+- `onLayerChange` — fired when `visible`, `locked`, or `name` changes; `LayersPanel` uses it to update the row without rebuilding the list.
+- `name` / `setName()` — user-editable display name, editable in `PropertiesPanel` and inline in `LayersPanel` (double-click or F2).
+- `layerLabel` — read-only type label (e.g. `'Rectangle'`, `'Line'`); used as the default `name` on construction.
 
 **Block types:** `TextBlock` (rich text via TipTap), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation).
 
@@ -40,9 +45,13 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Drag:** Each block fires `onDragMove(dx, dy)` on every drag frame. `main.ts` applies the same delta to all other blocks in `selectedBlocks`, keeping relative positions intact during grouped drag.
 
+**History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all four block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` (Ctrl+Z) restores the previous snapshot. `copySelected()` (Ctrl+C/X) writes snapshots to `clipboard[]`. `paste()` (Ctrl+V) reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset.
+
 **Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee.
 
 **Marquee selection:** Dragging on empty board space in edit mode draws a `.marquee` div (`position: fixed`) and on mouseup selects all blocks whose `getBoundingClientRect()` intersects it. Capture the rect before calling `.remove()` — after removal it returns zeros.
+
+**Layers panel** (`src/ui/LayersPanel.ts`): Left-docked panel listing all blocks in z-order (last `blocks[]` entry = frontmost = top row). Supports drag-to-reorder (HTML5 DnD), per-row visibility and lock toggles, and inline name editing (double-click or F2). Mirrors the dock/undock/collapse/resize behavior of `PropertiesPanel`. `onReorder` callback in `main.ts` splices `blocks[]` then calls `overlay.appendChild` on every block to re-sync DOM order. `refresh()` rebuilds all rows; `notifySelectionChanged()` only toggles `is-selected` classes. The panel uses `data-array-index` on each row to map between the reversed visual order and the actual array index.
 
 **Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag.
 
@@ -63,13 +72,14 @@ src/
     LineBlock.ts      # line/arrow block with two draggable endpoints
   ui/
     AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
+    LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
     TextFormatToolbar.ts  # floating toolbar shown on text selection
-    PropertiesPanel.ts    # fixed side panel; generic over BoardObject
+    PropertiesPanel.ts    # right-docked side panel; generic over BoardObject
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
-  main.ts             # board state: blocks[], selectedBlocks, pan, mode, event wiring
+  main.ts             # board state: blocks[], selectedBlocks, history, clipboard, pan, mode
   style.css           # all styles (Tailwind + component styles)
 ```
 

@@ -577,7 +577,7 @@ addBar.onAddShape = (shape) => {
 addBlock(
     new TextBlock(overlay, {
         id: 'demo',
-        x: 100,
+        x: 250,
         y: 100,
         rotation: 0,
         content:
@@ -599,7 +599,7 @@ addBlock(
 addBlock(
     new ImageBlock(overlay, {
         id: 'demo-image',
-        x: 420,
+        x: 570,
         y: 100,
         width: 320,
         height: 240,
