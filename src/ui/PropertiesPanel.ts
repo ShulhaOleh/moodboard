@@ -22,7 +22,6 @@ export class PropertiesPanel {
         rotation: HTMLInputElement
     }
     private docked = true
-    private tabEl: HTMLElement
     private snapPreviewEl: HTMLElement
     private expandBtnEl: HTMLElement
 
@@ -32,10 +31,10 @@ export class PropertiesPanel {
         this.el.className = 'hidden docked'
         this.el.innerHTML = `
             <div class="panel-header">
+                <div class="panel-drag-handle"></div>
                 <button class="panel-undock-btn" title="Pop out">↗</button>
                 <span class="layers-title">Properties</span>
                 <button class="panel-collapse-btn" title="Hide panel">›</button>
-                <div class="panel-drag-handle"></div>
             </div>
             <div class="panel-content">
                 <div class="panel-common-props">
@@ -153,12 +152,6 @@ export class PropertiesPanel {
         const collapseBtn = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
         collapseBtn.addEventListener('click', () => this.setCollapsed(true))
 
-        // Right-edge tab — re-docks floating panel.
-        this.tabEl = document.createElement('div')
-        this.tabEl.className = 'panel-dock-tab hidden'
-        this.tabEl.addEventListener('click', () => this.setDocked(true))
-        this.tabEl.addEventListener('mousedown', (e) => e.stopPropagation())
-
         // Mirror of the collapse button, fixed at the same screen position.
         // Visible only when the panel is docked and collapsed, so there is always
         // a button at that location regardless of panel state.
@@ -174,7 +167,6 @@ export class PropertiesPanel {
         this.snapPreviewEl.className = 'panel-snap-preview'
 
         container.appendChild(this.el)
-        container.appendChild(this.tabEl)
         container.appendChild(this.expandBtnEl)
         container.appendChild(this.snapPreviewEl)
         this.setupCommonEvents()
@@ -458,7 +450,6 @@ export class PropertiesPanel {
             this.el.style.top = ''
             this.el.style.right = ''
             this.el.style.height = ''
-            this.tabEl.classList.add('hidden')
             this.expandBtnEl.classList.add('hidden')
         } else {
             this.el.classList.remove('docked', 'docked-collapsed')
@@ -468,9 +459,6 @@ export class PropertiesPanel {
             this.el.style.left = ''
             this.el.style.top = ''
             this.el.style.right = ''
-            if (!this.el.classList.contains('hidden')) {
-                this.tabEl.classList.remove('hidden')
-            }
         }
 
         if (!first) return
@@ -529,7 +517,6 @@ export class PropertiesPanel {
         this.sync()
         object.onChange = () => this.sync()
         this.el.classList.remove('hidden')
-        if (!this.docked) this.tabEl.classList.remove('hidden')
     }
 
     private sync() {
@@ -551,6 +538,5 @@ export class PropertiesPanel {
         if (this.object) this.object.onChange = null
         this.object = null
         this.el.classList.add('hidden')
-        this.tabEl.classList.add('hidden')
     }
 }

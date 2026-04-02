@@ -56,8 +56,8 @@ body {
 /* Zoom widget — slider + percentage label, bottom-left */
 #zoom-widget {
     position: absolute;
-    bottom: 16px;
-    left: calc(16px + var(--layers-panel-offset, 0px));
+    bottom: 8px;
+    left: calc(8px + var(--layers-panel-offset, 0px));
     z-index: 100;
     transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
     background: var(--color-surface);
@@ -394,6 +394,10 @@ body {
     display: none;
 }
 
+#properties-panel .layers-title {
+    text-align: right;
+}
+
 
 .panel-undock-btn {
     flex-shrink: 0;
@@ -549,41 +553,6 @@ body {
     transform: scaleX(1);
 }
 
-/* Right-edge tab — shown when panel is floating, click re-docks */
-.panel-dock-tab {
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 99;
-    width: 20px;
-    height: 48px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-right: none;
-    border-radius: 6px 0 0 6px;
-    box-shadow: -2px 0 6px rgba(0, 0, 0, 0.06);
-    cursor: pointer;
-    pointer-events: all;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-placeholder);
-    font-size: 12px;
-}
-
-.panel-dock-tab::before {
-    content: '›';
-}
-
-.panel-dock-tab:hover {
-    background: var(--color-surface-raised);
-    color: var(--color-text-secondary);
-}
-
-.panel-dock-tab.hidden {
-    display: none;
-}
 
 .prop-row {
     display: flex;
@@ -1207,34 +1176,6 @@ body {
     color: var(--color-text-secondary);
 }
 
-/* Left-edge dock tab — shown when floating, click re-docks */
-.layers-dock-tab {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 99;
-    width: 20px;
-    height: 48px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-left: none;
-    border-radius: 0 6px 6px 0;
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
-    cursor: pointer;
-    pointer-events: all;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-placeholder);
-    font-size: 12px;
-}
-.layers-dock-tab::before { content: '‹'; }
-.layers-dock-tab:hover {
-    background: var(--color-surface-raised);
-    color: var(--color-text-secondary);
-}
-.layers-dock-tab.hidden { display: none; }
 
 /* Snap-to-dock ghost preview, shown while dragging near the left edge */
 .layers-snap-preview {

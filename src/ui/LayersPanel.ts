@@ -37,7 +37,6 @@ export class LayersPanel {
     onDockChange: ((docked: boolean) => void) | null = null
     private docked = true
     private listEl: HTMLUListElement
-    private tabEl: HTMLElement
     private expandBtnEl: HTMLButtonElement
     private snapPreviewEl: HTMLElement
     private cachedBlocks: BoardObject[] = []
@@ -51,9 +50,9 @@ export class LayersPanel {
         this.el.className = 'docked'
         this.el.innerHTML = `
             <div class="panel-header">
-                <button class="panel-undock-btn" title="Pop out">↗</button>
-                <span class="layers-title">Layers</span>
                 <button class="panel-collapse-btn" title="Hide panel">‹</button>
+                <span class="layers-title">Layers</span>
+                <button class="panel-undock-btn" title="Pop out">↗</button>
                 <div class="panel-drag-handle"></div>
             </div>
             <div class="panel-content">
@@ -129,12 +128,6 @@ export class LayersPanel {
         const collapseBtn = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
         collapseBtn.addEventListener('click', () => this.setCollapsed(true))
 
-        // Left-edge tab — shown when floating, re-docks the panel.
-        this.tabEl = document.createElement('div')
-        this.tabEl.className = 'layers-dock-tab hidden'
-        this.tabEl.addEventListener('click', () => this.setDocked(true))
-        this.tabEl.addEventListener('mousedown', (e) => e.stopPropagation())
-
         // Expand button — visible only when docked and collapsed.
         this.expandBtnEl = document.createElement('button')
         this.expandBtnEl.className = 'layers-expand-btn hidden'
@@ -148,7 +141,6 @@ export class LayersPanel {
         this.snapPreviewEl.className = 'layers-snap-preview'
 
         container.appendChild(this.el)
-        container.appendChild(this.tabEl)
         container.appendChild(this.expandBtnEl)
         container.appendChild(this.snapPreviewEl)
         this.setupResizeHandles()
@@ -280,7 +272,6 @@ export class LayersPanel {
         })
     }
 
-    // Updates the CSS variable that drives the zoom widget offset.
     private updateOffset() {
         const collapsed = this.el.classList.contains('docked-collapsed')
         const offset = this.docked && !collapsed ? this.el.offsetWidth + 8 : 0
@@ -302,7 +293,6 @@ export class LayersPanel {
             this.el.style.top = ''
             this.el.style.right = ''
             this.el.style.height = ''
-            this.tabEl.classList.add('hidden')
             this.expandBtnEl.classList.add('hidden')
         } else {
             this.el.classList.remove('docked', 'docked-collapsed')
@@ -310,9 +300,6 @@ export class LayersPanel {
             this.el.style.left = ''
             this.el.style.top = ''
             this.el.style.right = ''
-            if (!this.el.classList.contains('hidden')) {
-                this.tabEl.classList.remove('hidden')
-            }
         }
 
         if (!first) return
