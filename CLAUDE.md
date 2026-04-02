@@ -80,7 +80,25 @@ src/
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
   main.ts             # board state: blocks[], selectedBlocks, history, clipboard, pan, mode
-  style.css           # all styles (Tailwind + component styles)
+  style.css           # entry point — @imports Tailwind and all component stylesheets
+  styles/
+    tokens.css        # :root color variables
+    base.css          # * reset + html/body
+    board.css         # zoom widget, marquee, drag-over, explore-mode
+    panel.css         # shared panel shell (header, drag handle, resize handles, buttons)
+    board/
+      line-block.css
+      shape-block.css
+      image-block.css
+      text-block.css
+      block-handles.css   # .tb-handles / .tb-resize / .tb-rotate
+    ui/
+      add-bar.css
+      properties-panel.css
+      layers-panel.css
+      text-format-toolbar.css
+      color-picker.css
+      font-picker.css
 ```
 
 ## Code Style

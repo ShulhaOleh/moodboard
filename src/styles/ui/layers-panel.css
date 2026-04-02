@@ -1,0 +1,231 @@
+/* LayersPanel — floating/docked left panel listing blocks in z-order. */
+
+/* Floating state (default) */
+#layers-panel {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease;
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 100;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    pointer-events: all;
+    user-select: none;
+}
+
+/* Docked state — full-height panel pinned to the left */
+#layers-panel.docked {
+    top: 8px;
+    left: 8px;
+    bottom: 8px;
+    right: auto !important;
+    width: 200px;
+    height: auto;
+    max-height: none;
+}
+
+#layers-panel.hidden {
+    display: none;
+}
+
+#layers-panel.panel-no-transition {
+    transition: none !important;
+}
+
+/* Drag handle only visible when floating */
+#layers-panel.docked .panel-drag-handle {
+    display: none;
+}
+
+/* Undock / collapse buttons only useful when docked */
+#layers-panel:not(.docked) .panel-undock-btn {
+    display: none;
+}
+#layers-panel:not(.docked) .panel-collapse-btn {
+    display: none;
+}
+
+/* Slide panel off the left edge when collapsed */
+#layers-panel.docked.docked-collapsed {
+    transform: translateX(calc(-100% - 8px));
+}
+
+/* Expand button — sits at the left edge when docked-collapsed */
+.layers-expand-btn {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    z-index: 101;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface);
+    color: var(--color-text-faint);
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+    pointer-events: all;
+    user-select: none;
+}
+
+.layers-expand-btn.hidden { display: none; }
+
+.layers-expand-btn:hover {
+    background: var(--color-surface-raised);
+    color: var(--color-text-secondary);
+}
+
+/* Snap-to-dock ghost preview, shown while dragging near the left edge */
+.layers-snap-preview {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    bottom: 8px;
+    border-radius: 8px;
+    background: var(--color-accent-a06);
+    border: 2px dashed var(--color-accent-a25);
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0;
+    transform: scaleX(0.92);
+    transform-origin: left center;
+    transition: opacity 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.layers-snap-preview.is-visible {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+/* When docked, only the right resize handle is exposed */
+#layers-panel.docked .panel-resize-left,
+#layers-panel.docked .panel-resize-top,
+#layers-panel.docked .panel-resize-bottom,
+#layers-panel.docked .panel-resize-tl,
+#layers-panel.docked .panel-resize-tr,
+#layers-panel.docked .panel-resize-br,
+#layers-panel.docked .panel-resize-bl {
+    display: none;
+}
+
+/* ── Layer list ──────────────────────────────────────────────────────────── */
+
+.layers-title {
+    flex: 1;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-placeholder);
+    padding: 0 4px;
+}
+
+.layers-list {
+    list-style: none;
+    padding: 4px 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.layer-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+}
+
+.layer-row:hover { background: var(--color-surface-sunken); }
+
+.layer-row.is-selected {
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-hover);
+}
+
+.layer-row.is-hidden  { opacity: 0.45; }
+.layer-row.is-dragging { opacity: 0.35; }
+.layer-row.drag-over-top    { border-top-color: var(--color-accent); }
+.layer-row.drag-over-bottom { border-bottom-color: var(--color-accent); }
+
+.layer-grip {
+    color: var(--color-text-placeholder);
+    cursor: grab;
+    font-size: 13px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.layer-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.layer-name-input {
+    flex: 1;
+    min-width: 0;
+    height: 20px;
+    padding: 0 4px;
+    font-size: 12px;
+    border: 1px solid var(--color-accent);
+    border-radius: 3px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-accent-a12);
+}
+
+.layer-vis-btn,
+.layer-lock-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+    color: var(--color-text-placeholder);
+    opacity: 0;
+    padding: 0;
+}
+
+.layer-vis-btn svg,
+.layer-lock-btn svg {
+    width: 13px;
+    height: 13px;
+}
+
+.layer-row:hover .layer-vis-btn,
+.layer-row:hover .layer-lock-btn,
+.layer-row.is-hidden .layer-vis-btn,
+.layer-row.is-locked .layer-lock-btn {
+    opacity: 1;
+}
+
+.layer-vis-btn:hover,
+.layer-lock-btn:hover {
+    background: var(--color-accent-a12);
+    color: var(--color-text);
+}

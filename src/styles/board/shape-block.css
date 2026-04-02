@@ -1,0 +1,18 @@
+/* ShapeBlock — draggable, resizable, rotatable SVG shape. */
+
+.shape-block {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+    border: 1px solid transparent;
+    user-select: none;
+}
+
+.shape-block:hover {
+    border-color: var(--color-border-strong);
+}
+
+.shape-block.is-selected {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+}

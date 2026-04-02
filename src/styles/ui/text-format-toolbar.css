@@ -1,0 +1,67 @@
+/* TextFormatToolbar — floating toolbar shown on text selection inside a TextBlock. */
+
+.text-format-toolbar {
+    position: fixed;
+    z-index: 1000;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.text-format-toolbar.hidden {
+    display: none;
+}
+
+.tf-btn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tf-btn:hover {
+    background: var(--color-surface-sunken);
+    border-color: var(--color-border);
+}
+
+.tf-btn.is-active {
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-hover);
+    border-color: var(--color-accent-border);
+}
+
+.tf-separator {
+    width: 1px;
+    height: 18px;
+    background: var(--color-border);
+    flex-shrink: 0;
+}
+
+.tf-align-select {
+    height: 26px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.tf-size-input {
+    width: 44px;
+    height: 26px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 12px;
+    text-align: center;
+}

@@ -1,0 +1,259 @@
+/* PropertiesPanel — floating/docked right panel with block appearance fields. */
+
+/* Floating state (default) */
+#properties-panel {
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 100;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+    max-height: calc(100vh - 32px);
+    overflow: hidden;
+    pointer-events: all;
+    user-select: none;
+}
+
+/* Docked state — full-height panel pinned to the right */
+#properties-panel.docked {
+    top: 8px;
+    right: 8px;
+    bottom: 8px;
+    left: auto !important;
+    width: 220px;
+    height: auto;
+    max-height: none;
+}
+
+#properties-panel.hidden {
+    display: none;
+}
+
+#properties-panel.panel-no-transition {
+    transition: none !important;
+}
+
+#properties-panel.docked .panel-drag-handle {
+    display: none;
+}
+
+/* Right-align the title inside the properties panel header */
+#properties-panel .layers-title {
+    text-align: right;
+}
+
+/* Undock / collapse buttons only useful when docked */
+#properties-panel:not(.docked) .panel-undock-btn {
+    display: none;
+}
+
+#properties-panel:not(.docked) .panel-collapse-btn {
+    display: none;
+}
+
+/* Collapsed docked state — slides panel off the right edge */
+#properties-panel.docked.docked-collapsed {
+    transform: translateX(calc(100% + 8px));
+}
+
+/* Mirror button — visible only when the docked panel is collapsed */
+.panel-expand-btn {
+    position: absolute;
+    top: 14px;   /* panel top (8) + header padding (6) */
+    right: 16px; /* panel right (8) + header padding (8) */
+    z-index: 101;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface);
+    color: var(--color-text-faint);
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1;
+    pointer-events: all;
+    user-select: none;
+}
+
+.panel-expand-btn:hover {
+    background: var(--color-surface-raised);
+    color: var(--color-text-secondary);
+}
+
+.panel-expand-btn.hidden {
+    display: none;
+}
+
+/* Snap-to-dock ghost preview, shown while dragging near the right edge */
+.panel-snap-preview {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    bottom: 8px;
+    border-radius: 8px;
+    background: var(--color-accent-a06);
+    border: 2px dashed var(--color-accent-a25);
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0;
+    transform: scaleX(0.92);
+    transform-origin: right center;
+    transition: opacity 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.panel-snap-preview.is-visible {
+    opacity: 1;
+    transform: scaleX(1);
+}
+
+/* Right, top, and their corners are floating-only */
+#properties-panel.docked .panel-resize-right,
+#properties-panel.docked .panel-resize-top,
+#properties-panel.docked .panel-resize-bottom,
+#properties-panel.docked .panel-resize-tl,
+#properties-panel.docked .panel-resize-tr,
+#properties-panel.docked .panel-resize-br,
+#properties-panel.docked .panel-resize-bl {
+    display: none;
+}
+
+/* ── Property fields ─────────────────────────────────────────────────────── */
+
+.prop-name-row {
+    padding: 10px 12px 6px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 2px;
+}
+
+.prop-name-row input {
+    width: 100%;
+    padding: 2px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--color-text);
+    outline: none;
+    cursor: text;
+    transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.prop-name-row input:hover {
+    background: var(--color-surface-sunken);
+}
+
+.prop-name-row input:focus {
+    background: var(--color-surface-sunken);
+    box-shadow: 0 0 0 2px var(--color-accent-a25);
+}
+
+.prop-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prop-section {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-placeholder);
+}
+
+.panel-common-props,
+#prop-appearance {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.prop-row label {
+    font-size: 12px;
+    color: var(--color-text-faint);
+    width: 72px;
+    flex-shrink: 0;
+}
+
+.prop-row input[type='number'],
+.prop-row input[type='text'] {
+    width: 60px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 13px;
+}
+
+.prop-row input.prop-text-wide {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+}
+
+.prop-row input[type='color'] {
+    width: 32px;
+    height: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 1px;
+    cursor: pointer;
+}
+
+.prop-font-picker {
+    flex: 1;
+}
+
+.prop-font-picker .font-picker-trigger {
+    height: 24px;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    font-size: 12px;
+}
+
+.prop-select {
+    flex: 1;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Delete button — pushed to bottom when space allows, scrolls naturally otherwise */
+#prop-delete {
+    margin-top: auto;
+    padding: 6px;
+    border: 1px solid var(--color-danger-border);
+    border-radius: 4px;
+    background: none;
+    color: var(--color-danger);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+#prop-delete:hover {
+    background: var(--color-danger-subtle);
+}
+
+/* Clear button on clearable color fields */
+.prop-row > button {
+    font-size: 11px;
+    color: var(--color-text-placeholder);
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.prop-row > button:hover {
+    color: var(--color-danger);
+}

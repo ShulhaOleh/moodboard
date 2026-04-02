@@ -1,0 +1,69 @@
+/* Board-level overlays: zoom widget, marquee selection, drag-over highlight, and explore-mode cursor. */
+
+/* Zoom widget — slider + percentage label, bottom-left */
+#zoom-widget {
+    position: absolute;
+    bottom: 8px;
+    left: calc(8px + var(--layers-panel-offset, 0px));
+    z-index: 100;
+    transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 4px 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    pointer-events: all;
+    user-select: none;
+}
+
+#zoom-widget input[type='range'] {
+    width: 80px;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+}
+
+#zoom-label {
+    font-size: 12px;
+    color: var(--color-text-faint);
+    width: 36px;
+    text-align: left;
+    flex-shrink: 0;
+}
+
+/* Marquee selection rectangle */
+.marquee {
+    position: fixed;
+    border: 1px solid var(--color-accent);
+    background: var(--color-accent-a08);
+    pointer-events: none;
+    z-index: 50;
+}
+
+/* Drag-and-drop highlight */
+#app.drag-over::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    border: 3px dashed var(--color-accent);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Explore mode — blocks are non-interactive, cursor reflects pan state */
+#app.explore-mode .text-block,
+#app.explore-mode .image-block {
+    pointer-events: none;
+}
+
+#app.explore-mode {
+    cursor: grab;
+}
+
+#app.explore-mode.panning {
+    cursor: grabbing;
+}

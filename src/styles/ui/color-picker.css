@@ -1,0 +1,70 @@
+/* ColorPicker — swatch button with a popover for color and alpha input. */
+
+.color-picker {
+    display: inline-flex;
+}
+
+.color-picker-swatch {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    /* Checkerboard base layer to show transparency */
+    background: repeating-conic-gradient(#ccc 0% 25%, white 0% 50%) 0 0 / 10px 10px;
+}
+
+/* Color overlay sits on top of the checkerboard */
+.color-picker-swatch::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--swatch-color, #000);
+}
+
+.color-picker-swatch:hover {
+    border-color: var(--color-border-strong);
+}
+
+.color-picker-popover {
+    position: fixed;
+    z-index: 2000;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-picker-popover.hidden {
+    display: none;
+}
+
+.color-picker-color-input {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.color-picker-alpha-slider {
+    width: 80px;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+}
+
+.color-picker-alpha-label {
+    font-size: 11px;
+    color: var(--color-text-faint);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+}

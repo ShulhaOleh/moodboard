@@ -1,0 +1,35 @@
+/* Design-token definitions — all UI colors. Override any variable on :root to theme the app. */
+
+:root {
+    /* Accent — violet */
+    --color-accent:        #8b5cf6;
+    --color-accent-hover:  #7c3aed;
+    --color-accent-subtle: #f5f3ff;
+    --color-accent-border: #ddd6fe;
+    /* Pre-multiplied alpha variants used in backgrounds and shadows */
+    --color-accent-a06: rgba(139, 92, 246, 0.06);
+    --color-accent-a08: rgba(139, 92, 246, 0.08);
+    --color-accent-a12: rgba(139, 92, 246, 0.12);
+    --color-accent-a25: rgba(139, 92, 246, 0.25);
+
+    /* Surface */
+    --color-surface:        #ffffff;
+    --color-surface-raised: #f8fafc; /* hover state of buttons / triggers */
+    --color-surface-sunken: #f1f5f9; /* code backgrounds, hover list items */
+
+    /* Border */
+    --color-border:        #e2e8f0;
+    --color-border-strong: #cbd5e1;
+
+    /* Text */
+    --color-text:             #0f172a;
+    --color-text-secondary:   #334155;
+    --color-text-muted:       #475569;
+    --color-text-faint:       #64748b;
+    --color-text-placeholder: #94a3b8;
+
+    /* Danger */
+    --color-danger:        #ef4444;
+    --color-danger-border: #fecaca;
+    --color-danger-subtle: #fef2f2;
+}

@@ -1,0 +1,194 @@
+/* AddBar — top-center toolbar with mode picker, add buttons, and shape split-button. */
+
+#add-bar {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    pointer-events: all;
+    user-select: none;
+}
+
+.add-bar-btn {
+    height: 32px;
+    min-width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-text-faint);
+}
+
+.add-bar-btn:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+}
+
+.add-bar-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.add-bar-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.add-bar-divider {
+    width: 1px;
+    align-self: stretch;
+    background: var(--color-border);
+    margin: 4px 3px;
+}
+
+/* Mode picker — accent-colored trigger + dropdown */
+.mode-picker {
+    position: relative;
+}
+
+.mode-trigger {
+    width: auto;
+    padding: 0 8px;
+    gap: 4px;
+    background: var(--color-accent);
+    color: var(--color-surface);
+}
+
+.mode-trigger:hover {
+    background: var(--color-accent-hover);
+    color: var(--color-surface);
+}
+
+/* Shape split-button — icon button adds the current shape; chevron opens the type picker.
+   Mirrors the Figma toolbar pattern: a normal tool button with a tiny companion dropdown arrow. */
+.shape-split-btn {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+.shape-icon-btn {
+    height: 32px;
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-text-faint);
+}
+
+.shape-icon-btn:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+}
+
+.shape-icon-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.shape-chevron-btn {
+    height: 32px;
+    width: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    border-radius: 3px;
+    cursor: pointer;
+    color: var(--color-text-placeholder);
+    padding: 0;
+}
+
+.shape-chevron-btn .mode-chevron {
+    width: 7px !important;
+    height: 7px !important;
+}
+
+.shape-chevron-btn:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text-faint);
+}
+
+.shape-icon-btn:disabled,
+.shape-chevron-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.mode-chevron {
+    width: 8px !important;
+    height: 8px !important;
+    opacity: 0.8;
+}
+
+.mode-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 130px;
+    z-index: 200;
+}
+
+.mode-dropdown.hidden {
+    display: none;
+}
+
+.mode-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    background: none;
+    text-align: left;
+}
+
+.mode-option:hover:not(.is-active) {
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+}
+
+.mode-option.is-active {
+    background: var(--color-accent);
+    color: var(--color-surface);
+}
+
+.mode-option svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.mode-option[data-shape] svg {
+    width: 20px;
+    height: 20px;
+}
