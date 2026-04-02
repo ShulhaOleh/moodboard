@@ -297,8 +297,10 @@ export class LineBlock implements BoardObject {
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
-            if (target.closest('.text-block, .image-block, .shape-block, .line-block')) {
+            const hit = target.closest('.text-block, .image-block, .shape-block, .line-block')
+            if (hit) {
                 if (e.ctrlKey) return
+                if (hit.classList.contains('is-selected')) return
                 this.markDeselected()
             } else {
                 this.deselect()
@@ -309,8 +311,8 @@ export class LineBlock implements BoardObject {
     private select(e: MouseEvent) {
         this.selected = true
         this.el.classList.add('is-selected')
-        this.onSelect?.(this, e)
         this.renderHandles()
+        this.onSelect?.(this, e)
     }
 
     markSelected() {

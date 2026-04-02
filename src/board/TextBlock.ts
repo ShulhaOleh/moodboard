@@ -146,9 +146,12 @@ export class TextBlock implements BoardObject {
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
-            if (target.closest('.text-block, .image-block, .shape-block, .line-block')) {
-                // Shift+click on another block adds it to the selection — keep this one selected.
+            const hit = target.closest('.text-block, .image-block, .shape-block, .line-block')
+            if (hit) {
                 if (e.ctrlKey) return
+                // Interacting with another block that is already in the selection group
+                // (e.g. starting a drag) must not strip the selection border from this one.
+                if (hit.classList.contains('is-selected')) return
                 this.markDeselected()
             } else {
                 this.deselect()
@@ -303,7 +306,6 @@ export class TextBlock implements BoardObject {
     private select(e: MouseEvent) {
         this.selected = true
         this.el.classList.add('is-selected')
-        this.onSelect?.(this, e)
 
         // Fix dimensions so the resize handle has something to work with
         if (!this.data.width) {
@@ -315,7 +317,10 @@ export class TextBlock implements BoardObject {
             this.el.style.height = `${this.data.height}px`
         }
 
+        // Render handles before firing onSelect so that the multi-select path
+        // (which calls markSelected → removes handles) can clean them up correctly.
         this.renderHandles()
+        this.onSelect?.(this, e)
     }
 
     markSelected() {
