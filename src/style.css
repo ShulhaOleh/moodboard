@@ -57,7 +57,7 @@ body {
 #zoom-widget {
     position: absolute;
     bottom: 16px;
-    left: 16px;
+    left: calc(16px + var(--layers-panel-offset, 0px));
     z-index: 100;
     transition: left 260ms cubic-bezier(0.22, 1, 0.36, 1);
     background: var(--color-surface);
@@ -1360,7 +1360,3 @@ body {
     color: var(--color-text);
 }
 
-/* Shift zoom widget right when layers panel is docked to avoid overlap */
-#app.layers-panel-docked #zoom-widget {
-    left: 220px;
-}

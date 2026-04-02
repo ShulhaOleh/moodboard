@@ -42,8 +42,10 @@ export class LayersPanel {
     private snapPreviewEl: HTMLElement
     private cachedBlocks: BoardObject[] = []
     private dragSrcIdx: number | null = null
+    private container: HTMLElement
 
     constructor(container: HTMLElement) {
+        this.container = container
         this.el = document.createElement('div')
         this.el.id = 'layers-panel'
         this.el.className = 'docked'
@@ -150,6 +152,7 @@ export class LayersPanel {
         container.appendChild(this.expandBtnEl)
         container.appendChild(this.snapPreviewEl)
         this.setupResizeHandles()
+        requestAnimationFrame(() => this.updateOffset())
     }
 
     // Rebuilds the full layer list. Call after any structural change (add, remove, reorder, undo).
@@ -277,6 +280,13 @@ export class LayersPanel {
         })
     }
 
+    // Updates the CSS variable that drives the zoom widget offset.
+    private updateOffset() {
+        const collapsed = this.el.classList.contains('docked-collapsed')
+        const offset = this.docked && !collapsed ? this.el.offsetWidth + 8 : 0
+        this.container.style.setProperty('--layers-panel-offset', `${offset}px`)
+    }
+
     private setDocked(docked: boolean) {
         this.onDockChange?.(docked)
         const animating =
@@ -341,11 +351,14 @@ export class LayersPanel {
                 { once: true }
             )
         }
+
+        this.updateOffset()
     }
 
     private setCollapsed(collapsed: boolean) {
         this.el.classList.toggle('docked-collapsed', collapsed)
         this.expandBtnEl.classList.toggle('hidden', !collapsed)
+        this.updateOffset()
     }
 
     private setupResizeHandles() {
@@ -380,6 +393,7 @@ export class LayersPanel {
             const onMove = (e: MouseEvent) => {
                 const w = Math.max(minW, startW + (e.clientX - startX))
                 this.el.style.width = `${w}px`
+                if (this.docked) this.updateOffset()
             }
             const onUp = () => {
                 window.removeEventListener('mousemove', onMove)
