@@ -445,6 +445,25 @@ export class LineBlock implements BoardObject {
         )
     }
 
+    getWorldCorners(): [number, number][] {
+        return [
+            [this.data.x1, this.data.y1],
+            [this.data.x2, this.data.y2],
+        ]
+    }
+
+    // Sets both endpoints directly — used by SelectionBox for group scale/rotate
+    // where computing via setPosition+setSize+setRotation would mis-sequence.
+    setEndpoints(x1: number, y1: number, x2: number, y2: number) {
+        this.onBeforePropertyChange?.()
+        this.data.x1 = x1
+        this.data.y1 = y1
+        this.data.x2 = x2
+        this.data.y2 = y2
+        this.applyLayout()
+        this.onChange?.()
+    }
+
     setPosition(x: number, y: number) {
         this.onBeforePropertyChange?.()
         const curr = this.getPosition()

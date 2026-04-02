@@ -35,6 +35,9 @@ export class CanvasBoard implements BoardObject {
     getRotation() {
         return 0
     }
+    getWorldCorners(): [number, number][] {
+        return []
+    }
     setPosition() {}
     setSize() {}
     setRotation() {}

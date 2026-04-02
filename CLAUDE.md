@@ -31,6 +31,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - `onBeforePropertyChange` — fired before the first setter call per mouse interaction burst; `main.ts` uses a `propertyChangeActive` flag (reset on `mouseup`) to push exactly one history entry per property-panel drag.
 - `onLayerChange` — fired when `visible`, `locked`, or `name` changes; `LayersPanel` uses it to update the row without rebuilding the list.
 - `name` / `setName()` — user-editable display name, editable in `PropertiesPanel` and inline in `LayersPanel` (double-click or F2).
+- `getWorldCorners()` — returns the world-space corner points of the block (4 rotated corners for standard blocks, 2 endpoints for `LineBlock`); used by `SelectionBox` to compute the group AABB.
 - `layerLabel` — read-only type label (e.g. `'Rectangle'`, `'Line'`); used as the default `name` on construction.
 
 **Block types:** `TextBlock` (rich text via TipTap), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation).
@@ -73,6 +74,7 @@ src/
   ui/
     AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
     LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
+    SelectionBox.ts       # shared AABB box with resize/rotate handles for multi-select
     TextFormatToolbar.ts  # floating toolbar shown on text selection
     PropertiesPanel.ts    # right-docked side panel; generic over BoardObject
     ColorPicker.ts        # swatch + popover with color input and alpha slider

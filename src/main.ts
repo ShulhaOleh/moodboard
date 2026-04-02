@@ -10,6 +10,7 @@ import { LayersPanel } from './ui/LayersPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
+import { SelectionBox } from './ui/SelectionBox'
 
 type BlockSnapshot =
     | { type: 'text'; data: TextBlockData }
@@ -71,6 +72,8 @@ let panX = 0
 let panY = 0
 let zoom = 1
 
+const selectionBox = new SelectionBox(overlay, () => ({ panX, panY, zoom }))
+
 function applyTransform() {
     overlay.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`
     overlay.style.transformOrigin = '0 0'
@@ -106,6 +109,7 @@ function undo() {
     if (!state) return
     for (const b of [...blocks]) removeBlock(b)
     for (const snap of state) addBlock(blockFromSnapshot(snap))
+    selectionBox.setBlocks([])
 }
 
 function copySelected() {
@@ -181,6 +185,7 @@ function paste() {
 
     if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
     else if (selectedBlocks.size > 1) panel.show(canvasBoard)
+    selectionBox.setBlocks([...selectedBlocks])
     layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
@@ -192,6 +197,7 @@ addBar.onModeChange = (newMode) => {
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
     panel.show(canvasBoard)
+    selectionBox.setBlocks([])
     layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
@@ -235,6 +241,7 @@ function addBlock(block: BoardObject) {
             const pos = b.getPosition()
             b.setPosition(pos.x + dx, pos.y + dy)
         }
+        selectionBox.update()
     }
     block.onSelect = (obj, e) => {
         if (e.ctrlKey) {
@@ -251,12 +258,14 @@ function addBlock(block: BoardObject) {
             selectedBlocks.add(obj)
             panel.show(obj)
         }
+        selectionBox.setBlocks([...selectedBlocks])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
     block.onDeselect = () => {
         selectedBlocks.forEach((b) => b.markDeselected())
         selectedBlocks.clear()
         panel.show(canvasBoard)
+        selectionBox.setBlocks([])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
     layersPanel.refresh(blocks, selectedBlocks)
@@ -289,6 +298,7 @@ layersPanel.onSelectBlock = (block) => {
     selectedBlocks.add(block)
     block.markSelected()
     panel.show(block)
+    selectionBox.setBlocks([])
     layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
@@ -463,6 +473,7 @@ document.addEventListener('mousedown', (e) => {
         }
 
         if (selectedBlocks.size === 0) panel.show(canvasBoard)
+        selectionBox.setBlocks([...selectedBlocks])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
 

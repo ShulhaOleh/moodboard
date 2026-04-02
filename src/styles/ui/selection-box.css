@@ -1,0 +1,51 @@
+/* SelectionBox — group selection outline and transform handles for multi-select. */
+
+.selection-box {
+    position: absolute;
+    border: 1.5px solid var(--color-accent);
+    pointer-events: none;
+    z-index: 200;
+    box-sizing: border-box;
+}
+
+.sb-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-accent);
+    border-radius: 2px;
+    pointer-events: all;
+    box-sizing: border-box;
+}
+
+.sb-nw { top: -5px;    left: -5px;    cursor: nwse-resize; }
+.sb-ne { top: -5px;    right: -5px;   cursor: nesw-resize; }
+.sb-sw { bottom: -5px; left: -5px;    cursor: nesw-resize; }
+.sb-se { bottom: -5px; right: -5px;   cursor: nwse-resize; }
+
+.sb-rotate {
+    position: absolute;
+    top: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 12px;
+    background: var(--color-surface);
+    border: 2px solid var(--color-accent);
+    border-radius: 50%;
+    pointer-events: all;
+    cursor: crosshair;
+    box-sizing: border-box;
+}
+
+.sb-rotate::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 10px;
+    background: var(--color-accent);
+}

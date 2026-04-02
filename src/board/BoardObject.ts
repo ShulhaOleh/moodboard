@@ -70,6 +70,9 @@ export interface BoardObject {
     getPosition(): { x: number; y: number }
     getSize(): { width: number; height: number }
     getRotation(): number
+    // Returns world-space corner points used to compute the group selection AABB.
+    // Standard blocks return 4 rotated corners; LineBlock returns its 2 endpoints.
+    getWorldCorners(): [number, number][]
     setPosition(x: number, y: number): void
     setSize(width: number, height: number): void
     setRotation(deg: number): void

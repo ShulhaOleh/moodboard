@@ -362,6 +362,24 @@ export class ShapeBlock implements BoardObject {
         return this.data.rotation
     }
 
+    getWorldCorners(): [number, number][] {
+        const { x, y } = this.getPosition()
+        const { width: w, height: h } = this.getSize()
+        const rad = this.data.rotation * (Math.PI / 180)
+        const cx = x + w / 2
+        const cy = y + h / 2
+        const cos = Math.cos(rad)
+        const sin = Math.sin(rad)
+        const hw = w / 2
+        const hh = h / 2
+        return [
+            [cx - hw * cos + hh * sin, cy - hw * sin - hh * cos],
+            [cx + hw * cos + hh * sin, cy + hw * sin - hh * cos],
+            [cx + hw * cos - hh * sin, cy + hw * sin + hh * cos],
+            [cx - hw * cos - hh * sin, cy - hw * sin + hh * cos],
+        ]
+    }
+
     getAppearanceFields(): PropertyField[] {
         const fields: PropertyField[] = [
             {
