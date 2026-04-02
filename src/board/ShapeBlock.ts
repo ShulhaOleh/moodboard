@@ -26,6 +26,7 @@ export interface ShapeBlockData {
     shadowBlur: number
     shadowX: number
     shadowY: number
+    name?: string
 }
 
 export class ShapeBlock implements BoardObject {
@@ -39,6 +40,7 @@ export class ShapeBlock implements BoardObject {
     onLayerChange: (() => void) | null = null
     visible = true
     locked = false
+    name: string
     get layerLabel(): string {
         const names: Record<string, string> = {
             rectangle: 'Rectangle',
@@ -57,6 +59,7 @@ export class ShapeBlock implements BoardObject {
 
     constructor(container: HTMLElement, data: ShapeBlockData) {
         this.data = { ...data }
+        this.name = data.name ?? this.layerLabel
 
         this.el = document.createElement('div')
         this.el.className = 'shape-block'
@@ -567,6 +570,12 @@ export class ShapeBlock implements BoardObject {
         this.locked = v
         this.el.style.pointerEvents = v ? 'none' : ''
         this.onLayerChange?.()
+    }
+
+    setName(name: string) {
+        this.name = name
+        this.onLayerChange?.()
+        this.onChange?.()
     }
 
     destroy() {

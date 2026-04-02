@@ -32,6 +32,7 @@ export interface TextBlockData {
     shadowBlur: number
     shadowX: number
     shadowY: number
+    name?: string
 }
 
 export class TextBlock implements BoardObject {
@@ -46,6 +47,7 @@ export class TextBlock implements BoardObject {
     readonly layerLabel = 'Text'
     visible = true
     locked = false
+    name: string
     private data: TextBlockData
     private editing = false
     private selected = false
@@ -56,6 +58,7 @@ export class TextBlock implements BoardObject {
 
     constructor(container: HTMLElement, data: TextBlockData) {
         this.data = { ...data }
+        this.name = data.name ?? 'Text'
 
         this.el = document.createElement('div')
         this.el.className = 'text-block'
@@ -557,6 +560,12 @@ export class TextBlock implements BoardObject {
         this.locked = v
         this.el.style.pointerEvents = v ? 'none' : ''
         this.onLayerChange?.()
+    }
+
+    setName(name: string) {
+        this.name = name
+        this.onLayerChange?.()
+        this.onChange?.()
     }
 
     destroy() {

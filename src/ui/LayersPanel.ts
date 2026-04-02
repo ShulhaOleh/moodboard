@@ -70,6 +70,16 @@ export class LayersPanel {
 
         this.listEl = this.el.querySelector('.layers-list') as HTMLUListElement
 
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'F2') return
+            const selected = this.listEl.querySelector<HTMLLIElement>('.layer-row.is-selected')
+            if (!selected) return
+            e.preventDefault()
+            const idx = Number(selected.dataset.arrayIndex)
+            const block = this.cachedBlocks[idx]
+            if (block) this.startInlineEdit(selected, block)
+        })
+
         // Prevent wheel from reaching the board pan/zoom handler.
         this.el.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
         // Prevent board's "click outside → deselect" from firing.
@@ -189,7 +199,7 @@ export class LayersPanel {
 
         const label = document.createElement('span')
         label.className = 'layer-label'
-        label.textContent = block.layerLabel
+        label.textContent = block.name
 
         const visBtn = document.createElement('button')
         visBtn.className = 'layer-vis-btn'
@@ -211,13 +221,19 @@ export class LayersPanel {
 
         row.append(grip, label, visBtn, lockBtn)
 
-        // Keep row in sync when visibility/lock changes without a full refresh.
+        // Keep row in sync when visibility/lock/name changes without a full refresh.
         block.onLayerChange = () => {
             row.classList.toggle('is-hidden', !block.visible)
             row.classList.toggle('is-locked', block.locked)
             visBtn.innerHTML = block.visible ? ICON_EYE : ICON_EYE_OFF
             lockBtn.innerHTML = block.locked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
+            label.textContent = block.name
         }
+
+        label.addEventListener('dblclick', (e) => {
+            e.stopPropagation()
+            this.startInlineEdit(row, block)
+        })
 
         // Selecting a layer row.
         row.addEventListener('mousedown', (e) => {
@@ -264,6 +280,44 @@ export class LayersPanel {
         })
 
         return row
+    }
+
+    private startInlineEdit(row: HTMLLIElement, block: BoardObject) {
+        const label = row.querySelector<HTMLElement>('.layer-label')!
+        const input = document.createElement('input')
+        input.className = 'layer-name-input'
+        input.value = block.name
+        label.replaceWith(input)
+        input.focus()
+        input.select()
+
+        let committed = false
+        const commit = () => {
+            if (committed) return
+            committed = true
+            const val = input.value.trim()
+            if (val) block.setName(val)
+            input.replaceWith(label)
+            label.textContent = block.name
+        }
+        const cancel = () => {
+            if (committed) return
+            committed = true
+            input.replaceWith(label)
+        }
+
+        input.addEventListener('blur', commit)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                input.blur()
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                input.removeEventListener('blur', commit)
+                cancel()
+            }
+        })
     }
 
     private clearDragIndicators() {

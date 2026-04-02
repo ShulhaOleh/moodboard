@@ -22,6 +22,7 @@ export interface ImageBlockData {
     shadowY: number
     // Kept for future Dexie persistence — recreate src via URL.createObjectURL on load.
     imageBlob?: Blob
+    name?: string
 }
 
 export class ImageBlock implements BoardObject {
@@ -36,6 +37,7 @@ export class ImageBlock implements BoardObject {
     readonly layerLabel = 'Image'
     visible = true
     locked = false
+    name: string
     private data: ImageBlockData
     private imgEl: HTMLImageElement
     private innerEl: HTMLElement
@@ -45,6 +47,7 @@ export class ImageBlock implements BoardObject {
 
     constructor(container: HTMLElement, data: ImageBlockData) {
         this.data = { ...data }
+        this.name = data.name ?? 'Image'
 
         this.el = document.createElement('div')
         this.el.className = 'image-block'
@@ -439,6 +442,12 @@ export class ImageBlock implements BoardObject {
         this.locked = v
         this.el.style.pointerEvents = v ? 'none' : ''
         this.onLayerChange?.()
+    }
+
+    setName(name: string) {
+        this.name = name
+        this.onLayerChange?.()
+        this.onChange?.()
     }
 
     // Must be called when removing the block if src is an object URL, to free memory.

@@ -52,6 +52,11 @@ export interface BoardObject {
     onLayerChange: (() => void) | null
     // Human-readable label shown in the Layers panel.
     readonly layerLabel: string
+    // User-editable name shown in the layers panel and properties panel.
+    name: string
+    setName(name: string): void
+    // When true, the properties panel hides the name field for this object.
+    readonly hideName?: true
     // When false the block is hidden (display:none) and excluded from selection.
     visible: boolean
     // When true the block cannot be dragged or selected.

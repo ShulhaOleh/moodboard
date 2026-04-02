@@ -25,6 +25,7 @@ export interface LineBlockData {
     opacity: number
     startPoint: PointStyle
     endPoint: PointStyle
+    name?: string
 }
 
 // Extra space around the bounding box so thick strokes and endpoint handles are never clipped.
@@ -53,6 +54,7 @@ export class LineBlock implements BoardObject {
     readonly layerLabel = 'Line'
     visible = true
     locked = false
+    name: string
     private data: LineBlockData
     private svgEl: SVGSVGElement
     private defsEl: SVGDefsElement
@@ -64,6 +66,7 @@ export class LineBlock implements BoardObject {
 
     constructor(container: HTMLElement, data: LineBlockData) {
         this.data = { ...data }
+        this.name = data.name ?? 'Line'
 
         this.el = document.createElement('div')
         this.el.className = 'line-block'
@@ -567,6 +570,12 @@ export class LineBlock implements BoardObject {
         this.locked = v
         this.el.style.pointerEvents = v ? 'none' : ''
         this.onLayerChange?.()
+    }
+
+    setName(name: string) {
+        this.name = name
+        this.onLayerChange?.()
+        this.onChange?.()
     }
 
     destroy() {

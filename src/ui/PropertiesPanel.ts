@@ -21,6 +21,7 @@ export class PropertiesPanel {
         height: HTMLInputElement
         rotation: HTMLInputElement
     }
+    private nameInputEl: HTMLInputElement
     private docked = true
     private snapPreviewEl: HTMLElement
     private expandBtnEl: HTMLElement
@@ -37,6 +38,9 @@ export class PropertiesPanel {
                 <button class="panel-collapse-btn" title="Hide panel">›</button>
             </div>
             <div class="panel-content">
+                <div class="prop-name-row">
+                    <input type="text" id="prop-name" placeholder="Name" />
+                </div>
                 <div class="panel-common-props">
                     <div class="prop-section">Position</div>
                     <div class="prop-row">
@@ -78,6 +82,7 @@ export class PropertiesPanel {
         this.appearanceEl = this.el.querySelector('#prop-appearance') as HTMLElement
         this.commonPropsEl = this.el.querySelector('.panel-common-props') as HTMLElement
         this.deleteBtnEl = this.el.querySelector('#prop-delete') as HTMLButtonElement
+        this.nameInputEl = this.el.querySelector('#prop-name') as HTMLInputElement
         this.deleteBtnEl.addEventListener('click', () => this.onDelete?.())
 
         this.inputs = {
@@ -175,6 +180,19 @@ export class PropertiesPanel {
 
     private setupCommonEvents() {
         const { x, y, width, height, rotation } = this.inputs
+
+        this.nameInputEl.addEventListener('focus', () => this.nameInputEl.select())
+        this.nameInputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.nameInputEl.blur()
+            if (e.key === 'Escape') {
+                this.nameInputEl.value = this.object?.name ?? ''
+                this.nameInputEl.blur()
+            }
+        })
+        this.nameInputEl.addEventListener('change', () => {
+            const val = this.nameInputEl.value.trim()
+            if (this.object) this.object.setName(val || this.object.name)
+        })
 
         for (const input of [x, y, width, height]) {
             input.addEventListener('focus', () => input.select())
@@ -514,6 +532,10 @@ export class PropertiesPanel {
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
         this.renderAppearanceFields(object.getAppearanceFields())
+        this.nameInputEl.value = object.name
+        ;(this.nameInputEl.closest('.prop-name-row') as HTMLElement).style.display = object.hideName
+            ? 'none'
+            : ''
         this.sync()
         object.onChange = () => this.sync()
         this.el.classList.remove('hidden')
@@ -531,6 +553,9 @@ export class PropertiesPanel {
         // Skip sync while the field is focused — the user is mid-edit without the suffix
         if (document.activeElement !== this.inputs.rotation) {
             this.inputs.rotation.value = `${Math.round(this.object.getRotation())}°`
+        }
+        if (document.activeElement !== this.nameInputEl) {
+            this.nameInputEl.value = this.object.name
         }
     }
 

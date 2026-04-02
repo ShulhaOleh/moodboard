@@ -15,6 +15,8 @@ export class CanvasBoard implements BoardObject {
     onBeforePropertyChange = null
     onLayerChange = null
     readonly layerLabel = 'Canvas'
+    readonly hideName = true as const
+    name = 'Canvas'
     visible = true
     locked = false
 
@@ -38,6 +40,7 @@ export class CanvasBoard implements BoardObject {
     setRotation() {}
     setVisible() {}
     setLocked() {}
+    setName() {}
     markSelected() {}
     markDeselected() {}
     destroy() {}
