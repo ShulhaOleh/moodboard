@@ -45,7 +45,11 @@ export class SelectionBox {
 
     setBlocks(blocks: BoardObject[]) {
         this.blocks = [...blocks]
-        if (this.blocks.length < 2) {
+        // Hide for empty selection or a lone LineBlock (it uses its own endpoint handles).
+        const hide =
+            this.blocks.length === 0 ||
+            (this.blocks.length === 1 && this.blocks[0] instanceof LineBlock)
+        if (hide) {
             this.el.style.display = 'none'
             return
         }
@@ -55,7 +59,7 @@ export class SelectionBox {
     // Recomputes the AABB from current block positions and repositions the element.
     // Call after any drag frame so the outline tracks the group.
     update() {
-        if (this.blocks.length < 2) return
+        if (this.blocks.length === 0) return
         this.computeAABB()
         this.applyLayout()
     }

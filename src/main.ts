@@ -286,6 +286,7 @@ function deleteSelected() {
     pushHistory()
     const toDelete = [...selectedBlocks]
     toDelete.forEach((b) => removeBlock(b))
+    selectionBox.setBlocks([])
 }
 
 panel.onDelete = () => deleteSelected()
@@ -298,7 +299,7 @@ layersPanel.onSelectBlock = (block) => {
     selectedBlocks.add(block)
     block.markSelected()
     panel.show(block)
-    selectionBox.setBlocks([])
+    selectionBox.setBlocks([block])
     layersPanel.notifySelectionChanged(selectedBlocks)
 }
 

@@ -1,4 +1,5 @@
-// Abstract base for bounding-box blocks (Text, Image, Shape) — position, size, rotation, handles, and drag gestures.
+// Abstract base for bounding-box blocks (Text, Image, Shape) — position, size, rotation, and drag gestures.
+// Resize and rotate handles are provided by SelectionBox, not by the individual block.
 
 import { BaseBlock } from './BaseBlock'
 
@@ -14,7 +15,6 @@ export interface BoxBaseData {
 
 export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
     protected data: D
-    protected handlesEl: HTMLElement | null = null
     protected readonly dragOffset = { x: 0, y: 0 }
 
     protected get minResizeWidth(): number {
@@ -27,11 +27,6 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
     constructor(el: HTMLElement, defaultName: string, data: D) {
         super(el, data.name ?? defaultName)
         this.data = { ...data } as D
-    }
-
-    protected override clearHandles() {
-        this.handlesEl?.remove()
-        this.handlesEl = null
     }
 
     protected applyPosition() {
@@ -48,30 +43,10 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
         this.el.style.transform = `rotate(${this.data.rotation}deg)`
     }
 
-    // Called immediately before renderHandles inside select() — override to fix dimensions first.
-    protected beforeRenderHandles() {}
-
     protected select(e: MouseEvent) {
         this.selected = true
         this.el.classList.add('is-selected')
-        this.beforeRenderHandles()
-        this.renderHandles()
         this.onSelect?.(this, e)
-    }
-
-    protected renderHandles() {
-        this.handlesEl?.remove()
-        const handles = document.createElement('div')
-        handles.className = 'tb-handles'
-        const resizeHandle = document.createElement('div')
-        resizeHandle.className = 'tb-resize'
-        resizeHandle.addEventListener('mousedown', (e) => this.startResize(e))
-        const rotateHandle = document.createElement('div')
-        rotateHandle.className = 'tb-rotate'
-        rotateHandle.addEventListener('mousedown', (e) => this.startRotate(e))
-        handles.append(resizeHandle, rotateHandle)
-        this.el.appendChild(handles)
-        this.handlesEl = handles
     }
 
     // Wire up the block's primary mousedown — call this at the end of the subclass constructor.
@@ -80,7 +55,6 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
             if (e.button !== 0) return
             if (this.locked) return
             if (this.isEditing()) return
-            if ((e.target as HTMLElement).closest('.tb-handles')) return
             if (!this.selected) {
                 this.select(e)
                 return
@@ -116,64 +90,6 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
             this.data.y = newY
             this.applyPosition()
             this.onDragMove?.(dx, dy)
-            this.onChange?.()
-        }
-
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('mouseup', onUp)
-    }
-
-    protected startResize(e: MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-        this.onDragStart?.()
-
-        const startX = e.clientX
-        const startY = e.clientY
-        const startW = this.data.width ?? this.el.offsetWidth
-        const startH = this.data.height ?? this.el.offsetHeight
-        const angle = (this.data.rotation * Math.PI) / 180
-
-        const onMove = (e: MouseEvent) => {
-            const dx = e.clientX - startX
-            const dy = e.clientY - startY
-            // Project mouse delta onto the element's local axes.
-            const localDx = dx * Math.cos(angle) + dy * Math.sin(angle)
-            const localDy = -dx * Math.sin(angle) + dy * Math.cos(angle)
-            this.data.width = Math.max(this.minResizeWidth, startW + localDx)
-            this.data.height = Math.max(this.minResizeHeight, startH + localDy)
-            this.applySize()
-            this.onChange?.()
-        }
-
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('mouseup', onUp)
-    }
-
-    protected startRotate(e: MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-        this.onDragStart?.()
-
-        const rect = this.el.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
-
-        const onMove = (e: MouseEvent) => {
-            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX)
-            // +90° so that 0° points up (handle sits above the block).
-            this.data.rotation = (angle * 180) / Math.PI + 90
-            this.applyTransform()
             this.onChange?.()
         }
 

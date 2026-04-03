@@ -11,7 +11,6 @@
 @import './styles/board/shape-block.css';
 @import './styles/board/image-block.css';
 @import './styles/board/text-block.css';
-@import './styles/board/block-handles.css';
 
 @import './styles/ui/add-bar.css';
 @import './styles/ui/properties-panel.css';

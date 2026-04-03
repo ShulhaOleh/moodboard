@@ -81,18 +81,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         return this.editing
     }
 
-    // Fixes dimensions before handles are rendered so the resize handle has known bounds.
-    protected override beforeRenderHandles() {
-        if (!this.data.width) {
-            this.data.width = this.el.getBoundingClientRect().width
-            this.el.style.width = `${this.data.width}px`
-        }
-        if (!this.data.height) {
-            this.data.height = this.el.getBoundingClientRect().height
-            this.el.style.height = `${this.data.height}px`
-        }
-    }
-
     private applyTypography() {
         this.el.style.fontSize = `${this.data.fontSize}px`
         this.el.style.padding = `${this.data.padding}px`
@@ -134,10 +122,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
     private startEdit() {
         this.editing = true
 
-        // Handles interfere with TipTap — hide them for the duration.
-        this.handlesEl?.remove()
-        this.handlesEl = null
-
         const savedRotation = this.data.rotation
         this.data.rotation = 0
         this.applyTransform()
@@ -174,7 +158,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
             this.applyTransform()
             this.contentEl.innerHTML = ''
             this.renderContent()
-            if (this.selected) this.renderHandles()
         }
 
         // Defer finish so focus has time to settle — the toolbar's inputs and native color
