@@ -34,6 +34,8 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - `getWorldCorners()` — returns the world-space corner points of the block (4 rotated corners for standard blocks, 2 endpoints for `LineBlock`); used by `SelectionBox` to compute the group AABB.
 - `layerLabel` — read-only type label (e.g. `'Rectangle'`, `'Line'`); used as the default `name` on construction.
 
+**Block class hierarchy:** All blocks extend `BaseBlock` (abstract), which holds the seven callbacks, `visible`/`locked`/`name`/`el`, selection state, the outside-click deselect listener, and `setVisible`/`setLocked`/`setName`/`destroy`/`markSelected`/`markDeselected`. Bounding-box blocks (Text, Image, Shape) additionally extend `BoxBlock<D>` (abstract), which holds `data: D`, `applyPosition`/`applySize`/`applyTransform`, `startDrag`, `getPosition`/`getSize`/`getRotation`/`getWorldCorners`, and `setPosition`/`setSize`/`setRotation`. `LineBlock` extends `BaseBlock` directly because its spatial model (two absolute endpoints) doesn't fit the bounding-box pattern. Extension points on `BoxBlock`: `minResizeWidth`/`minResizeHeight` getters (overridden by `TextBlock` and `ShapeBlock`), `isEditing()` (overridden by `TextBlock` to block drag during TipTap session).
+
 **Block types:** `TextBlock` (rich text via TipTap), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation).
 
 **Text editing flow:** Double-clicking a `TextBlock` mounts a TipTap `Editor` instance into the block's content element. A `TextFormatToolbar` (floating above the selection) appears on text selection and is destroyed when editing ends. The block temporarily resets its rotation to 0° during editing, restoring it on exit.
@@ -42,7 +44,8 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - `onSelect` receives the `MouseEvent` — Ctrl+click adds to selection, plain click replaces it.
 - When switching between blocks, the outgoing block skips `onDeselect` if Ctrl is held or the click is on another board object (guard: `.closest('.text-block, .image-block, .shape-block, .line-block')`).
 - `markSelected()` / `markDeselected()` update visual state only (no callbacks) — used for multi-select and marquee.
-- Multi-select shows no handles on any block; single selection shows handles and the properties panel.
+
+**SelectionBox** (`src/ui/SelectionBox.ts`): Renders an AABB outline with four corner resize handles and a rotation handle. It is used for **both single and multi-block selection** — `setBlocks([block])` for a single non-`LineBlock`, `setBlocks([...blocks])` for a group. The only case it hides is zero blocks or a lone `LineBlock` (which uses its own draggable endpoint handles instead). Resize and rotate on individual blocks are handled entirely by `SelectionBox`; `BoxBlock` has no per-block handles. `SelectionBox.update()` must be called after any drag frame that moves a block so the outline tracks it — `main.ts` does this in `block.onDragMove`.
 
 **Drag:** Each block fires `onDragMove(dx, dy)` on every drag frame. `main.ts` applies the same delta to all other blocks in `selectedBlocks`, keeping relative positions intact during grouped drag.
 
@@ -66,15 +69,17 @@ src/
   board/
     extensions/       # custom TipTap extensions (FontSize, FontFamily)
     BoardObject.ts    # shared interface + PropertyField discriminated union
+    BaseBlock.ts      # abstract base: callbacks, lifecycle, selection logic
+    BoxBlock.ts       # abstract base for Text/Image/Shape: geometry, drag, AABB
     CanvasBoard.ts    # pseudo-object for canvas background (shown when nothing selected)
-    TextBlock.ts      # draggable, resizable, rotatable rich-text block
-    ImageBlock.ts     # draggable, resizable, rotatable image block
-    ShapeBlock.ts     # draggable, resizable, rotatable SVG shape block
-    LineBlock.ts      # line/arrow block with two draggable endpoints
+    TextBlock.ts      # rich-text block (extends BoxBlock)
+    ImageBlock.ts     # bitmap block (extends BoxBlock)
+    ShapeBlock.ts     # SVG shape block (extends BoxBlock)
+    LineBlock.ts      # line/arrow block with two draggable endpoints (extends BaseBlock)
   ui/
     AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
     LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
-    SelectionBox.ts       # shared AABB box with resize/rotate handles for multi-select
+    SelectionBox.ts       # AABB outline + 4-corner resize + rotate handles (single and multi)
     TextFormatToolbar.ts  # floating toolbar shown on text selection
     PropertiesPanel.ts    # right-docked side panel; generic over BoardObject
     ColorPicker.ts        # swatch + popover with color input and alpha slider
@@ -93,7 +98,6 @@ src/
       shape-block.css
       image-block.css
       text-block.css
-      block-handles.css   # .tb-handles / .tb-resize / .tb-rotate
     ui/
       add-bar.css
       properties-panel.css
@@ -101,6 +105,7 @@ src/
       text-format-toolbar.css
       color-picker.css
       font-picker.css
+      selection-box.css
 ```
 
 ## Code Style
