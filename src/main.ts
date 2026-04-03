@@ -49,14 +49,82 @@ zoomSlider.addEventListener('input', () => {
     panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
     zoom = newZoom
     applyTransform()
-    zoomLabel.textContent = `${Math.round(zoom * 100)}%`
+    zoomLabel.value = `${Math.round(zoom * 100)}%`
 })
 
-const zoomLabel = document.createElement('span')
+const zoomLabel = document.createElement('input')
 zoomLabel.id = 'zoom-label'
-zoomLabel.textContent = '100%'
+zoomLabel.type = 'text'
+zoomLabel.value = '100%'
+zoomLabel.addEventListener('focus', () => {
+    zoomLabel.value = String(Math.round(zoom * 100))
+    zoomLabel.select()
+})
+zoomLabel.addEventListener('blur', () => {
+    const raw = parseInt(zoomLabel.value, 10)
+    const pct = isNaN(raw) ? Math.round(zoom * 100) : Math.min(400, Math.max(10, raw))
+    const newZoom = pct / 100
+    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
+    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
+    zoom = newZoom
+    applyTransform()
+    zoomLabel.value = `${Math.round(zoom * 100)}%`
+    zoomSlider.value = String(Math.round(zoom * 100))
+})
+zoomLabel.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') zoomLabel.blur()
+    if (e.key === 'Escape') {
+        zoomLabel.value = `${Math.round(zoom * 100)}%`
+        zoomLabel.blur()
+    }
+})
 
-zoomWidget.append(zoomLabel, zoomSlider)
+function stepZoom(delta: number) {
+    const pct = Math.min(400, Math.max(10, Math.round(zoom * 100) + delta))
+    const newZoom = pct / 100
+    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
+    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
+    zoom = newZoom
+    applyTransform()
+    zoomLabel.value = `${Math.round(zoom * 100)}%`
+    zoomSlider.value = String(Math.round(zoom * 100))
+}
+
+function bindZoomButton(btn: HTMLButtonElement, delta: number) {
+    let timeout: ReturnType<typeof setTimeout> | null = null
+    let interval: ReturnType<typeof setInterval> | null = null
+    btn.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+        stepZoom(delta)
+        timeout = setTimeout(() => {
+            interval = setInterval(() => stepZoom(delta), 80)
+        }, 500)
+    })
+    const stop = () => {
+        if (timeout !== null) {
+            clearTimeout(timeout)
+            timeout = null
+        }
+        if (interval !== null) {
+            clearInterval(interval)
+            interval = null
+        }
+    }
+    btn.addEventListener('mouseup', stop)
+    btn.addEventListener('mouseleave', stop)
+}
+
+const zoomMinus = document.createElement('button')
+zoomMinus.id = 'zoom-minus'
+zoomMinus.textContent = '−'
+bindZoomButton(zoomMinus, -1)
+
+const zoomPlus = document.createElement('button')
+zoomPlus.id = 'zoom-plus'
+zoomPlus.textContent = '+'
+bindZoomButton(zoomPlus, +1)
+
+zoomWidget.append(zoomMinus, zoomLabel, zoomPlus, zoomSlider)
 app.appendChild(zoomWidget)
 
 const blocks: BoardObject[] = []
@@ -212,7 +280,7 @@ document.addEventListener(
             panY = e.clientY - (e.clientY - panY) * (newZoom / zoom)
             zoom = newZoom
             applyTransform()
-            zoomLabel.textContent = `${Math.round(zoom * 100)}%`
+            zoomLabel.value = `${Math.round(zoom * 100)}%`
             zoomSlider.value = String(Math.round(zoom * 100))
         } else if (e.shiftKey) {
             panX -= e.deltaY

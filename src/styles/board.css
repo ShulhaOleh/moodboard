@@ -11,27 +11,56 @@
     border: 1px solid var(--color-border);
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 4px 10px;
+    padding: 4px 8px;
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     pointer-events: all;
     user-select: none;
 }
 
 #zoom-widget input[type='range'] {
-    width: 80px;
+    width: 60px;
     cursor: pointer;
     accent-color: var(--color-accent);
 }
 
+#zoom-minus,
+#zoom-plus {
+    font-size: 13px;
+    line-height: 1;
+    color: var(--color-text-faint);
+    background: transparent;
+    border: none;
+    padding: 0 1px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+#zoom-minus:hover,
+#zoom-plus:hover {
+    color: var(--color-text);
+}
+
 #zoom-label {
     font-size: 12px;
+    font-family: inherit;
     color: var(--color-text-faint);
     width: 36px;
     text-align: left;
     flex-shrink: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 0;
+    cursor: pointer;
+    user-select: text;
+}
+
+#zoom-label:focus {
+    color: var(--color-text);
+    cursor: text;
 }
 
 /* Marquee selection rectangle */
