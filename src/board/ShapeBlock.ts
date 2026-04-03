@@ -44,6 +44,7 @@ export interface ShapeBlockData {
     fontSize: number
     fontFamily: string
     textAlign: string
+    textVerticalAlign: 'top' | 'middle' | 'bottom'
     textPadding: number
     name?: string
 }
@@ -52,6 +53,8 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
     private svgEl: SVGSVGElement
     private shapeEl: SVGElement
     private textEl: HTMLElement
+    // Single flex child inside textEl — keeps rendered and edited content vertically aligned.
+    private textInnerEl: HTMLElement
     private editing = false
     private editorInstance: Editor | null = null
     // Fired when text editing starts or ends — main.ts uses this to refresh the properties panel.
@@ -92,6 +95,8 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
 
         this.textEl = document.createElement('div')
         this.textEl.className = 'shape-text-content'
+        this.textInnerEl = document.createElement('div')
+        this.textEl.appendChild(this.textInnerEl)
         this.el.appendChild(this.textEl)
 
         this.applyPosition()
@@ -127,10 +132,10 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
         this.data.rotation = 0
         this.applyTransform()
 
-        this.textEl.innerHTML = ''
+        this.textInnerEl.innerHTML = ''
 
         this.editorInstance = new Editor({
-            element: this.textEl,
+            element: this.textInnerEl,
             extensions: [
                 StarterKit,
                 TextStyle,
@@ -162,7 +167,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             this.el.classList.remove('is-text-editing')
             this.data.rotation = savedRotation
             this.applyTransform()
-            this.textEl.innerHTML = ''
+            this.textInnerEl.innerHTML = ''
             this.renderText()
             this.onTextEditChange?.()
         }
@@ -188,6 +193,12 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
         this.textEl.style.fontSize = `${this.data.fontSize}px`
         this.textEl.style.textAlign = this.data.textAlign
         this.textEl.style.padding = `${this.data.textPadding}px`
+        const justify = {
+            top: 'flex-start',
+            middle: 'center',
+            bottom: 'flex-end',
+        }[this.data.textVerticalAlign]
+        this.textEl.style.justifyContent = justify
         if (this.data.fontFamily) {
             loadFont(this.data.fontFamily)
             this.textEl.style.fontFamily = this.data.fontFamily
@@ -195,7 +206,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
     }
 
     private renderText() {
-        this.textEl.innerHTML = this.data.text
+        this.textInnerEl.innerHTML = this.data.text
     }
 
     private createShapeEl(shape: ShapeType): SVGElement {
@@ -420,13 +431,24 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
                 {
                     type: 'select',
                     key: 'textAlign',
-                    label: 'Align',
+                    label: 'Align H',
                     value: this.data.textAlign,
                     options: [
                         { value: 'left', label: 'Left' },
                         { value: 'center', label: 'Center' },
                         { value: 'right', label: 'Right' },
                         { value: 'justify', label: 'Justify' },
+                    ],
+                },
+                {
+                    type: 'select',
+                    key: 'textVerticalAlign',
+                    label: 'Align V',
+                    value: this.data.textVerticalAlign,
+                    options: [
+                        { value: 'top', label: 'Top' },
+                        { value: 'middle', label: 'Middle' },
+                        { value: 'bottom', label: 'Bottom' },
                     ],
                 },
                 {
@@ -515,6 +537,10 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
         }
         if (key === 'textAlign') {
             this.data.textAlign = String(value)
+            this.applyTextStyle()
+        }
+        if (key === 'textVerticalAlign') {
+            this.data.textVerticalAlign = value as 'top' | 'middle' | 'bottom'
             this.applyTextStyle()
         }
         if (key === 'textPadding') {

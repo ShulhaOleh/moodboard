@@ -507,7 +507,8 @@ addBar.onAddText = () => {
         textColor: '#333333',
         fontSize: 16,
         fontFamily: 'Inter',
-        textAlign: 'left',
+        textAlign: 'center',
+        textVerticalAlign: 'middle',
         textPadding: 8,
         name: 'Text',
     })
@@ -583,7 +584,8 @@ addBar.onAddShape = (shape) => {
             textColor: '#000000',
             fontSize: 16,
             fontFamily: 'Inter',
-            textAlign: 'left',
+            textAlign: 'center',
+            textVerticalAlign: 'middle',
             textPadding: 8,
         })
     )
@@ -614,7 +616,8 @@ addBlock(
         textColor: '#333333',
         fontSize: 16,
         fontFamily: 'Inter',
-        textAlign: 'left',
+        textAlign: 'center',
+        textVerticalAlign: 'middle',
         textPadding: 16,
         name: 'Text',
     })

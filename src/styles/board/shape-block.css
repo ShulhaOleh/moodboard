@@ -23,6 +23,8 @@
     inset: 0;
     overflow: hidden;
     pointer-events: none;
+    display: flex;
+    flex-direction: column;
     word-break: break-word;
     overflow-wrap: break-word;
 }
@@ -75,7 +77,6 @@
 /* TipTap editor */
 .shape-text-content .ProseMirror {
     outline: none;
-    min-height: 100%;
     cursor: text;
 }
 
