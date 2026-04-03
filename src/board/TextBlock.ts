@@ -11,7 +11,8 @@ import { FontSize } from './extensions/FontSize'
 import { FontFamily } from './extensions/FontFamily'
 import { loadFont } from '../lib/fonts'
 import { TextFormatToolbar } from '../ui/TextFormatToolbar'
-import { BoardObject, PropertyField } from './BoardObject'
+import { PropertyField } from './BoardObject'
+import { BoxBlock } from './BoxBlock'
 
 export interface TextBlockData {
     id: string
@@ -35,33 +36,23 @@ export interface TextBlockData {
     name?: string
 }
 
-export class TextBlock implements BoardObject {
-    readonly el: HTMLElement
-    onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null = null
-    onDeselect: (() => void) | null = null
-    onChange: (() => void) | null = null
-    onDragMove: ((dx: number, dy: number) => void) | null = null
-    onDragStart: (() => void) | null = null
-    onBeforePropertyChange: (() => void) | null = null
-    onLayerChange: (() => void) | null = null
+export class TextBlock extends BoxBlock<TextBlockData> {
     readonly layerLabel = 'Text'
-    visible = true
-    locked = false
-    name: string
-    private data: TextBlockData
     private editing = false
-    private selected = false
     private contentEl: HTMLElement
-    private handlesEl: HTMLElement | null = null
-    private dragOffset = { x: 0, y: 0 }
     private editorInstance: Editor | null = null
 
-    constructor(container: HTMLElement, data: TextBlockData) {
-        this.data = { ...data }
-        this.name = data.name ?? 'Text'
+    protected override get minResizeWidth(): number {
+        return 120
+    }
+    protected override get minResizeHeight(): number {
+        return 40
+    }
 
-        this.el = document.createElement('div')
-        this.el.className = 'text-block'
+    constructor(container: HTMLElement, data: TextBlockData) {
+        const el = document.createElement('div')
+        el.className = 'text-block'
+        super(el, 'Text', data)
 
         this.contentEl = document.createElement('div')
         this.contentEl.className = 'text-block-content'
@@ -78,16 +69,28 @@ export class TextBlock implements BoardObject {
         this.renderContent()
         this.setupInteraction()
 
+        this.el.addEventListener('dblclick', (e) => {
+            if ((e.target as HTMLElement).closest('.tb-handles')) return
+            this.startEdit()
+        })
+
         container.appendChild(this.el)
     }
 
-    private applyPosition() {
-        this.el.style.left = `${this.data.x}px`
-        this.el.style.top = `${this.data.y}px`
+    protected override isEditing(): boolean {
+        return this.editing
     }
 
-    private applyTransform() {
-        this.el.style.transform = `rotate(${this.data.rotation}deg)`
+    // Fixes dimensions before handles are rendered so the resize handle has known bounds.
+    protected override beforeRenderHandles() {
+        if (!this.data.width) {
+            this.data.width = this.el.getBoundingClientRect().width
+            this.el.style.width = `${this.data.width}px`
+        }
+        if (!this.data.height) {
+            this.data.height = this.el.getBoundingClientRect().height
+            this.el.style.height = `${this.data.height}px`
+        }
     }
 
     private applyTypography() {
@@ -127,72 +130,97 @@ export class TextBlock implements BoardObject {
         this.contentEl.classList.toggle('is-empty', isEmpty)
     }
 
-    private setupInteraction() {
-        this.el.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return
-            if (this.locked) return
-            if (this.editing) return
-            if ((e.target as HTMLElement).closest('.tb-handles')) return
-            if (!this.selected) {
-                this.select(e)
-                return // selecting click should not start a drag
-            }
-            this.startDrag(e)
+    // Temporarily resets rotation to 0 for comfortable editing, restores it on exit.
+    private startEdit() {
+        this.editing = true
+
+        // Handles interfere with TipTap — hide them for the duration.
+        this.handlesEl?.remove()
+        this.handlesEl = null
+
+        const savedRotation = this.data.rotation
+        this.data.rotation = 0
+        this.applyTransform()
+
+        this.contentEl.innerHTML = ''
+        this.contentEl.classList.remove('is-empty')
+        this.editorInstance = new Editor({
+            element: this.contentEl,
+            extensions: [
+                StarterKit,
+                TextStyle,
+                Color,
+                FontSize,
+                FontFamily,
+                TextAlign.configure({ types: ['heading', 'paragraph'] }),
+                Underline,
+            ],
+            content: this.data.content,
+            autofocus: true,
         })
 
-        // Deselect when clicking outside this block.
-        // If the click lands on another board object, skip onDeselect — the incoming
-        // onSelect will update the panel, so firing onDeselect here would hide it.
-        document.addEventListener('mousedown', (e) => {
-            if (!this.selected || this.el.contains(e.target as Node)) return
-            const target = e.target as HTMLElement
-            const hit = target.closest('.text-block, .image-block, .shape-block, .line-block')
-            if (hit) {
-                if (e.ctrlKey) return
-                // Interacting with another block that is already in the selection group
-                // (e.g. starting a drag) must not strip the selection border from this one.
-                if (hit.classList.contains('is-selected')) return
-                this.markDeselected()
-            } else {
-                this.deselect()
-            }
-        })
+        const toolbar = new TextFormatToolbar(this.editorInstance)
 
-        this.el.addEventListener('dblclick', (e) => {
-            if ((e.target as HTMLElement).closest('.tb-handles')) return
-            this.startEdit()
-        })
-    }
-
-    getPosition() {
-        return { x: this.data.x, y: this.data.y }
-    }
-    getSize() {
-        return {
-            width: this.data.width ?? this.el.offsetWidth,
-            height: this.data.height ?? this.el.offsetHeight,
+        let finished = false
+        const finish = () => {
+            if (finished) return
+            finished = true
+            this.data.content = this.editorInstance!.getHTML()
+            this.editorInstance!.destroy()
+            this.editorInstance = null
+            toolbar.destroy()
+            this.editing = false
+            this.data.rotation = savedRotation
+            this.applyTransform()
+            this.contentEl.innerHTML = ''
+            this.renderContent()
+            if (this.selected) this.renderHandles()
         }
-    }
-    getRotation() {
-        return this.data.rotation
+
+        // Defer finish so focus has time to settle — the toolbar's inputs and native color
+        // picker both cause editor blur but should not exit edit mode.
+        this.editorInstance.on('blur', () => {
+            setTimeout(() => {
+                if (this.editorInstance?.isFocused) return
+                if (toolbar.isInteracting) return
+                if (toolbar.el.contains(document.activeElement)) return
+                finish()
+            }, 100)
+        })
+
+        this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Escape') this.editorInstance?.commands.blur()
+        })
     }
 
-    getWorldCorners(): [number, number][] {
-        const { x, y } = this.getPosition()
-        const { width: w, height: h } = this.getSize()
-        const rad = this.data.rotation * (Math.PI / 180)
-        const cx = x + w / 2
-        const cy = y + h / 2
-        const cos = Math.cos(rad)
-        const sin = Math.sin(rad)
-        const hw = w / 2
-        const hh = h / 2
-        return [
-            [cx - hw * cos + hh * sin, cy - hw * sin - hh * cos],
-            [cx + hw * cos + hh * sin, cy + hw * sin - hh * cos],
-            [cx + hw * cos - hh * sin, cy + hw * sin + hh * cos],
-            [cx - hw * cos - hh * sin, cy - hw * sin + hh * cos],
-        ]
+    setFontFamilyBlock(family: string) {
+        this.data.fontFamily = family
+        this.applyFontFamily()
+    }
+
+    setFontSize(size: number) {
+        this.data.fontSize = size
+        this.applyTypography()
+    }
+
+    setPadding(px: number) {
+        this.data.padding = px
+        this.applyTypography()
+    }
+
+    setTextAlign(align: string) {
+        this.data.textAlign = align
+        this.applyTextAlign()
+    }
+
+    setColor(color: string) {
+        this.data.color = color
+        this.applyAppearance()
+    }
+
+    setBackground(bg: string) {
+        this.data.background = bg
+        this.applyAppearance()
     }
 
     getAppearanceFields(): PropertyField[] {
@@ -303,300 +331,11 @@ export class TextBlock implements BoardObject {
         }
     }
 
-    private select(e: MouseEvent) {
-        this.selected = true
-        this.el.classList.add('is-selected')
-
-        // Fix dimensions so the resize handle has something to work with
-        if (!this.data.width) {
-            this.data.width = this.el.getBoundingClientRect().width
-            this.el.style.width = `${this.data.width}px`
-        }
-        if (!this.data.height) {
-            this.data.height = this.el.getBoundingClientRect().height
-            this.el.style.height = `${this.data.height}px`
-        }
-
-        // Render handles before firing onSelect so that the multi-select path
-        // (which calls markSelected → removes handles) can clean them up correctly.
-        this.renderHandles()
-        this.onSelect?.(this, e)
-    }
-
-    markSelected() {
-        this.selected = true
-        this.el.classList.add('is-selected')
-        this.handlesEl?.remove()
-        this.handlesEl = null
-    }
-
-    markDeselected() {
-        this.selected = false
-        this.el.classList.remove('is-selected')
-        this.handlesEl?.remove()
-        this.handlesEl = null
-    }
-
-    private deselect() {
-        this.markDeselected()
-        this.onDeselect?.()
-    }
-
-    private renderHandles() {
-        this.handlesEl?.remove()
-
-        const handles = document.createElement('div')
-        handles.className = 'tb-handles'
-
-        const resizeHandle = document.createElement('div')
-        resizeHandle.className = 'tb-resize'
-        resizeHandle.addEventListener('mousedown', (e) => this.startResize(e))
-
-        const rotateHandle = document.createElement('div')
-        rotateHandle.className = 'tb-rotate'
-        rotateHandle.addEventListener('mousedown', (e) => this.startRotate(e))
-
-        handles.appendChild(resizeHandle)
-        handles.appendChild(rotateHandle)
-        this.el.appendChild(handles)
-        this.handlesEl = handles
-    }
-
-    private startDrag(e: MouseEvent) {
-        e.preventDefault()
-
-        const startX = e.clientX
-        const startY = e.clientY
-        let dragging = false
-
-        const onMove = (e: MouseEvent) => {
-            if (!dragging) {
-                // Only commit to a drag after the mouse moves a few pixels,
-                // so clicks and double-clicks never accidentally shift the block.
-                if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
-                dragging = true
-                this.onDragStart?.()
-                this.dragOffset.x = startX - this.data.x
-                this.dragOffset.y = startY - this.data.y
-            }
-            const newX = e.clientX - this.dragOffset.x
-            const newY = e.clientY - this.dragOffset.y
-            const dx = newX - this.data.x
-            const dy = newY - this.data.y
-            this.data.x = newX
-            this.data.y = newY
-            this.applyPosition()
-            this.onDragMove?.(dx, dy)
-            this.onChange?.()
-        }
-
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('mouseup', onUp)
-    }
-
-    private startResize(e: MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-        this.onDragStart?.()
-
-        const startX = e.clientX
-        const startY = e.clientY
-        const startW = this.data.width ?? this.el.offsetWidth
-        const startH = this.data.height ?? this.el.offsetHeight
-        const angle = (this.data.rotation * Math.PI) / 180
-
-        const onMove = (e: MouseEvent) => {
-            const dx = e.clientX - startX
-            const dy = e.clientY - startY
-            // Project mouse delta onto the element's local axes
-            const localDx = dx * Math.cos(angle) + dy * Math.sin(angle)
-            const localDy = -dx * Math.sin(angle) + dy * Math.cos(angle)
-            this.data.width = Math.max(120, startW + localDx)
-            this.data.height = Math.max(40, startH + localDy)
-            this.el.style.width = `${this.data.width}px`
-            this.el.style.height = `${this.data.height}px`
-            this.onChange?.()
-        }
-
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('mouseup', onUp)
-    }
-
-    private startRotate(e: MouseEvent) {
-        e.preventDefault()
-        e.stopPropagation()
-        this.onDragStart?.()
-
-        const rect = this.el.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
-
-        const onMove = (e: MouseEvent) => {
-            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX)
-            // +90° offset so 0° points up (handle is above the block)
-            this.data.rotation = (angle * 180) / Math.PI + 90
-            this.applyTransform()
-            this.onChange?.()
-        }
-
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove)
-            window.removeEventListener('mouseup', onUp)
-        }
-
-        window.addEventListener('mousemove', onMove)
-        window.addEventListener('mouseup', onUp)
-    }
-
-    // Temporarily resets rotation to 0 for comfortable editing, restores it on exit.
-    private startEdit() {
-        this.editing = true
-
-        // Handles are useless (and their mousedown listeners have no editing guard)
-        // while the TipTap editor is active, so hide them for the duration.
-        this.handlesEl?.remove()
-        this.handlesEl = null
-
-        const savedRotation = this.data.rotation
-        this.data.rotation = 0
-        this.applyTransform()
-
-        this.contentEl.innerHTML = ''
-        this.contentEl.classList.remove('is-empty')
-        this.editorInstance = new Editor({
-            element: this.contentEl,
-            extensions: [
-                StarterKit,
-                TextStyle,
-                Color,
-                FontSize,
-                FontFamily,
-                TextAlign.configure({ types: ['heading', 'paragraph'] }),
-                Underline,
-            ],
-            content: this.data.content,
-            autofocus: true,
-        })
-
-        const toolbar = new TextFormatToolbar(this.editorInstance)
-
-        let finished = false
-        const finish = () => {
-            if (finished) return
-            finished = true
-            this.data.content = this.editorInstance!.getHTML()
-            this.editorInstance!.destroy()
-            this.editorInstance = null
-            toolbar.destroy()
-            this.editing = false
-            this.data.rotation = savedRotation
-            this.applyTransform()
-            this.contentEl.innerHTML = ''
-            this.renderContent()
-            if (this.selected) this.renderHandles()
-        }
-
-        // Defer finish so focus has time to settle — the toolbar's inputs and native color
-        // picker both cause editor blur but should not exit edit mode.
-        this.editorInstance.on('blur', () => {
-            setTimeout(() => {
-                if (this.editorInstance?.isFocused) return
-                if (toolbar.isInteracting) return
-                if (toolbar.el.contains(document.activeElement)) return
-                finish()
-            }, 100)
-        })
-
-        this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
-            if (e.key === 'Escape') this.editorInstance?.commands.blur()
-        })
-    }
-
-    setFontFamilyBlock(family: string) {
-        this.data.fontFamily = family
-        this.applyFontFamily()
-    }
-
-    setFontSize(size: number) {
-        this.data.fontSize = size
-        this.applyTypography()
-    }
-
-    setPadding(px: number) {
-        this.data.padding = px
-        this.applyTypography()
-    }
-
-    setTextAlign(align: string) {
-        this.data.textAlign = align
-        this.applyTextAlign()
-    }
-
-    setPosition(x: number, y: number) {
-        this.onBeforePropertyChange?.()
-        this.data.x = x
-        this.data.y = y
-        this.applyPosition()
-    }
-
-    setSize(width: number, height: number) {
-        this.onBeforePropertyChange?.()
-        this.data.width = Math.max(120, width)
-        this.data.height = Math.max(40, height)
-        this.el.style.width = `${this.data.width}px`
-        this.el.style.height = `${this.data.height}px`
-    }
-
-    setRotation(deg: number) {
-        this.onBeforePropertyChange?.()
-        this.data.rotation = deg
-        this.applyTransform()
-    }
-
-    setColor(color: string) {
-        this.data.color = color
-        this.applyAppearance()
-    }
-
-    setBackground(bg: string) {
-        this.data.background = bg
-        this.applyAppearance()
-    }
-
-    setVisible(v: boolean) {
-        this.visible = v
-        this.el.style.display = v ? '' : 'none'
-        this.onLayerChange?.()
-    }
-
-    setLocked(v: boolean) {
-        this.locked = v
-        this.el.style.pointerEvents = v ? 'none' : ''
-        this.onLayerChange?.()
-    }
-
-    setName(name: string) {
-        this.name = name
-        this.onLayerChange?.()
-        this.onChange?.()
-    }
-
-    destroy() {
+    override destroy() {
         this.editorInstance?.destroy()
-        this.el.remove()
+        super.destroy()
     }
 
-    // Returns a snapshot of the current block state for persistence.
     getData(): Readonly<TextBlockData> {
         return { ...this.data }
     }

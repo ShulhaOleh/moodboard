@@ -1,0 +1,241 @@
+// Abstract base for bounding-box blocks (Text, Image, Shape) — position, size, rotation, handles, and drag gestures.
+
+import { BaseBlock } from './BaseBlock'
+
+export interface BoxBaseData {
+    id: string
+    x: number
+    y: number
+    width?: number
+    height?: number
+    rotation: number
+    name?: string
+}
+
+export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
+    protected data: D
+    protected handlesEl: HTMLElement | null = null
+    protected readonly dragOffset = { x: 0, y: 0 }
+
+    protected get minResizeWidth(): number {
+        return 40
+    }
+    protected get minResizeHeight(): number {
+        return 40
+    }
+
+    constructor(el: HTMLElement, defaultName: string, data: D) {
+        super(el, data.name ?? defaultName)
+        this.data = { ...data } as D
+    }
+
+    protected override clearHandles() {
+        this.handlesEl?.remove()
+        this.handlesEl = null
+    }
+
+    protected applyPosition() {
+        this.el.style.left = `${this.data.x}px`
+        this.el.style.top = `${this.data.y}px`
+    }
+
+    protected applySize() {
+        if (this.data.width !== undefined) this.el.style.width = `${this.data.width}px`
+        if (this.data.height !== undefined) this.el.style.height = `${this.data.height}px`
+    }
+
+    protected applyTransform() {
+        this.el.style.transform = `rotate(${this.data.rotation}deg)`
+    }
+
+    // Called immediately before renderHandles inside select() — override to fix dimensions first.
+    protected beforeRenderHandles() {}
+
+    protected select(e: MouseEvent) {
+        this.selected = true
+        this.el.classList.add('is-selected')
+        this.beforeRenderHandles()
+        this.renderHandles()
+        this.onSelect?.(this, e)
+    }
+
+    protected renderHandles() {
+        this.handlesEl?.remove()
+        const handles = document.createElement('div')
+        handles.className = 'tb-handles'
+        const resizeHandle = document.createElement('div')
+        resizeHandle.className = 'tb-resize'
+        resizeHandle.addEventListener('mousedown', (e) => this.startResize(e))
+        const rotateHandle = document.createElement('div')
+        rotateHandle.className = 'tb-rotate'
+        rotateHandle.addEventListener('mousedown', (e) => this.startRotate(e))
+        handles.append(resizeHandle, rotateHandle)
+        this.el.appendChild(handles)
+        this.handlesEl = handles
+    }
+
+    // Wire up the block's primary mousedown — call this at the end of the subclass constructor.
+    protected setupInteraction() {
+        this.el.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return
+            if (this.locked) return
+            if (this.isEditing()) return
+            if ((e.target as HTMLElement).closest('.tb-handles')) return
+            if (!this.selected) {
+                this.select(e)
+                return
+            }
+            this.startDrag(e)
+        })
+    }
+
+    // Override in subclasses that have an inline editor (e.g. TextBlock) to block drag while editing.
+    protected isEditing(): boolean {
+        return false
+    }
+
+    protected startDrag(e: MouseEvent) {
+        e.preventDefault()
+        const startX = e.clientX
+        const startY = e.clientY
+        let dragging = false
+
+        const onMove = (e: MouseEvent) => {
+            if (!dragging) {
+                if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
+                dragging = true
+                this.onDragStart?.()
+                this.dragOffset.x = startX - this.data.x
+                this.dragOffset.y = startY - this.data.y
+            }
+            const newX = e.clientX - this.dragOffset.x
+            const newY = e.clientY - this.dragOffset.y
+            const dx = newX - this.data.x
+            const dy = newY - this.data.y
+            this.data.x = newX
+            this.data.y = newY
+            this.applyPosition()
+            this.onDragMove?.(dx, dy)
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    protected startResize(e: MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.onDragStart?.()
+
+        const startX = e.clientX
+        const startY = e.clientY
+        const startW = this.data.width ?? this.el.offsetWidth
+        const startH = this.data.height ?? this.el.offsetHeight
+        const angle = (this.data.rotation * Math.PI) / 180
+
+        const onMove = (e: MouseEvent) => {
+            const dx = e.clientX - startX
+            const dy = e.clientY - startY
+            // Project mouse delta onto the element's local axes.
+            const localDx = dx * Math.cos(angle) + dy * Math.sin(angle)
+            const localDy = -dx * Math.sin(angle) + dy * Math.cos(angle)
+            this.data.width = Math.max(this.minResizeWidth, startW + localDx)
+            this.data.height = Math.max(this.minResizeHeight, startH + localDy)
+            this.applySize()
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    protected startRotate(e: MouseEvent) {
+        e.preventDefault()
+        e.stopPropagation()
+        this.onDragStart?.()
+
+        const rect = this.el.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+
+        const onMove = (e: MouseEvent) => {
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX)
+            // +90° so that 0° points up (handle sits above the block).
+            this.data.rotation = (angle * 180) / Math.PI + 90
+            this.applyTransform()
+            this.onChange?.()
+        }
+
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+    }
+
+    getPosition() {
+        return { x: this.data.x, y: this.data.y }
+    }
+
+    getSize() {
+        return {
+            width: this.data.width ?? this.el.offsetWidth,
+            height: this.data.height ?? this.el.offsetHeight,
+        }
+    }
+
+    getRotation() {
+        return this.data.rotation
+    }
+
+    getWorldCorners(): [number, number][] {
+        const { x, y } = this.getPosition()
+        const { width: w, height: h } = this.getSize()
+        const rad = this.data.rotation * (Math.PI / 180)
+        const cx = x + w / 2
+        const cy = y + h / 2
+        const cos = Math.cos(rad)
+        const sin = Math.sin(rad)
+        const hw = w / 2
+        const hh = h / 2
+        return [
+            [cx - hw * cos + hh * sin, cy - hw * sin - hh * cos],
+            [cx + hw * cos + hh * sin, cy + hw * sin - hh * cos],
+            [cx + hw * cos - hh * sin, cy + hw * sin + hh * cos],
+            [cx - hw * cos - hh * sin, cy - hw * sin + hh * cos],
+        ]
+    }
+
+    setPosition(x: number, y: number) {
+        this.onBeforePropertyChange?.()
+        this.data.x = x
+        this.data.y = y
+        this.applyPosition()
+    }
+
+    setSize(width: number, height: number) {
+        this.onBeforePropertyChange?.()
+        this.data.width = Math.max(this.minResizeWidth, width)
+        this.data.height = Math.max(this.minResizeHeight, height)
+        this.applySize()
+    }
+
+    setRotation(deg: number) {
+        this.onBeforePropertyChange?.()
+        this.data.rotation = deg
+        this.applyTransform()
+    }
+}

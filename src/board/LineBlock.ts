@@ -2,7 +2,8 @@
 // Stored as absolute board coordinates (x1,y1) → (x2,y2); no rotation or bounding-box resize.
 // Endpoint decorations (arrowheads, dots, etc.) are rendered via SVG markers.
 
-import { BoardObject, PropertyField } from './BoardObject'
+import { PropertyField } from './BoardObject'
+import { BaseBlock } from './BaseBlock'
 
 export type PointStyle =
     | 'none'
@@ -42,19 +43,8 @@ const POINT_STYLE_OPTIONS = [
     { value: 'diamond-arrow', label: 'Diamond arrow' },
 ]
 
-export class LineBlock implements BoardObject {
-    readonly el: HTMLElement
-    onSelect: ((obj: BoardObject, e: MouseEvent) => void) | null = null
-    onDeselect: (() => void) | null = null
-    onChange: (() => void) | null = null
-    onDragMove: ((dx: number, dy: number) => void) | null = null
-    onDragStart: (() => void) | null = null
-    onBeforePropertyChange: (() => void) | null = null
-    onLayerChange: (() => void) | null = null
+export class LineBlock extends BaseBlock {
     readonly layerLabel = 'Line'
-    visible = true
-    locked = false
-    name: string
     private data: LineBlockData
     private svgEl: SVGSVGElement
     private defsEl: SVGDefsElement
@@ -62,14 +52,12 @@ export class LineBlock implements BoardObject {
     private lineEl: SVGPathElement
     private handle1El: HTMLElement | null = null
     private handle2El: HTMLElement | null = null
-    private selected = false
 
     constructor(container: HTMLElement, data: LineBlockData) {
+        const el = document.createElement('div')
+        el.className = 'line-block'
+        super(el, data.name ?? 'Line')
         this.data = { ...data }
-        this.name = data.name ?? 'Line'
-
-        this.el = document.createElement('div')
-        this.el.className = 'line-block'
 
         this.svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         this.svgEl.setAttribute('width', '100%')
@@ -293,19 +281,6 @@ export class LineBlock implements BoardObject {
             }
             this.startBodyDrag(e as unknown as MouseEvent)
         })
-
-        document.addEventListener('mousedown', (e) => {
-            if (!this.selected || this.el.contains(e.target as Node)) return
-            const target = e.target as HTMLElement
-            const hit = target.closest('.text-block, .image-block, .shape-block, .line-block')
-            if (hit) {
-                if (e.ctrlKey) return
-                if (hit.classList.contains('is-selected')) return
-                this.markDeselected()
-            } else {
-                this.deselect()
-            }
-        })
     }
 
     private select(e: MouseEvent) {
@@ -315,21 +290,8 @@ export class LineBlock implements BoardObject {
         this.onSelect?.(this, e)
     }
 
-    markSelected() {
-        this.selected = true
-        this.el.classList.add('is-selected')
+    protected override clearHandles() {
         this.removeHandles()
-    }
-
-    markDeselected() {
-        this.selected = false
-        this.el.classList.remove('is-selected')
-        this.removeHandles()
-    }
-
-    private deselect() {
-        this.markDeselected()
-        this.onDeselect?.()
     }
 
     private renderHandles() {
@@ -579,27 +541,5 @@ export class LineBlock implements BoardObject {
 
     getData(): Readonly<LineBlockData> {
         return { ...this.data }
-    }
-
-    setVisible(v: boolean) {
-        this.visible = v
-        this.el.style.display = v ? '' : 'none'
-        this.onLayerChange?.()
-    }
-
-    setLocked(v: boolean) {
-        this.locked = v
-        this.el.style.pointerEvents = v ? 'none' : ''
-        this.onLayerChange?.()
-    }
-
-    setName(name: string) {
-        this.name = name
-        this.onLayerChange?.()
-        this.onChange?.()
-    }
-
-    destroy() {
-        this.el.remove()
     }
 }
