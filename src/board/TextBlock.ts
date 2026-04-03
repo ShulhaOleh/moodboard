@@ -23,7 +23,6 @@ export interface TextBlockData {
     rotation: number
     content: string
     fontSize: number
-    padding: number
     color: string
     fontFamily: string
     textAlign: string
@@ -77,7 +76,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
 
     private applyTypography() {
         this.el.style.fontSize = `${this.data.fontSize}px`
-        this.el.style.padding = `${this.data.padding}px`
     }
 
     private applyFontFamily() {
@@ -168,11 +166,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
 
     setFontSize(size: number) {
         this.data.fontSize = size
-        this.applyTypography()
-    }
-
-    setPadding(px: number) {
-        this.data.padding = px
         this.applyTypography()
     }
 

@@ -31,6 +31,8 @@ export abstract class BaseBlock implements BoardObject {
         document.addEventListener('mousedown', (e) => {
             if (!this.selected || this.el.contains(e.target as Node)) return
             const target = e.target as HTMLElement
+            // Interacting with the SelectionBox (resize/rotate handles) must never deselect.
+            if (target.closest('.selection-box')) return
             const hit = target.closest(BLOCK_SELECTOR)
             if (hit) {
                 if (e.ctrlKey) return

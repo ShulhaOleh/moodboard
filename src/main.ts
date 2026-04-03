@@ -508,7 +508,6 @@ addBar.onAddText = () => {
             rotation: 0,
             content: '',
             fontSize: 16,
-            padding: 8,
             color: '#333333',
             fontFamily: 'Inter',
             textAlign: 'left',
@@ -601,7 +600,6 @@ addBlock(
         content:
             '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
         fontSize: 16,
-        padding: 16,
         color: '#333333',
         fontFamily: 'Inter',
         textAlign: 'left',

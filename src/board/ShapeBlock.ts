@@ -294,27 +294,8 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             : 'none'
     }
 
-    private rebuildShape() {
-        this.shapeEl.remove()
-        this.shapeEl = this.createShapeEl(this.data.shape)
-        this.svgEl.appendChild(this.shapeEl)
-        this.applyAppearance()
-    }
-
     getAppearanceFields(): PropertyField[] {
         const fields: PropertyField[] = [
-            {
-                type: 'select',
-                key: 'shape',
-                label: 'Shape',
-                value: this.data.shape,
-                options: [
-                    { value: 'rectangle', label: 'Rectangle' },
-                    { value: 'ellipse', label: 'Ellipse' },
-                    { value: 'polygon', label: 'Polygon' },
-                    { value: 'star', label: 'Star' },
-                ],
-            },
             { type: 'color', key: 'fill', label: 'Fill', value: this.data.fill, clearable: true },
             {
                 type: 'color',
@@ -473,10 +454,6 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
 
     setAppearanceProperty(key: string, value: string | number) {
         this.onBeforePropertyChange?.()
-        if (key === 'shape') {
-            this.data.shape = value as ShapeType
-            this.rebuildShape()
-        }
         if (key === 'fill') {
             this.data.fill = String(value)
             this.shapeEl.setAttribute('fill', this.data.fill || 'none')
