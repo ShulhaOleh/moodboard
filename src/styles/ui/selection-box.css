@@ -24,6 +24,19 @@
 .sb-sw { bottom: -5px; left: -5px;    cursor: nesw-resize; }
 .sb-se { bottom: -5px; right: -5px;   cursor: nwse-resize; }
 
+.sb-side {
+    position: absolute;
+    pointer-events: all;
+}
+
+.sb-n, .sb-s { left: 0; right: 0; height: 8px; cursor: ns-resize; }
+.sb-e, .sb-w { top: 0; bottom: 0; width: 8px;  cursor: ew-resize; }
+
+.sb-n { top: -4px; }
+.sb-s { bottom: -4px; }
+.sb-e { right: -4px; }
+.sb-w { left: -4px; }
+
 .sb-rotate {
     position: absolute;
     top: -28px;

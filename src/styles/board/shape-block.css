@@ -13,8 +13,7 @@
 }
 
 .shape-block.is-selected {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
+    border-color: var(--color-border-strong);
 }
 
 /* Text overlay — sits above the SVG and covers the full shape area. */

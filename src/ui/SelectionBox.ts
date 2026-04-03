@@ -96,6 +96,25 @@ export class SelectionBox {
             this.el.appendChild(h)
         }
 
+        const sides: { cls: string; hx: 'left' | 'right' | null; hy: 'top' | 'bottom' | null }[] = [
+            { cls: 'sb-n', hx: null, hy: 'top' },
+            { cls: 'sb-s', hx: null, hy: 'bottom' },
+            { cls: 'sb-w', hx: 'left', hy: null },
+            { cls: 'sb-e', hx: 'right', hy: null },
+        ]
+
+        for (const { cls, hx, hy } of sides) {
+            const h = document.createElement('div')
+            h.className = `sb-side ${cls}`
+            h.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return
+                e.stopPropagation()
+                e.preventDefault()
+                this.startResize(e, hx, hy)
+            })
+            this.el.appendChild(h)
+        }
+
         const rot = document.createElement('div')
         rot.className = 'sb-rotate'
         rot.addEventListener('mousedown', (e) => {
@@ -174,10 +193,13 @@ export class SelectionBox {
 
     // ── Resize ────────────────────────────────────────────────────────────────
 
-    private startResize(e: MouseEvent, hx: 'left' | 'right', hy: 'top' | 'bottom') {
-        // Anchor is the corner opposite the drag handle — stays fixed during scale.
-        const ax = hx === 'left' ? this.gx + this.gw : this.gx
-        const ay = hy === 'top' ? this.gy + this.gh : this.gy
+    private startResize(e: MouseEvent, hx: 'left' | 'right' | null, hy: 'top' | 'bottom' | null) {
+        // Anchor is the edge/corner opposite the drag handle — stays fixed during scale.
+        // For a side handle, the perpendicular axis is locked (scale = 1) so its anchor is unused.
+        const ax =
+            hx === 'left' ? this.gx + this.gw : hx === 'right' ? this.gx : this.gx + this.gw / 2
+        const ay =
+            hy === 'top' ? this.gy + this.gh : hy === 'bottom' ? this.gy : this.gy + this.gh / 2
         const origGW = this.gw
         const origGH = this.gh
 
@@ -193,9 +215,8 @@ export class SelectionBox {
 
             let sx: number, sy: number
 
-            if (ev.shiftKey && origGW > 1 && origGH > 1) {
-                // Uniform scale: project the mouse-anchor vector onto the original diagonal
-                // so both axes scale by the same factor, preserving aspect ratio.
+            if (hx !== null && hy !== null && ev.shiftKey && origGW > 1 && origGH > 1) {
+                // Uniform scale (corner handles + Shift): project onto the original diagonal.
                 const diagX = hx === 'right' ? origGW : -origGW
                 const diagY = hy === 'bottom' ? origGH : -origGH
                 const diagLenSq = diagX * diagX + diagY * diagY
@@ -204,11 +225,9 @@ export class SelectionBox {
                 sx = s
                 sy = s
             } else {
-                // If the original dimension was degenerate, keep that axis unchanged.
-                const newGW = Math.max(10, Math.abs(mx - ax))
-                const newGH = Math.max(10, Math.abs(my - ay))
-                sx = origGW > 1 ? newGW / origGW : 1
-                sy = origGH > 1 ? newGH / origGH : 1
+                // Side handles lock one axis; degenerate dimensions are left unchanged.
+                sx = hx !== null && origGW > 1 ? Math.max(10, Math.abs(mx - ax)) / origGW : 1
+                sy = hy !== null && origGH > 1 ? Math.max(10, Math.abs(my - ay)) / origGH : 1
             }
 
             this.applyScale(snapshots, ax, ay, sx, sy)

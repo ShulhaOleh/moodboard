@@ -15,8 +15,7 @@
 }
 
 .image-block.is-selected {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
+    border-color: var(--color-border-strong);
 }
 
 /* Inner wrapper clips the image to the border radius; kept separate from the outer
