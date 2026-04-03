@@ -1,4 +1,4 @@
-/* SelectionBox — group selection outline and transform handles for multi-select. */
+/* SelectionBox — group selection outline and transform handles for single and multi-select. */
 
 .selection-box {
     position: absolute;
@@ -35,7 +35,7 @@
     border: 2px solid var(--color-accent);
     border-radius: 50%;
     pointer-events: all;
-    cursor: crosshair;
+    cursor: grab;
     box-sizing: border-box;
 }
 
@@ -48,4 +48,15 @@
     width: 1px;
     height: 10px;
     background: var(--color-accent);
+}
+
+/* Applied to body during active rotation — overrides cursor on every element. */
+body.sb-rotating,
+body.sb-rotating * {
+    cursor: grabbing !important;
+}
+
+/* While Ctrl is held, hint that corner handles will rotate instead of resize. */
+body.sb-ctrl .sb-handle {
+    cursor: grab;
 }

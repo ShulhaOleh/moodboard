@@ -39,6 +39,14 @@ export class SelectionBox {
         this.el.style.display = 'none'
         this.buildHandles()
         overlay.appendChild(this.el)
+
+        // Show rotation cursor on corner handles while Ctrl is held.
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Control') document.body.classList.add('sb-ctrl')
+        })
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'Control') document.body.classList.remove('sb-ctrl')
+        })
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -81,7 +89,9 @@ export class SelectionBox {
                 if (e.button !== 0) return
                 e.stopPropagation()
                 e.preventDefault()
-                this.startResize(e, hx, hy)
+                // Ctrl+handle rotates instead of resizing.
+                if (e.ctrlKey) this.startRotate(e)
+                else this.startResize(e, hx, hy)
             })
             this.el.appendChild(h)
         }
@@ -172,6 +182,8 @@ export class SelectionBox {
         const origGH = this.gh
 
         const snapshots = this.snapshotBlocks()
+        // Push history before any state changes — same contract as block drag gestures.
+        this.blocks.forEach((b) => b.onBeforePropertyChange?.())
         document.body.style.cursor = window.getComputedStyle(e.target as Element).cursor
 
         const onMove = (ev: MouseEvent) => {
@@ -179,11 +191,25 @@ export class SelectionBox {
             const mx = (ev.clientX - panX) / zoom
             const my = (ev.clientY - panY) / zoom
 
-            const newGW = Math.max(10, Math.abs(mx - ax))
-            const newGH = Math.max(10, Math.abs(my - ay))
-            // If the original dimension was degenerate, keep that axis unchanged.
-            const sx = origGW > 1 ? newGW / origGW : 1
-            const sy = origGH > 1 ? newGH / origGH : 1
+            let sx: number, sy: number
+
+            if (ev.shiftKey && origGW > 1 && origGH > 1) {
+                // Uniform scale: project the mouse-anchor vector onto the original diagonal
+                // so both axes scale by the same factor, preserving aspect ratio.
+                const diagX = hx === 'right' ? origGW : -origGW
+                const diagY = hy === 'bottom' ? origGH : -origGH
+                const diagLenSq = diagX * diagX + diagY * diagY
+                const proj = (mx - ax) * diagX + (my - ay) * diagY
+                const s = Math.max(10 / Math.max(origGW, origGH), proj / diagLenSq)
+                sx = s
+                sy = s
+            } else {
+                // If the original dimension was degenerate, keep that axis unchanged.
+                const newGW = Math.max(10, Math.abs(mx - ax))
+                const newGH = Math.max(10, Math.abs(my - ay))
+                sx = origGW > 1 ? newGW / origGW : 1
+                sy = origGH > 1 ? newGH / origGH : 1
+            }
 
             this.applyScale(snapshots, ax, ay, sx, sy)
             this.update()
@@ -232,7 +258,7 @@ export class SelectionBox {
         )
 
         const snapshots = this.snapshotBlocks()
-        document.body.style.cursor = 'crosshair'
+        document.body.classList.add('sb-rotating')
 
         const onMove = (ev: MouseEvent) => {
             const vp = this.getViewport()
@@ -245,7 +271,7 @@ export class SelectionBox {
         }
 
         const onUp = () => {
-            document.body.style.cursor = ''
+            document.body.classList.remove('sb-rotating')
             window.removeEventListener('mousemove', onMove)
             window.removeEventListener('mouseup', onUp)
         }
