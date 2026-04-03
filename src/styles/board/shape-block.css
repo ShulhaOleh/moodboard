@@ -1,4 +1,4 @@
-/* ShapeBlock — draggable, resizable, rotatable SVG shape. */
+/* ShapeBlock — draggable, resizable, rotatable SVG shape with optional inline text. */
 
 .shape-block {
     position: absolute;
@@ -16,3 +16,66 @@
     border-color: var(--color-accent);
     box-shadow: 0 0 0 1px var(--color-accent);
 }
+
+/* Text overlay — sits above the SVG and covers the full shape area. */
+.shape-text-content {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.shape-block.is-text-editing .shape-text-content {
+    pointer-events: all;
+    overflow: auto;
+}
+
+/* Rich-text content styles */
+.shape-text-content h1,
+.shape-text-content h2,
+.shape-text-content h3 {
+    font-weight: 600;
+    margin-bottom: 0.4em;
+}
+
+.shape-text-content h1 { font-size: 1.5em; }
+.shape-text-content h2 { font-size: 1.25em; }
+.shape-text-content h3 { font-size: 1.1em; }
+
+.shape-text-content p {
+    margin-bottom: 0.5em;
+}
+
+.shape-text-content p:last-child {
+    margin-bottom: 0;
+}
+
+.shape-text-content ul,
+.shape-text-content ol {
+    padding-left: 1.25em;
+    margin-bottom: 0.5em;
+}
+
+.shape-text-content ul { list-style-type: disc; }
+.shape-text-content ol { list-style-type: decimal; }
+
+.shape-text-content strong { font-weight: 600; }
+.shape-text-content em     { font-style: italic; }
+
+.shape-text-content code {
+    background: var(--color-surface-sunken);
+    border-radius: 3px;
+    padding: 0.1em 0.3em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+/* TipTap editor */
+.shape-text-content .ProseMirror {
+    outline: none;
+    min-height: 100%;
+    cursor: text;
+}
+

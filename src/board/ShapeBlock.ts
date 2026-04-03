@@ -1,5 +1,16 @@
 // Draggable, resizable, rotatable geometric shape block rendered as an inline SVG.
+// Supports optional inline text editing via TipTap, activated by double-click.
 
+import { Editor } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { Color } from '@tiptap/extension-color'
+import TextAlign from '@tiptap/extension-text-align'
+import { Underline } from '@tiptap/extension-underline'
+import { FontSize } from './extensions/FontSize'
+import { FontFamily } from './extensions/FontFamily'
+import { loadFont } from '../lib/fonts'
+import { TextFormatToolbar } from '../ui/TextFormatToolbar'
 import { PropertyField } from './BoardObject'
 import { BoxBlock } from './BoxBlock'
 
@@ -27,12 +38,24 @@ export interface ShapeBlockData {
     shadowBlur: number
     shadowX: number
     shadowY: number
+    // Text overlay
+    text: string
+    textColor: string
+    fontSize: number
+    fontFamily: string
+    textAlign: string
+    textPadding: number
     name?: string
 }
 
 export class ShapeBlock extends BoxBlock<ShapeBlockData> {
     private svgEl: SVGSVGElement
     private shapeEl: SVGElement
+    private textEl: HTMLElement
+    private editing = false
+    private editorInstance: Editor | null = null
+    // Fired when text editing starts or ends — main.ts uses this to refresh the properties panel.
+    onTextEditChange: (() => void) | null = null
 
     protected override get minResizeWidth(): number {
         return 20
@@ -67,13 +90,112 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
         this.svgEl.appendChild(this.shapeEl)
         this.el.appendChild(this.svgEl)
 
+        this.textEl = document.createElement('div')
+        this.textEl.className = 'shape-text-content'
+        this.el.appendChild(this.textEl)
+
         this.applyPosition()
         this.applySize()
         this.applyTransform()
         this.applyAppearance()
+        this.applyTextStyle()
+        this.renderText()
 
         this.setupInteraction()
+
+        this.el.addEventListener('dblclick', (e) => {
+            if ((e.target as HTMLElement).closest('.sb-handle')) return
+            this.startEdit()
+        })
+
         container.appendChild(this.el)
+    }
+
+    protected override isEditing(): boolean {
+        return this.editing
+    }
+
+    // Activates TipTap inline editing. Called on double-click or programmatically
+    // (e.g. immediately after creating a text-preset shape from the Add Bar).
+    startEdit() {
+        if (this.editing) return
+        this.editing = true
+        this.el.classList.add('is-text-editing')
+        this.onTextEditChange?.()
+
+        const savedRotation = this.data.rotation
+        this.data.rotation = 0
+        this.applyTransform()
+
+        this.textEl.innerHTML = ''
+
+        this.editorInstance = new Editor({
+            element: this.textEl,
+            extensions: [
+                StarterKit,
+                TextStyle,
+                Color,
+                FontSize,
+                FontFamily,
+                TextAlign.configure({ types: ['heading', 'paragraph'] }),
+                Underline,
+            ],
+            content: this.data.text,
+            autofocus: true,
+        })
+
+        const toolbar = new TextFormatToolbar(this.editorInstance)
+
+        let finished = false
+        const finish = () => {
+            if (finished) return
+            finished = true
+            const html = this.editorInstance!.getHTML()
+            const tmp = document.createElement('div')
+            tmp.innerHTML = html
+            // Treat whitespace-only TipTap output (e.g. "<p></p>") as no text.
+            this.data.text = tmp.textContent?.trim() ? html : ''
+            this.editorInstance!.destroy()
+            this.editorInstance = null
+            toolbar.destroy()
+            this.editing = false
+            this.el.classList.remove('is-text-editing')
+            this.data.rotation = savedRotation
+            this.applyTransform()
+            this.textEl.innerHTML = ''
+            this.renderText()
+            this.onTextEditChange?.()
+        }
+
+        // Defer finish so focus has time to settle — the toolbar's inputs and native color
+        // picker both cause editor blur but should not exit edit mode.
+        this.editorInstance.on('blur', () => {
+            setTimeout(() => {
+                if (this.editorInstance?.isFocused) return
+                if (toolbar.isInteracting) return
+                if (toolbar.el.contains(document.activeElement)) return
+                finish()
+            }, 100)
+        })
+
+        this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
+            if (e.key === 'Escape') this.editorInstance?.commands.blur()
+        })
+    }
+
+    private applyTextStyle() {
+        this.textEl.style.color = this.data.textColor
+        this.textEl.style.fontSize = `${this.data.fontSize}px`
+        this.textEl.style.textAlign = this.data.textAlign
+        this.textEl.style.padding = `${this.data.textPadding}px`
+        if (this.data.fontFamily) {
+            loadFont(this.data.fontFamily)
+            this.textEl.style.fontFamily = this.data.fontFamily
+        }
+    }
+
+    private renderText() {
+        this.textEl.innerHTML = this.data.text
     }
 
     private createShapeEl(shape: ShapeType): SVGElement {
@@ -282,6 +404,48 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             }
         )
 
+        if (this.data.text.trim() || this.editing)
+            fields.push(
+                { type: 'section', label: 'Text' },
+                { type: 'font', key: 'fontFamily', label: 'Font', value: this.data.fontFamily },
+                {
+                    type: 'number',
+                    key: 'fontSize',
+                    label: 'Font size',
+                    value: this.data.fontSize,
+                    min: 8,
+                    max: 120,
+                    step: 1,
+                },
+                {
+                    type: 'select',
+                    key: 'textAlign',
+                    label: 'Align',
+                    value: this.data.textAlign,
+                    options: [
+                        { value: 'left', label: 'Left' },
+                        { value: 'center', label: 'Center' },
+                        { value: 'right', label: 'Right' },
+                        { value: 'justify', label: 'Justify' },
+                    ],
+                },
+                {
+                    type: 'color',
+                    key: 'textColor',
+                    label: 'Text color',
+                    value: this.data.textColor,
+                },
+                {
+                    type: 'number',
+                    key: 'textPadding',
+                    label: 'Padding',
+                    value: this.data.textPadding,
+                    min: 0,
+                    max: 100,
+                    step: 1,
+                }
+            )
+
         return fields
     }
 
@@ -337,6 +501,31 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             this.data.shadowBlur = Number(value)
             this.applyAppearance()
         }
+        if (key === 'textColor') {
+            this.data.textColor = String(value)
+            this.applyTextStyle()
+        }
+        if (key === 'fontSize') {
+            this.data.fontSize = Number(value)
+            this.applyTextStyle()
+        }
+        if (key === 'fontFamily') {
+            this.data.fontFamily = String(value)
+            this.applyTextStyle()
+        }
+        if (key === 'textAlign') {
+            this.data.textAlign = String(value)
+            this.applyTextStyle()
+        }
+        if (key === 'textPadding') {
+            this.data.textPadding = Number(value)
+            this.applyTextStyle()
+        }
+    }
+
+    override destroy() {
+        this.editorInstance?.destroy()
+        super.destroy()
     }
 
     getData(): Readonly<ShapeBlockData> {

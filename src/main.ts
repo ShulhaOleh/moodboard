@@ -1,7 +1,6 @@
 // App entry point — initializes the board overlay and wires up UI components.
 
 import './style.css'
-import { TextBlock, TextBlockData } from './board/TextBlock'
 import { ImageBlock, ImageBlockData } from './board/ImageBlock'
 import { ShapeBlock, ShapeBlockData } from './board/ShapeBlock'
 import { LineBlock, LineBlockData } from './board/LineBlock'
@@ -13,7 +12,6 @@ import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
 
 type BlockSnapshot =
-    | { type: 'text'; data: TextBlockData }
     | { type: 'image'; data: ImageBlockData }
     | { type: 'shape'; data: ShapeBlockData }
     | { type: 'line'; data: LineBlockData }
@@ -80,7 +78,6 @@ function applyTransform() {
 }
 
 function snapshotBlock(block: BoardObject): BlockSnapshot {
-    if (block instanceof TextBlock) return { type: 'text', data: { ...block.getData() } }
     if (block instanceof ImageBlock) return { type: 'image', data: { ...block.getData() } }
     if (block instanceof ShapeBlock) return { type: 'shape', data: { ...block.getData() } }
     if (block instanceof LineBlock) return { type: 'line', data: { ...block.getData() } }
@@ -93,8 +90,6 @@ function pushHistory() {
 
 function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
     switch (snap.type) {
-        case 'text':
-            return new TextBlock(overlay, snap.data)
         case 'image':
             return new ImageBlock(overlay, snap.data)
         case 'shape':
@@ -154,16 +149,6 @@ function paste() {
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
                     src,
-                },
-            }
-        } else if (snap.type === 'text') {
-            newSnap = {
-                type: 'text',
-                data: {
-                    ...snap.data,
-                    id: crypto.randomUUID(),
-                    x: snap.data.x + offset,
-                    y: snap.data.y + offset,
                 },
             }
         } else {
@@ -228,6 +213,11 @@ document.addEventListener(
 
 function addBlock(block: BoardObject) {
     blocks.push(block)
+    if (block instanceof ShapeBlock) {
+        block.onTextEditChange = () => {
+            if (selectedBlocks.has(block) && selectedBlocks.size === 1) panel.show(block)
+        }
+    }
     block.onDragStart = () => pushHistory()
     block.onBeforePropertyChange = () => {
         if (!propertyChangeActive) {
@@ -435,7 +425,7 @@ document.addEventListener('mousedown', (e) => {
         return
     }
 
-    if (target.closest('.text-block, .image-block, .shape-block, .line-block')) return
+    if (target.closest('.image-block, .shape-block, .line-block')) return
 
     const startX = e.clientX
     const startY = e.clientY
@@ -494,27 +484,35 @@ function centerPosition() {
 addBar.onAddText = () => {
     pushHistory()
     const { x, y } = centerPosition()
-    addBlock(
-        new TextBlock(overlay, {
-            id: crypto.randomUUID(),
-            x,
-            y,
-            width: 240,
-            rotation: 0,
-            content: '',
-            fontSize: 16,
-            padding: 16,
-            color: '#333333',
-            background: '#ffffff',
-            fontFamily: 'Inter',
-            textAlign: 'left',
-            borderRadius: 6,
-            shadowColor: '',
-            shadowBlur: 0,
-            shadowX: 0,
-            shadowY: 0,
-        })
-    )
+    const block = new ShapeBlock(overlay, {
+        id: crypto.randomUUID(),
+        x,
+        y,
+        width: 240,
+        height: 120,
+        rotation: 0,
+        shape: 'rectangle',
+        fill: '',
+        stroke: '',
+        strokeWidth: 0,
+        borderRadius: 0,
+        sides: 5,
+        starPoints: 5,
+        opacity: 100,
+        shadowColor: '',
+        shadowBlur: 0,
+        shadowX: 0,
+        shadowY: 0,
+        text: '',
+        textColor: '#333333',
+        fontSize: 16,
+        fontFamily: 'Inter',
+        textAlign: 'left',
+        textPadding: 8,
+        name: 'Text',
+    })
+    addBlock(block)
+    block.startEdit()
 }
 
 addBar.onAddImage = () => {
@@ -581,30 +579,44 @@ addBar.onAddShape = (shape) => {
             shadowBlur: 0,
             shadowX: 0,
             shadowY: 0,
+            text: '',
+            textColor: '#000000',
+            fontSize: 16,
+            fontFamily: 'Inter',
+            textAlign: 'left',
+            textPadding: 8,
         })
     )
 }
 
 // Demo objects
 addBlock(
-    new TextBlock(overlay, {
+    new ShapeBlock(overlay, {
         id: 'demo',
         x: 250,
         y: 100,
+        width: 300,
+        height: 180,
         rotation: 0,
-        content:
-            '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
-        fontSize: 16,
-        padding: 16,
-        color: '#333333',
-        background: '#ffffff',
-        fontFamily: 'Inter',
-        textAlign: 'left',
+        shape: 'rectangle',
+        fill: '#ffffff',
+        stroke: '',
+        strokeWidth: 0,
         borderRadius: 6,
+        sides: 5,
+        starPoints: 5,
+        opacity: 100,
         shadowColor: '',
         shadowBlur: 20,
         shadowX: 0,
         shadowY: 4,
+        text: '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
+        textColor: '#333333',
+        fontSize: 16,
+        fontFamily: 'Inter',
+        textAlign: 'left',
+        textPadding: 16,
+        name: 'Text',
     })
 )
 
