@@ -2,6 +2,7 @@
 
 export type PropertyField =
     | { type: 'section'; label: string }
+    | { type: 'button'; key: string; label: string; destructive?: boolean }
     | {
           type: 'number'
           key: string

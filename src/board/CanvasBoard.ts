@@ -10,6 +10,10 @@ export class CanvasBoard implements BoardObject {
     onSelect = null
     onDeselect = null
     onChange: (() => void) | null = null
+    onNewBoard: (() => void) | null = null
+    onLoadDemo: (() => void) | null = null
+    onExport: (() => void) | null = null
+    onImport: (() => void) | null = null
     onDragMove = null
     onDragStart = null
     onBeforePropertyChange = null
@@ -48,6 +52,15 @@ export class CanvasBoard implements BoardObject {
     markDeselected() {}
     destroy() {}
 
+    getBackground(): string {
+        return this.bg
+    }
+
+    setBackground(bg: string) {
+        this.bg = bg
+        this.appEl.style.backgroundColor = bg
+    }
+
     getAppearanceFields(): PropertyField[] {
         return [
             {
@@ -57,6 +70,11 @@ export class CanvasBoard implements BoardObject {
                 value: this.bg,
                 clearable: true,
             },
+            { type: 'section', label: 'Board' },
+            { type: 'button', key: 'export', label: 'Export JSON' },
+            { type: 'button', key: 'import', label: 'Import JSON' },
+            { type: 'button', key: 'loadDemo', label: 'Load demo' },
+            { type: 'button', key: 'newBoard', label: 'New board', destructive: true },
         ]
     }
 
@@ -66,5 +84,9 @@ export class CanvasBoard implements BoardObject {
             this.appEl.style.backgroundColor = this.bg
             this.onChange?.()
         }
+        if (key === 'newBoard') this.onNewBoard?.()
+        if (key === 'loadDemo') this.onLoadDemo?.()
+        if (key === 'export') this.onExport?.()
+        if (key === 'import') this.onImport?.()
     }
 }

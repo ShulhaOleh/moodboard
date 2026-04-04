@@ -244,6 +244,19 @@ export class PropertiesPanel {
                 continue
             }
 
+            if (field.type === 'button') {
+                const btn = document.createElement('button')
+                btn.className = field.destructive
+                    ? 'prop-action-btn is-destructive'
+                    : 'prop-action-btn'
+                btn.textContent = field.label
+                btn.addEventListener('click', () =>
+                    this.object?.setAppearanceProperty(field.key, '')
+                )
+                this.appearanceEl.appendChild(btn)
+                continue
+            }
+
             const row = document.createElement('div')
             row.className = 'prop-row'
 

@@ -114,6 +114,7 @@ async function saveBoard() {
         panX,
         panY,
         zoom,
+        canvasBackground: canvasBoard.getBackground(),
     })
 }
 
@@ -132,6 +133,7 @@ async function loadBoard(): Promise<boolean> {
     zoom = record.zoom
     applyTransform()
     zoomWidget.sync(zoom)
+    canvasBoard.setBackground(record.canvasBackground ?? '#ffffff')
     for (const snap of record.blocks) {
         if (snap.type === 'image' && snap.data.imageBlob) {
             addBlock(
@@ -664,12 +666,124 @@ addBar.onAddShape = (shape) => {
     )
 }
 
-// Load persisted board, or show demo objects on first visit.
-void loadBoard().then((loaded) => {
-    if (loaded) return
+// ── Board-level actions ───────────────────────────────────────────────────────
+
+function newBoard() {
+    if (!window.confirm('Clear the board and start fresh? This cannot be undone.')) return
+    for (const b of [...blocks]) removeBlock(b)
+    selectionBox.setBlocks([])
+    panel.show(canvasBoard)
+    history.length = 0
+    panX = 0
+    panY = 0
+    zoom = 1
+    applyTransform()
+    zoomWidget.sync(zoom)
+    canvasBoard.setBackground('#ffffff')
+    void db.boards.delete('default')
+}
+
+async function exportBoard() {
+    const blockData = await Promise.all(
+        blocks.map(async (block) => {
+            const snap = snapshotBlock(block)
+            if (snap.type !== 'image') return snap
+            const { imageBlob, ...rest } = snap.data
+            let src = snap.data.src
+            if (imageBlob) {
+                const buf = await imageBlob.arrayBuffer()
+                const bytes = new Uint8Array(buf)
+                let binary = ''
+                for (const byte of bytes) binary += String.fromCharCode(byte)
+                src = `data:${imageBlob.type};base64,${btoa(binary)}`
+            } else if (src.startsWith('blob:')) {
+                src = ''
+            }
+            return { type: 'image' as const, data: { ...rest, src } }
+        })
+    )
+    const data = {
+        schemaVersion: SCHEMA_VERSION,
+        canvasBackground: canvasBoard.getBackground(),
+        panX,
+        panY,
+        zoom,
+        blocks: blockData,
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'moodboard.json'
+    a.click()
+    URL.revokeObjectURL(url)
+}
+
+function importBoard() {
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.json,application/json'
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files?.[0]
+        if (!file) return
+        void file.text().then((text) => {
+            let data: ReturnType<typeof JSON.parse>
+            try {
+                data = JSON.parse(text)
+            } catch {
+                alert('Invalid JSON file.')
+                return
+            }
+            if (data.schemaVersion !== SCHEMA_VERSION) {
+                alert(`Cannot import: schema version ${data.schemaVersion} is not supported.`)
+                return
+            }
+            for (const b of [...blocks]) removeBlock(b)
+            selectionBox.setBlocks([])
+            panel.show(canvasBoard)
+            history.length = 0
+            panX = data.panX ?? 0
+            panY = data.panY ?? 0
+            zoom = data.zoom ?? 1
+            applyTransform()
+            zoomWidget.sync(zoom)
+            canvasBoard.setBackground(data.canvasBackground ?? '#ffffff')
+            for (const snap of data.blocks ?? []) {
+                if (
+                    snap.type === 'image' &&
+                    typeof snap.data.src === 'string' &&
+                    snap.data.src.startsWith('data:')
+                ) {
+                    const [header, b64] = snap.data.src.split(',')
+                    const mime = header.match(/data:([^;]+)/)?.[1] ?? 'image/png'
+                    const binary = atob(b64)
+                    const bytes = new Uint8Array(binary.length)
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+                    const imageBlob = new Blob([bytes], { type: mime })
+                    addBlock(
+                        blockFromSnapshot({
+                            type: 'image',
+                            data: { ...snap.data, src: URL.createObjectURL(imageBlob), imageBlob },
+                        })
+                    )
+                } else {
+                    addBlock(blockFromSnapshot(snap))
+                }
+            }
+            scheduleSave()
+        })
+    })
+    fileInput.click()
+}
+
+function loadDemo() {
+    for (const b of [...blocks]) removeBlock(b)
+    selectionBox.setBlocks([])
+    panel.show(canvasBoard)
+    history.length = 0
     addBlock(
         new TextBlock(overlay, {
-            id: 'demo',
+            id: crypto.randomUUID(),
             x: 250,
             y: 100,
             rotation: 0,
@@ -683,7 +797,7 @@ void loadBoard().then((loaded) => {
     )
     addBlock(
         new ImageBlock(overlay, {
-            id: 'demo-image',
+            id: crypto.randomUUID(),
             x: 570,
             y: 100,
             width: 320,
@@ -700,4 +814,15 @@ void loadBoard().then((loaded) => {
             shadowY: 4,
         })
     )
+    scheduleSave()
+}
+
+canvasBoard.onNewBoard = newBoard
+canvasBoard.onLoadDemo = loadDemo
+canvasBoard.onExport = exportBoard
+canvasBoard.onImport = importBoard
+
+// Load persisted board, or show demo objects on first visit.
+void loadBoard().then((loaded) => {
+    if (!loaded) loadDemo()
 })

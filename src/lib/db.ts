@@ -20,6 +20,7 @@ export interface BoardRecord {
     panX: number
     panY: number
     zoom: number
+    canvasBackground: string
 }
 
 export const SCHEMA_VERSION = 1

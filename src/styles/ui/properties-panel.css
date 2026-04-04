@@ -246,6 +246,34 @@
     background: var(--color-danger-subtle);
 }
 
+/* Action buttons (export, import, new board) in the canvas appearance section */
+.prop-action-btn {
+    width: 100%;
+    padding: 6px;
+    margin-top: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: none;
+    color: var(--color-text-faint);
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.prop-action-btn:hover {
+    color: var(--color-text);
+    background: var(--color-surface-raised);
+}
+
+.prop-action-btn.is-destructive {
+    color: var(--color-danger);
+    border-color: var(--color-danger-border);
+}
+
+.prop-action-btn.is-destructive:hover {
+    background: var(--color-danger-subtle);
+}
+
 /* Clear button on clearable color fields */
 .prop-row > button {
     font-size: 11px;
