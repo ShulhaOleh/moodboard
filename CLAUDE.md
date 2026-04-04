@@ -51,6 +51,8 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Drag:** Each block fires `onDragMove(dx, dy)` on every drag frame. `main.ts` applies the same delta to all other blocks in `selectedBlocks`, keeping relative positions intact during grouped drag.
 
+**Snap and alignment guides** (`src/snap/SnapEngine.ts`, `src/ui/GuideOverlay.ts`): `computeSnap(dragged, candidates, threshold)` is a pure function — no DOM, no side effects. It returns a snapped position and a `SnapGuide[]` list. Threshold is always `6 / zoom` board units (= 6 screen pixels at any zoom). `BoxBlock` exposes a `snapPosition: ((x, y) => {x, y}) | null` hook; `main.ts` injects a closure that calls `computeSnap` and forwards guides to `GuideOverlay.draw()`. Co-traveling selected blocks naturally receive the post-snap delta because `onDragMove(dx, dy)` propagates the already-corrected delta. `GuideOverlay.el` is appended to `#app` (not `#overlay`) as `position: fixed; inset: 0` so it is never subject to the overlay's CSS transform or stacking context; draw() converts board coordinates to screen coordinates via `panX + bx * zoom`. Guides clear on `mouseup` via `guideOverlay.clear()`.
+
 **History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all four block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` (Ctrl+Z) restores the previous snapshot. `copySelected()` (Ctrl+C/X) writes snapshots to `clipboard[]`. `paste()` (Ctrl+V) reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset.
 
 **Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee.
@@ -99,6 +101,9 @@ src/
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
     Dialog.ts             # styled alert/confirm modals; use instead of native alert/confirm
+    GuideOverlay.ts       # fixed SVG overlay that draws alignment lines and spacing indicators
+  snap/
+    SnapEngine.ts     # pure snap computation: edge/center alignment + equal-spacing detection
   export/
     Exporter.ts       # scene-graph PNG renderer: OffscreenCanvas, per-block draw, text layout
     parseHtmlText.ts  # parses TipTap HTML into StyledParagraph[] for canvas text layout

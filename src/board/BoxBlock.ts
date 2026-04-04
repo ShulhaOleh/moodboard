@@ -16,6 +16,9 @@ export interface BoxBaseData {
 export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
     protected data: D
     protected readonly dragOffset = { x: 0, y: 0 }
+    // Injected by main.ts to apply snap corrections during drag.
+    // Called each frame with the raw proposed position; returns the snapped position.
+    public snapPosition: ((x: number, y: number) => { x: number; y: number }) | null = null
 
     protected get minResizeWidth(): number {
         return 40
@@ -82,12 +85,14 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
                 this.dragOffset.x = startX - this.data.x
                 this.dragOffset.y = startY - this.data.y
             }
-            const newX = e.clientX - this.dragOffset.x
-            const newY = e.clientY - this.dragOffset.y
-            const dx = newX - this.data.x
-            const dy = newY - this.data.y
-            this.data.x = newX
-            this.data.y = newY
+            const rawX = e.clientX - this.dragOffset.x
+            const rawY = e.clientY - this.dragOffset.y
+            // dragOffset always tracks the raw mouse position so snap can't drift the offset.
+            const snapped = this.snapPosition ? this.snapPosition(rawX, rawY) : { x: rawX, y: rawY }
+            const dx = snapped.x - this.data.x
+            const dy = snapped.y - this.data.y
+            this.data.x = snapped.x
+            this.data.y = snapped.y
             this.applyPosition()
             this.onDragMove?.(dx, dy)
             this.onChange?.()

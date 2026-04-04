@@ -15,6 +15,9 @@ import { ZoomWidget } from './ui/ZoomWidget'
 import { db, type PersistedBlock, SCHEMA_VERSION } from './lib/db'
 import { Dialog } from './ui/Dialog'
 import { Exporter } from './export/Exporter'
+import { GuideOverlay } from './ui/GuideOverlay'
+import { computeSnap } from './snap/SnapEngine'
+import { BoxBlock } from './board/BoxBlock'
 
 type BlockSnapshot = PersistedBlock
 
@@ -54,6 +57,9 @@ let panX = 0
 let panY = 0
 let zoom = 1
 let boardName = 'Untitled board'
+
+const guideOverlay = new GuideOverlay()
+app.appendChild(guideOverlay.el)
 
 const selectionBox = new SelectionBox(overlay, () => ({ panX, panY, zoom }))
 
@@ -351,6 +357,28 @@ function addBlock(block: BoardObject) {
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
     block.onChange = () => scheduleSave()
+
+    // Snap guides — only for BoxBlock subclasses (not LineBlock).
+    if (block instanceof BoxBlock) {
+        block.snapPosition = (rawX, rawY) => {
+            const { width, height } = block.getSize()
+            const dragged = { x: rawX, y: rawY, width, height }
+            // Exclude the dragged block and all co-traveling selected blocks from candidates.
+            const candidates = blocks
+                .filter((b) => b instanceof BoxBlock && b !== block && !selectedBlocks.has(b))
+                .map((b) => {
+                    const pos = b.getPosition()
+                    const sz = b.getSize()
+                    return { x: pos.x, y: pos.y, width: sz.width, height: sz.height }
+                })
+            // Threshold of 6 screen pixels, converted to board units so snap strength is
+            // consistent regardless of zoom level.
+            const result = computeSnap(dragged, candidates, 6 / zoom)
+            guideOverlay.draw(result.guides, zoom, panX, panY)
+            return { x: result.x, y: result.y }
+        }
+    }
+
     layersPanel.refresh(blocks, selectedBlocks)
 }
 
@@ -449,8 +477,10 @@ app.addEventListener('drop', (e) => {
     })
 })
 
-// Reset the property-change burst flag and persist state at the end of any mouse interaction.
+// Reset the property-change burst flag, clear snap guides, and persist state at the end of
+// any mouse interaction.
 document.addEventListener('mouseup', () => {
+    guideOverlay.clear()
     propertyChangeActive = false
     scheduleSave()
 })
