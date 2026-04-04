@@ -21,6 +21,7 @@ export interface BoardRecord {
     panY: number
     zoom: number
     canvasBackground: string
+    boardName?: string
 }
 
 export const SCHEMA_VERSION = 1

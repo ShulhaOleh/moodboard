@@ -24,6 +24,10 @@ const panel = new PropertiesPanel(app)
 const layersPanel = new LayersPanel(app)
 // Keep the zoom widget from overlapping the docked layers panel.
 layersPanel.onDockChange = (docked) => app.classList.toggle('layers-panel-docked', docked)
+layersPanel.onNameChange = (name) => {
+    boardName = name
+    scheduleSave()
+}
 app.classList.add('layers-panel-docked') // docked by default
 const canvasBoard = new CanvasBoard(app)
 panel.show(canvasBoard)
@@ -49,6 +53,7 @@ let mode: BoardMode = 'edit'
 let panX = 0
 let panY = 0
 let zoom = 1
+let boardName = 'Untitled board'
 
 const selectionBox = new SelectionBox(overlay, () => ({ panX, panY, zoom }))
 
@@ -117,6 +122,7 @@ async function saveBoard() {
         panY,
         zoom,
         canvasBackground: canvasBoard.getBackground(),
+        boardName,
     })
 }
 
@@ -131,6 +137,8 @@ async function loadBoard(): Promise<boolean> {
     applyTransform()
     zoomWidget.sync(zoom)
     canvasBoard.setBackground(record.canvasBackground ?? '#ffffff')
+    boardName = record.boardName ?? 'Untitled board'
+    layersPanel.setName(boardName)
     for (const snap of record.blocks) {
         if (snap.type === 'image' && snap.data.imageBlob) {
             addBlock(
@@ -683,6 +691,8 @@ async function newBoard() {
     applyTransform()
     zoomWidget.sync(zoom)
     canvasBoard.setBackground('#ffffff')
+    boardName = 'Untitled board'
+    layersPanel.setName(boardName)
     void db.boards.delete('default')
 }
 
@@ -707,6 +717,7 @@ async function exportBoard() {
     )
     const data = {
         schemaVersion: SCHEMA_VERSION,
+        boardName,
         canvasBackground: canvasBoard.getBackground(),
         panX,
         panY,
@@ -772,6 +783,8 @@ function importBoard() {
             applyTransform()
             zoomWidget.sync(zoom)
             canvasBoard.setBackground(data.canvasBackground ?? '#ffffff')
+            boardName = data.boardName ?? 'Untitled board'
+            layersPanel.setName(boardName)
             for (const snap of data.blocks ?? []) {
                 if (
                     snap.type === 'image' &&
@@ -848,6 +861,8 @@ async function loadDemo() {
     selectionBox.setBlocks([])
     panel.show(canvasBoard)
     history.length = 0
+    boardName = 'Untitled board'
+    layersPanel.setName(boardName)
     addBlock(
         new TextBlock(overlay, {
             id: crypto.randomUUID(),

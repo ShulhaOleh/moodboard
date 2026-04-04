@@ -32,11 +32,14 @@ export class LayersPanel {
     onSelectBlock: ((block: BoardObject) => void) | null = null
     // Called when the user reorders rows via drag-and-drop.
     onReorder: ((fromIdx: number, targetIdx: number, edge: 'top' | 'bottom') => void) | null = null
+    // Called when the user renames the board via the name input.
+    onNameChange: ((name: string) => void) | null = null
 
     // Called whenever the panel docks or undocks — main.ts uses it to reposition overlapping widgets.
     onDockChange: ((docked: boolean) => void) | null = null
     private docked = true
     private listEl: HTMLUListElement
+    private nameInput: HTMLInputElement
     private expandBtnEl: HTMLButtonElement
     private snapPreviewEl: HTMLElement
     private cachedBlocks: BoardObject[] = []
@@ -56,6 +59,9 @@ export class LayersPanel {
                 <div class="panel-drag-handle"></div>
             </div>
             <div class="panel-content">
+                <div class="board-name-row">
+                    <input class="board-name-input" type="text" value="Untitled board" spellcheck="false" />
+                </div>
                 <ul class="layers-list"></ul>
             </div>
             <div class="panel-resize-left"></div>
@@ -69,6 +75,24 @@ export class LayersPanel {
         `
 
         this.listEl = this.el.querySelector('.layers-list') as HTMLUListElement
+        this.nameInput = this.el.querySelector('.board-name-input') as HTMLInputElement
+
+        let prevName = this.nameInput.value
+        this.nameInput.addEventListener('focus', () => {
+            prevName = this.nameInput.value
+        })
+        this.nameInput.addEventListener('blur', () => {
+            const val = this.nameInput.value.trim()
+            if (val && val !== prevName) this.onNameChange?.(val)
+            else if (!val) this.nameInput.value = prevName
+        })
+        this.nameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.nameInput.blur()
+            if (e.key === 'Escape') {
+                this.nameInput.value = prevName
+                this.nameInput.blur()
+            }
+        })
 
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'F2') return
@@ -280,6 +304,10 @@ export class LayersPanel {
         })
 
         return row
+    }
+
+    setName(name: string) {
+        this.nameInput.value = name
     }
 
     private startInlineEdit(row: HTMLLIElement, block: BoardObject) {
