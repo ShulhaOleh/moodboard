@@ -201,6 +201,15 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
         }
     }
 
+    setFileProperty(key: string, file: File) {
+        if (key !== 'src') return
+        this.onBeforePropertyChange?.()
+        if (this.data.src.startsWith('blob:')) URL.revokeObjectURL(this.data.src)
+        this.data.imageBlob = file
+        this.data.src = URL.createObjectURL(file)
+        this.applyAppearance()
+    }
+
     getData(): Readonly<ImageBlockData> {
         return { ...this.data }
     }

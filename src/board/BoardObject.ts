@@ -80,6 +80,8 @@ export interface BoardObject {
     // Returns appearance fields specific to this object type.
     getAppearanceFields(): PropertyField[]
     setAppearanceProperty(key: string, value: string | number): void
+    // Optional: called when a file is picked via allowFilePick — lets the block store the raw File.
+    setFileProperty?(key: string, file: File): void
     // Controls visual selection state without firing callbacks — used by multi-select.
     markSelected(): void
     markDeselected(): void

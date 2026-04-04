@@ -321,9 +321,14 @@ export class PropertiesPanel {
                     fileInput.addEventListener('change', () => {
                         const file = fileInput.files?.[0]
                         if (!file) return
-                        const url = URL.createObjectURL(file)
-                        input.value = url
-                        this.object?.setAppearanceProperty(field.key, url)
+                        if (this.object?.setFileProperty) {
+                            input.value = file.name
+                            this.object.setFileProperty(field.key, file)
+                        } else {
+                            const url = URL.createObjectURL(file)
+                            input.value = url
+                            this.object?.setAppearanceProperty(field.key, url)
+                        }
                     })
                     row.appendChild(browseBtn)
                     row.appendChild(fileInput)

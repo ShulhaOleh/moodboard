@@ -122,12 +122,7 @@ async function saveBoard() {
 async function loadBoard(): Promise<boolean> {
     const record = await db.boards.get('default')
     if (!record) return false
-    if (record.schemaVersion !== SCHEMA_VERSION) {
-        console.warn(
-            `Board schema v${record.schemaVersion} does not match current v${SCHEMA_VERSION} — skipping load`
-        )
-        return false
-    }
+    if (record.schemaVersion !== SCHEMA_VERSION) return false
     panX = record.panX
     panY = record.panY
     zoom = record.zoom
@@ -710,7 +705,26 @@ async function exportBoard() {
         zoom,
         blocks: blockData,
     }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const json = JSON.stringify(data, null, 2)
+    if ('showSaveFilePicker' in window) {
+        try {
+            const showSaveFilePicker = window.showSaveFilePicker as (
+                opts: object
+            ) => Promise<FileSystemFileHandle>
+            const handle = await showSaveFilePicker({
+                suggestedName: 'moodboard.json',
+                types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }],
+            })
+            const writable = await handle.createWritable()
+            await writable.write(json)
+            await writable.close()
+            return
+        } catch (err) {
+            // User cancelled — do nothing
+            if ((err as DOMException).name === 'AbortError') return
+        }
+    }
+    const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -777,6 +791,8 @@ function importBoard() {
 }
 
 function loadDemo() {
+    if (blocks.length > 0 && !window.confirm('Load demo? This will overwrite the current board.'))
+        return
     for (const b of [...blocks]) removeBlock(b)
     selectionBox.setBlocks([])
     panel.show(canvasBoard)
