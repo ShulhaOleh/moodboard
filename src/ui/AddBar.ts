@@ -170,7 +170,6 @@ export class AddBar {
                 this.selectedShape = shape
                 this.updateShapeTrigger()
                 this.closeShapeDropdown()
-                this.onAddShape?.(shape)
             })
             this.shapeDropdownEl.appendChild(option)
         }

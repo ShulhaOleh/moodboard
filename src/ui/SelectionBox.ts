@@ -68,6 +68,7 @@ export class SelectionBox {
     // Call after any drag frame so the outline tracks the group.
     update() {
         if (this.blocks.length === 0) return
+        if (this.blocks.length === 1 && this.blocks[0] instanceof LineBlock) return
         this.computeAABB()
         this.applyLayout()
     }
