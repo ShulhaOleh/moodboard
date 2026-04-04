@@ -11,6 +11,7 @@ import { AddBar, BoardMode } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
+import { ZoomWidget } from './ui/ZoomWidget'
 
 type BlockSnapshot =
     | { type: 'text'; data: TextBlockData }
@@ -34,98 +35,8 @@ overlay.id = 'overlay'
 overlay.className = 'absolute inset-0 pointer-events-none'
 app.appendChild(overlay)
 
-const zoomWidget = document.createElement('div')
-zoomWidget.id = 'zoom-widget'
-
-const zoomSlider = document.createElement('input')
-zoomSlider.type = 'range'
-zoomSlider.min = '10'
-zoomSlider.max = '400'
-zoomSlider.step = '1'
-zoomSlider.value = '100'
-zoomSlider.addEventListener('input', () => {
-    const newZoom = Number(zoomSlider.value) / 100
-    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
-    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
-    zoom = newZoom
-    applyTransform()
-    zoomLabel.value = `${Math.round(zoom * 100)}%`
-})
-
-const zoomLabel = document.createElement('input')
-zoomLabel.id = 'zoom-label'
-zoomLabel.type = 'text'
-zoomLabel.value = '100%'
-zoomLabel.addEventListener('focus', () => {
-    zoomLabel.value = String(Math.round(zoom * 100))
-    zoomLabel.select()
-})
-zoomLabel.addEventListener('blur', () => {
-    const raw = parseInt(zoomLabel.value, 10)
-    const pct = isNaN(raw) ? Math.round(zoom * 100) : Math.min(400, Math.max(10, raw))
-    const newZoom = pct / 100
-    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
-    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
-    zoom = newZoom
-    applyTransform()
-    zoomLabel.value = `${Math.round(zoom * 100)}%`
-    zoomSlider.value = String(Math.round(zoom * 100))
-})
-zoomLabel.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') zoomLabel.blur()
-    if (e.key === 'Escape') {
-        zoomLabel.value = `${Math.round(zoom * 100)}%`
-        zoomLabel.blur()
-    }
-})
-
-function stepZoom(delta: number) {
-    const pct = Math.min(400, Math.max(10, Math.round(zoom * 100) + delta))
-    const newZoom = pct / 100
-    panX = window.innerWidth / 2 - (window.innerWidth / 2 - panX) * (newZoom / zoom)
-    panY = window.innerHeight / 2 - (window.innerHeight / 2 - panY) * (newZoom / zoom)
-    zoom = newZoom
-    applyTransform()
-    zoomLabel.value = `${Math.round(zoom * 100)}%`
-    zoomSlider.value = String(Math.round(zoom * 100))
-}
-
-function bindZoomButton(btn: HTMLButtonElement, delta: number) {
-    let timeout: ReturnType<typeof setTimeout> | null = null
-    let interval: ReturnType<typeof setInterval> | null = null
-    btn.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-        stepZoom(delta)
-        timeout = setTimeout(() => {
-            interval = setInterval(() => stepZoom(delta), 80)
-        }, 500)
-    })
-    const stop = () => {
-        if (timeout !== null) {
-            clearTimeout(timeout)
-            timeout = null
-        }
-        if (interval !== null) {
-            clearInterval(interval)
-            interval = null
-        }
-    }
-    btn.addEventListener('mouseup', stop)
-    btn.addEventListener('mouseleave', stop)
-}
-
-const zoomMinus = document.createElement('button')
-zoomMinus.id = 'zoom-minus'
-zoomMinus.textContent = '−'
-bindZoomButton(zoomMinus, -1)
-
-const zoomPlus = document.createElement('button')
-zoomPlus.id = 'zoom-plus'
-zoomPlus.textContent = '+'
-bindZoomButton(zoomPlus, +1)
-
-zoomWidget.append(zoomMinus, zoomLabel, zoomPlus, zoomSlider)
-app.appendChild(zoomWidget)
+const zoomWidget = new ZoomWidget(() => ({ panX, panY, zoom }))
+app.appendChild(zoomWidget.el)
 
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
@@ -145,6 +56,13 @@ const selectionBox = new SelectionBox(overlay, () => ({ panX, panY, zoom }))
 function applyTransform() {
     overlay.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`
     overlay.style.transformOrigin = '0 0'
+}
+
+zoomWidget.onZoomChange = (newZoom, newPanX, newPanY) => {
+    zoom = newZoom
+    panX = newPanX
+    panY = newPanY
+    applyTransform()
 }
 
 function snapshotBlock(block: BoardObject): BlockSnapshot {
@@ -280,8 +198,7 @@ document.addEventListener(
             panY = e.clientY - (e.clientY - panY) * (newZoom / zoom)
             zoom = newZoom
             applyTransform()
-            zoomLabel.value = `${Math.round(zoom * 100)}%`
-            zoomSlider.value = String(Math.round(zoom * 100))
+            zoomWidget.sync(zoom)
         } else if (e.shiftKey) {
             panX -= e.deltaY
             applyTransform()
