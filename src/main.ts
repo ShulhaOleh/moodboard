@@ -725,29 +725,11 @@ async function exportBoard() {
         blocks: blockData,
     }
     const json = JSON.stringify(data, null, 2)
-    if ('showSaveFilePicker' in window) {
-        try {
-            const showSaveFilePicker = window.showSaveFilePicker as (
-                opts: object
-            ) => Promise<FileSystemFileHandle>
-            const handle = await showSaveFilePicker({
-                suggestedName: 'moodboard.json',
-                types: [{ description: 'JSON file', accept: { 'application/json': ['.json'] } }],
-            })
-            const writable = await handle.createWritable()
-            await writable.write(json)
-            await writable.close()
-            return
-        } catch (err) {
-            // User cancelled — do nothing
-            if ((err as DOMException).name === 'AbortError') return
-        }
-    }
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'moodboard.json'
+    a.download = `${boardName}.json`
     a.click()
     URL.revokeObjectURL(url)
 }
@@ -759,7 +741,7 @@ function importBoard() {
     fileInput.addEventListener('change', () => {
         const file = fileInput.files?.[0]
         if (!file) return
-        void file.text().then((text) => {
+        void file.text().then(async (text) => {
             let data: ReturnType<typeof JSON.parse>
             try {
                 data = JSON.parse(text)
@@ -773,6 +755,14 @@ function importBoard() {
                 )
                 return
             }
+            if (
+                blocks.length > 0 &&
+                !(await Dialog.confirm('Import will overwrite the current board. Continue?', {
+                    confirmLabel: 'Import',
+                    destructive: true,
+                }))
+            )
+                return
             for (const b of [...blocks]) removeBlock(b)
             selectionBox.setBlocks([])
             panel.show(canvasBoard)
@@ -822,28 +812,10 @@ async function exportBoardPng() {
         return
     }
 
-    if ('showSaveFilePicker' in window) {
-        try {
-            const showSaveFilePicker = window.showSaveFilePicker as (
-                opts: object
-            ) => Promise<FileSystemFileHandle>
-            const handle = await showSaveFilePicker({
-                suggestedName: 'moodboard.png',
-                types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
-            })
-            const writable = await handle.createWritable()
-            await writable.write(blob)
-            await writable.close()
-            return
-        } catch (err) {
-            if ((err as DOMException).name === 'AbortError') return
-        }
-    }
-
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'moodboard.png'
+    a.download = `${boardName}.png`
     a.click()
     URL.revokeObjectURL(url)
 }
