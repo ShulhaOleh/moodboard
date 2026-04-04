@@ -13,6 +13,7 @@ import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
 import { ZoomWidget } from './ui/ZoomWidget'
 import { db, type PersistedBlock, SCHEMA_VERSION } from './lib/db'
+import { Dialog } from './ui/Dialog'
 
 type BlockSnapshot = PersistedBlock
 
@@ -663,8 +664,14 @@ addBar.onAddShape = (shape) => {
 
 // ── Board-level actions ───────────────────────────────────────────────────────
 
-function newBoard() {
-    if (!window.confirm('Clear the board and start fresh? This cannot be undone.')) return
+async function newBoard() {
+    if (
+        !(await Dialog.confirm('Clear the board and start fresh? This cannot be undone.', {
+            confirmLabel: 'Clear board',
+            destructive: true,
+        }))
+    )
+        return
     for (const b of [...blocks]) removeBlock(b)
     selectionBox.setBlocks([])
     panel.show(canvasBoard)
@@ -745,11 +752,13 @@ function importBoard() {
             try {
                 data = JSON.parse(text)
             } catch {
-                alert('Invalid JSON file.')
+                void Dialog.alert('Invalid JSON file.')
                 return
             }
             if (data.schemaVersion !== SCHEMA_VERSION) {
-                alert(`Cannot import: schema version ${data.schemaVersion} is not supported.`)
+                void Dialog.alert(
+                    `Cannot import: schema version ${data.schemaVersion} is not supported.`
+                )
                 return
             }
             for (const b of [...blocks]) removeBlock(b)
@@ -790,8 +799,14 @@ function importBoard() {
     fileInput.click()
 }
 
-function loadDemo() {
-    if (blocks.length > 0 && !window.confirm('Load demo? This will overwrite the current board.'))
+async function loadDemo() {
+    if (
+        blocks.length > 0 &&
+        !(await Dialog.confirm('Load demo? This will overwrite the current board.', {
+            confirmLabel: 'Load demo',
+            destructive: true,
+        }))
+    )
         return
     for (const b of [...blocks]) removeBlock(b)
     selectionBox.setBlocks([])

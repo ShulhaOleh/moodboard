@@ -21,7 +21,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Key dependencies:**
 - **TipTap** (`@tiptap/core`, `starter-kit`, `extension-text-style`, `extension-color`, `extension-underline`, `extension-text-align`) — rich text editing inside text blocks. Content is stored as HTML strings.
-- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`.
+- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`. Schema is versioned via `SCHEMA_VERSION` in `src/lib/db.ts` — bump it and add a migration branch in `loadBoard()` in `main.ts` whenever `PersistedBlock` changes.
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
 **Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget in the bottom-left mirrors the scroll-wheel zoom — it has `−`/`+` buttons (click or hold to repeat with a 500 ms initial delay), a clickable percentage label that accepts direct numeric input (Enter/Escape to confirm/cancel), and a range slider. Its `left` position is driven by `--layers-panel-offset` CSS variable, updated by `LayersPanel.updateOffset()` whenever the panel docks, undocks, collapses, or resizes.
@@ -59,6 +59,8 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Layers panel** (`src/ui/LayersPanel.ts`): Left-docked panel listing all blocks in z-order (last `blocks[]` entry = frontmost = top row). Supports drag-to-reorder (HTML5 DnD), per-row visibility and lock toggles, and inline name editing (double-click or F2). Mirrors the dock/undock/collapse/resize behavior of `PropertiesPanel`. `onReorder` callback in `main.ts` splices `blocks[]` then calls `overlay.appendChild` on every block to re-sync DOM order. `refresh()` rebuilds all rows; `notifySelectionChanged()` only toggles `is-selected` classes. The panel uses `data-array-index` on each row to map between the reversed visual order and the actual array index.
 
+**Dialogs:** Never use native `alert()` or `confirm()`. Use `Dialog.alert(message)` and `Dialog.confirm(message, { confirmLabel?, destructive? })` from `src/ui/Dialog.ts` — both return Promises and render styled modal popups.
+
 **Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag.
 
 **Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). `imageBlob?: Blob` holds the raw binary — stored in IndexedDB via structured clone and used to recreate `src` on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL. Images enter the board either by drag-and-drop onto `#app` (drop position converted from client coords using `(clientX - panX) / zoom`) or by browsing via the Source field in `PropertiesPanel`. JSON export converts blobs to base64 data URLs so the file is fully self-contained; import decodes them back to `Blob`.
@@ -87,8 +89,10 @@ src/
     ZoomWidget.ts         # zoom −/+ buttons, clickable % label, range slider; sync(zoom) for external updates
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
+    Dialog.ts             # styled alert/confirm modals; use instead of native alert/confirm
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
+    db.ts             # Dexie schema, PersistedBlock union, SCHEMA_VERSION
   main.ts             # board state: blocks[], selectedBlocks, history, clipboard, pan, mode
   style.css           # entry point — @imports Tailwind and all component stylesheets
   styles/
@@ -110,6 +114,7 @@ src/
       color-picker.css
       font-picker.css
       selection-box.css
+      dialog.css
 ```
 
 ## Code Style
