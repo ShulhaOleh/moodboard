@@ -21,14 +21,14 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Key dependencies:**
 - **TipTap** (`@tiptap/core`, `starter-kit`, `extension-text-style`, `extension-color`, `extension-underline`, `extension-text-align`) — rich text editing inside text blocks. Content is stored as HTML strings.
-- **Dexie** — IndexedDB wrapper for local persistence (not yet wired up).
+- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`.
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
 **Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget in the bottom-left mirrors the scroll-wheel zoom — it has `−`/`+` buttons (click or hold to repeat with a 500 ms initial delay), a clickable percentage label that accepts direct numeric input (Enter/Escape to confirm/cancel), and a range slider. Its `left` position is driven by `--layers-panel-offset` CSS variable, updated by `LayersPanel.updateOffset()` whenever the panel docks, undocks, collapses, or resizes.
 
 **Selection indicator constraint:** `#app` has `overflow: hidden`, which clips CSS `outline` and any `box-shadow` that bleeds outside the element's own bounds if the element sits at the viewport edge. Selection indicators on blocks must use `box-shadow: 0 0 0 1px` (not `outline`) and must not rely on anything rendering outside `#app`.
 
-**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`, `text`, `section`. Optional flags: `omitCommonProps` hides Position/Size/Rotation fields; `hideDelete` hides the Delete button; `hideName` hides the name field — all three used by `CanvasBoard`. Beyond geometry and appearance, the interface also carries:
+**BoardObject interface** (`src/board/BoardObject.ts`): Every board object implements this. `PropertiesPanel` is fully generic — it calls `getAppearanceFields()` to discover what controls to render and `setAppearanceProperty()` to apply changes. Adding a new block type requires no changes to `PropertiesPanel`. `PropertyField` is a discriminated union; current types: `number`, `slider`, `color`, `font`, `select`, `text`, `section`, `button`. The `text` type accepts `allowFilePick?: boolean`, which adds a browse button that calls the optional `setFileProperty?(key, file)` method on the block (used by `ImageBlock` to store the raw `File` as `imageBlob`). The `button` type triggers `setAppearanceProperty(key, '')` on click — used by `CanvasBoard` for board-level actions (export, import, new board, load demo). Optional flags: `omitCommonProps` hides Position/Size/Rotation fields; `hideDelete` hides the Delete button; `hideName` hides the name field — all three used by `CanvasBoard`. Beyond geometry and appearance, the interface also carries:
 - `onDragStart` — fired once when a drag/resize/rotate gesture commits (threshold passed or handle pressed); used by `main.ts` to push a history snapshot.
 - `onBeforePropertyChange` — fired before the first setter call per mouse interaction burst; `main.ts` uses a `propertyChangeActive` flag (reset on `mouseup`) to push exactly one history entry per property-panel drag.
 - `onLayerChange` — fired when `visible`, `locked`, or `name` changes; `LayersPanel` uses it to update the row without rebuilding the list.
@@ -61,7 +61,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Font loading:** `src/lib/fonts.ts` exports a curated `FONTS` list and `loadFont(family)`, which lazily injects a Google Fonts `<link>` tag.
 
-**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). When Dexie persistence is wired up, store the Blob (`imageBlob` field) and recreate the object URL on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL. Drag-and-drop of image files from the OS onto `#app` is handled in `main.ts` — drop position is converted from client coords using `(clientX - panX) / zoom`.
+**Image storage:** `ImageBlockData.src` is a runtime URL (object URL from a Blob, or a static asset path). `imageBlob?: Blob` holds the raw binary — stored in IndexedDB via structured clone and used to recreate `src` on load. Call `URL.revokeObjectURL` via `ImageBlock.destroy()` when removing a block whose src is a blob URL. Images enter the board either by drag-and-drop onto `#app` (drop position converted from client coords using `(clientX - panX) / zoom`) or by browsing via the Source field in `PropertiesPanel`. JSON export converts blobs to base64 data URLs so the file is fully self-contained; import decodes them back to `Blob`.
 
 **Static assets:** Place images in `public/assets/`. Vite serves them at `/moodboard/assets/<filename>` (base path is `/moodboard/`).
 
@@ -81,9 +81,10 @@ src/
   ui/
     AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
     LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
-    SelectionBox.ts       # AABB outline + 4-corner resize + rotate handles (single and multi)
+    SelectionBox.ts       # AABB outline + corner/side resize handles + rotate handle (single and multi)
     TextFormatToolbar.ts  # floating toolbar shown on text selection
     PropertiesPanel.ts    # right-docked side panel; generic over BoardObject
+    ZoomWidget.ts         # zoom −/+ buttons, clickable % label, range slider; sync(zoom) for external updates
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
   lib/
@@ -93,7 +94,7 @@ src/
   styles/
     tokens.css        # :root color variables
     base.css          # * reset + html/body
-    board.css         # zoom widget, marquee, drag-over, explore-mode
+    board.css         # marquee, drag-over, explore-mode
     panel.css         # shared panel shell (header, drag handle, resize handles, buttons)
     board/
       line-block.css
@@ -105,6 +106,7 @@ src/
       properties-panel.css
       layers-panel.css
       text-format-toolbar.css
+      zoom-widget.css
       color-picker.css
       font-picker.css
       selection-box.css
@@ -116,6 +118,7 @@ src/
 - No semicolons
 - TypeScript strict mode — `noUnusedLocals`, `noUnusedParameters`, `noImplicitReturns` are all errors
 - Pre-commit hook (husky + lint-staged) runs Prettier then ESLint on staged `src/**/*.ts` files
+- `no-console` is enforced — do not use `console.log/warn/error`
 
 ## Comments
 
