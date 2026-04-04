@@ -1,10 +1,10 @@
 // App entry point — initializes the board overlay and wires up UI components.
 
 import './style.css'
-import { TextBlock, TextBlockData } from './board/TextBlock'
-import { ImageBlock, ImageBlockData } from './board/ImageBlock'
-import { ShapeBlock, ShapeBlockData } from './board/ShapeBlock'
-import { LineBlock, LineBlockData } from './board/LineBlock'
+import { TextBlock } from './board/TextBlock'
+import { ImageBlock } from './board/ImageBlock'
+import { ShapeBlock } from './board/ShapeBlock'
+import { LineBlock } from './board/LineBlock'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { LayersPanel } from './ui/LayersPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
@@ -12,12 +12,9 @@ import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
 import { ZoomWidget } from './ui/ZoomWidget'
+import { db, type PersistedBlock, SCHEMA_VERSION } from './lib/db'
 
-type BlockSnapshot =
-    | { type: 'text'; data: TextBlockData }
-    | { type: 'image'; data: ImageBlockData }
-    | { type: 'shape'; data: ShapeBlockData }
-    | { type: 'line'; data: LineBlockData }
+type BlockSnapshot = PersistedBlock
 
 const app = document.getElementById('app')!
 
@@ -63,6 +60,91 @@ zoomWidget.onZoomChange = (newZoom, newPanX, newPanY) => {
     panX = newPanX
     panY = newPanY
     applyTransform()
+    scheduleSave()
+}
+
+// ── Persistence ───────────────────────────────────────────────────────────────
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingSave = false
+
+function scheduleSave() {
+    pendingSave = true
+    if (saveTimer !== null) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+        saveTimer = null
+        pendingSave = false
+        void saveBoard()
+    }, 1500)
+}
+
+// Cancels the debounce and saves immediately — called on every browser exit path.
+function flushSave() {
+    if (!pendingSave) return
+    if (saveTimer !== null) {
+        clearTimeout(saveTimer)
+        saveTimer = null
+    }
+    pendingSave = false
+    void saveBoard()
+}
+
+// visibilitychange fires earliest (tab switch, minimize, close) — best chance for IndexedDB to finish.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushSave()
+})
+// pagehide covers mobile Safari and bfcache scenarios where beforeunload doesn't fire.
+window.addEventListener('pagehide', flushSave)
+// beforeunload as the final safety net.
+window.addEventListener('beforeunload', flushSave)
+
+async function saveBoard() {
+    const persistedBlocks: BlockSnapshot[] = blocks.map((block) => {
+        const snap = snapshotBlock(block)
+        // Blob URLs are ephemeral — strip them and let the stored imageBlob reconstruct on load.
+        if (snap.type === 'image' && snap.data.src.startsWith('blob:')) {
+            return { type: 'image', data: { ...snap.data, src: '' } }
+        }
+        return snap
+    })
+    await db.boards.put({
+        id: 'default',
+        schemaVersion: SCHEMA_VERSION,
+        blocks: persistedBlocks,
+        panX,
+        panY,
+        zoom,
+    })
+}
+
+// Returns true if saved data was found and restored.
+async function loadBoard(): Promise<boolean> {
+    const record = await db.boards.get('default')
+    if (!record) return false
+    if (record.schemaVersion !== SCHEMA_VERSION) {
+        console.warn(
+            `Board schema v${record.schemaVersion} does not match current v${SCHEMA_VERSION} — skipping load`
+        )
+        return false
+    }
+    panX = record.panX
+    panY = record.panY
+    zoom = record.zoom
+    applyTransform()
+    zoomWidget.sync(zoom)
+    for (const snap of record.blocks) {
+        if (snap.type === 'image' && snap.data.imageBlob) {
+            addBlock(
+                blockFromSnapshot({
+                    type: 'image',
+                    data: { ...snap.data, src: URL.createObjectURL(snap.data.imageBlob) },
+                })
+            )
+        } else {
+            addBlock(blockFromSnapshot(snap))
+        }
+    }
+    return true
 }
 
 function snapshotBlock(block: BoardObject): BlockSnapshot {
@@ -96,6 +178,7 @@ function undo() {
     for (const b of [...blocks]) removeBlock(b)
     for (const snap of state) addBlock(blockFromSnapshot(snap))
     selectionBox.setBlocks([])
+    scheduleSave()
 }
 
 function copySelected() {
@@ -173,6 +256,7 @@ function paste() {
     else if (selectedBlocks.size > 1) panel.show(canvasBoard)
     selectionBox.setBlocks([...selectedBlocks])
     layersPanel.notifySelectionChanged(selectedBlocks)
+    scheduleSave()
 }
 
 addBar.onModeChange = (newMode) => {
@@ -207,6 +291,7 @@ document.addEventListener(
             panY -= e.deltaY
             applyTransform()
         }
+        scheduleSave()
     },
     { passive: false }
 )
@@ -258,6 +343,7 @@ function addBlock(block: BoardObject) {
         selectionBox.setBlocks([])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
+    block.onChange = () => scheduleSave()
     layersPanel.refresh(blocks, selectedBlocks)
 }
 
@@ -277,6 +363,7 @@ function deleteSelected() {
     const toDelete = [...selectedBlocks]
     toDelete.forEach((b) => removeBlock(b))
     selectionBox.setBlocks([])
+    scheduleSave()
 }
 
 panel.onDelete = () => deleteSelected()
@@ -309,6 +396,7 @@ layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
     // Reorder DOM to match the new array order — last element is topmost (frontmost).
     blocks.forEach((b) => overlay.appendChild(b.el))
     layersPanel.refresh(blocks, selectedBlocks)
+    scheduleSave()
 }
 
 // Drag-and-drop images from the OS onto the board.
@@ -354,9 +442,10 @@ app.addEventListener('drop', (e) => {
     })
 })
 
-// Reset the property-change burst flag at the end of any mouse interaction.
+// Reset the property-change burst flag and persist state at the end of any mouse interaction.
 document.addEventListener('mouseup', () => {
     propertyChangeActive = false
+    scheduleSave()
 })
 
 // Keyboard shortcuts: delete, undo, copy, cut, paste.
@@ -575,38 +664,40 @@ addBar.onAddShape = (shape) => {
     )
 }
 
-// Demo objects
-addBlock(
-    new TextBlock(overlay, {
-        id: 'demo',
-        x: 250,
-        y: 100,
-        rotation: 0,
-        content:
-            '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
-        fontSize: 16,
-        color: '#333333',
-        fontFamily: 'Inter',
-        textAlign: 'left',
-    })
-)
-
-addBlock(
-    new ImageBlock(overlay, {
-        id: 'demo-image',
-        x: 570,
-        y: 100,
-        width: 320,
-        height: 240,
-        rotation: 0,
-        src: '/moodboard/assets/sample.jpg',
-        objectFit: 'contain',
-        opacity: 100,
-        borderRadius: 6,
-        background: 'transparent',
-        shadowColor: '',
-        shadowBlur: 20,
-        shadowX: 0,
-        shadowY: 4,
-    })
-)
+// Load persisted board, or show demo objects on first visit.
+void loadBoard().then((loaded) => {
+    if (loaded) return
+    addBlock(
+        new TextBlock(overlay, {
+            id: 'demo',
+            x: 250,
+            y: 100,
+            rotation: 0,
+            content:
+                '<h1>Hello moodboard</h1><p>Double-click to <strong>edit</strong>. Select text to format it.</p><ul><li>item one</li><li>item two</li></ul>',
+            fontSize: 16,
+            color: '#333333',
+            fontFamily: 'Inter',
+            textAlign: 'left',
+        })
+    )
+    addBlock(
+        new ImageBlock(overlay, {
+            id: 'demo-image',
+            x: 570,
+            y: 100,
+            width: 320,
+            height: 240,
+            rotation: 0,
+            src: '/moodboard/assets/sample.jpg',
+            objectFit: 'contain',
+            opacity: 100,
+            borderRadius: 6,
+            background: 'transparent',
+            shadowColor: '',
+            shadowBlur: 20,
+            shadowX: 0,
+            shadowY: 4,
+        })
+    )
+})
