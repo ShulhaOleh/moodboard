@@ -67,6 +67,15 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Static assets:** Place images in `public/assets/`. Vite serves them at `/moodboard/assets/<filename>` (base path is `/moodboard/`).
 
+**PNG export** (`src/export/`): `Exporter.exportToPng(blocks, background, scale)` renders the board to an `OffscreenCanvas` (falls back to `HTMLCanvasElement`) by traversing each visible block's data model — no DOM capture. Key implementation details:
+- `applyBoxTransform` mirrors CSS `transform-origin: center`: `translate(cx,cy) → rotate → translate(-w/2,-h/2)`.
+- `buildShapePath` constructs paths in block-local pixel space (0..w, 0..h), not the SVG 0-100 viewBox, so `ctx.lineWidth = strokeWidth` directly (no viewBox scale factor).
+- Arrow marker scale: `markerScale = (strokeWidth × markerWidth) / 10`, matching the SVG `markerUnits="strokeWidth"` definitions in `LineBlock`.
+- ImageBlock transparent regions: the boardBg overdraw inside the clip is only applied when a shadow was actually drawn (to erase the opaque shadow-source fill). Skipping it when there is no shadow preserves the block's transparent areas so underlying blocks remain visible.
+- Font loading: `document.fonts.load("16px family")` is called explicitly per font family alongside `document.fonts.ready` — `document.fonts.ready` alone does not guarantee dynamically-injected Google Fonts `<link>` tags have resolved.
+- `runFont()` omits "normal" style/weight tokens from the CSS font shorthand to avoid parser edge cases in some canvas implementations.
+- `parseHtmlText` converts TipTap HTML into `StyledParagraph[]` (block elements → paragraphs, inline elements → styled runs) for `wrapRuns` / `renderParagraphs` to lay out. `wrapRuns` stores each token separately; `drawTextRun` must receive `{ ...seg.run, text: seg.text }` — passing `seg.run` directly would render the entire run string at every token position.
+
 **Module structure:**
 ```
 src/
@@ -90,6 +99,9 @@ src/
     ColorPicker.ts        # swatch + popover with color input and alpha slider
     FontPicker.ts         # searchable Google Fonts dropdown
     Dialog.ts             # styled alert/confirm modals; use instead of native alert/confirm
+  export/
+    Exporter.ts       # scene-graph PNG renderer: OffscreenCanvas, per-block draw, text layout
+    parseHtmlText.ts  # parses TipTap HTML into StyledParagraph[] for canvas text layout
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
     db.ts             # Dexie schema, PersistedBlock union, SCHEMA_VERSION

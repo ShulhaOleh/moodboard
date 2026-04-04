@@ -13,6 +13,7 @@ export class CanvasBoard implements BoardObject {
     onNewBoard: (() => void) | null = null
     onLoadDemo: (() => void) | null = null
     onExport: (() => void) | null = null
+    onExportPng: (() => void) | null = null
     onImport: (() => void) | null = null
     onDragMove = null
     onDragStart = null
@@ -72,6 +73,7 @@ export class CanvasBoard implements BoardObject {
             },
             { type: 'section', label: 'Board' },
             { type: 'button', key: 'export', label: 'Export JSON' },
+            { type: 'button', key: 'exportPng', label: 'Export PNG' },
             { type: 'button', key: 'import', label: 'Import JSON' },
             { type: 'button', key: 'loadDemo', label: 'Load demo' },
             { type: 'button', key: 'newBoard', label: 'New board', destructive: true },
@@ -87,6 +89,7 @@ export class CanvasBoard implements BoardObject {
         if (key === 'newBoard') this.onNewBoard?.()
         if (key === 'loadDemo') this.onLoadDemo?.()
         if (key === 'export') this.onExport?.()
+        if (key === 'exportPng') this.onExportPng?.()
         if (key === 'import') this.onImport?.()
     }
 }

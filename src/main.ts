@@ -14,6 +14,7 @@ import { SelectionBox } from './ui/SelectionBox'
 import { ZoomWidget } from './ui/ZoomWidget'
 import { db, type PersistedBlock, SCHEMA_VERSION } from './lib/db'
 import { Dialog } from './ui/Dialog'
+import { Exporter } from './export/Exporter'
 
 type BlockSnapshot = PersistedBlock
 
@@ -799,6 +800,41 @@ function importBoard() {
     fileInput.click()
 }
 
+async function exportBoardPng() {
+    let blob: Blob
+    try {
+        blob = await exporter.exportToPng(blocks, canvasBoard.getBackground(), 2)
+    } catch (err) {
+        void Dialog.alert(err instanceof Error ? err.message : 'Export failed.')
+        return
+    }
+
+    if ('showSaveFilePicker' in window) {
+        try {
+            const showSaveFilePicker = window.showSaveFilePicker as (
+                opts: object
+            ) => Promise<FileSystemFileHandle>
+            const handle = await showSaveFilePicker({
+                suggestedName: 'moodboard.png',
+                types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }],
+            })
+            const writable = await handle.createWritable()
+            await writable.write(blob)
+            await writable.close()
+            return
+        } catch (err) {
+            if ((err as DOMException).name === 'AbortError') return
+        }
+    }
+
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'moodboard.png'
+    a.click()
+    URL.revokeObjectURL(url)
+}
+
 async function loadDemo() {
     if (
         blocks.length > 0 &&
@@ -852,6 +888,9 @@ canvasBoard.onNewBoard = newBoard
 canvasBoard.onLoadDemo = loadDemo
 canvasBoard.onExport = exportBoard
 canvasBoard.onImport = importBoard
+canvasBoard.onExportPng = exportBoardPng
+
+const exporter = new Exporter()
 
 // Load persisted board, or show demo objects on first visit.
 void loadBoard().then((loaded) => {
