@@ -1,76 +1,89 @@
-/* Design-token definitions — all UI colors.
+/* Design-token definitions — all UI colors and shadows.
    Light values on :root; dark overrides on [data-theme="dark"].
    applyTheme() in settings.ts sets the attribute; index.html sets it synchronously to avoid flash. */
 
 :root {
-    /* Accent — violet */
-    --color-accent:        #8b5cf6;
-    --color-accent-hover:  #7c3aed;
-    --color-accent-subtle: #f5f3ff;
-    --color-accent-border: #ddd6fe;
-    /* Pre-multiplied alpha variants used in backgrounds and shadows */
-    --color-accent-a06: rgba(139, 92, 246, 0.06);
-    --color-accent-a08: rgba(139, 92, 246, 0.08);
-    --color-accent-a12: rgba(139, 92, 246, 0.12);
-    --color-accent-a25: rgba(139, 92, 246, 0.25);
+    /* Accent — Dracula purple, darkened for readability on light backgrounds */
+    --color-accent:        #7c3aed;
+    --color-accent-hover:  #6d28d9;
+    --color-accent-subtle: #ede9fe;
+    --color-accent-border: #c4b5fd;
+    --color-accent-a06: rgba(124, 58, 237, 0.06);
+    --color-accent-a08: rgba(124, 58, 237, 0.08);
+    --color-accent-a12: rgba(124, 58, 237, 0.12);
+    --color-accent-a25: rgba(124, 58, 237, 0.25);
 
-    /* Surface */
-    --color-surface:        #ffffff;
-    --color-surface-raised: #f8fafc; /* hover state of buttons / triggers */
-    --color-surface-sunken: #f1f5f9; /* code backgrounds, hover list items */
+    /* Surface — Dracula foreground as background */
+    --color-surface:        #f8f8f2;
+    --color-surface-raised: #efefea;
+    --color-surface-sunken: #e8e8e2;
 
     /* Border */
-    --color-border:        #e2e8f0;
-    --color-border-strong: #cbd5e1;
+    --color-border:        #d0d0c8;
+    --color-border-strong: #a8a8a0;
 
-    /* Text */
-    --color-text:             #0f172a;
-    --color-text-secondary:   #334155;
-    --color-text-muted:       #475569;
-    --color-text-faint:       #64748b;
-    --color-text-placeholder: #94a3b8;
+    /* Text — Dracula background as text */
+    --color-text:             #282a36;
+    --color-text-secondary:   #44475a;
+    --color-text-muted:       #6272a4;
+    --color-text-faint:       #8a93b8;
+    --color-text-placeholder: #b0b8cc;
 
-    /* Danger */
-    --color-danger:        #ef4444;
-    --color-danger-border: #fecaca;
-    --color-danger-subtle: #fef2f2;
+    /* Danger — Dracula red */
+    --color-danger:        #ff5555;
+    --color-danger-border: #ffb3b3;
+    --color-danger-subtle: #fff0f0;
 
     /* Transparent canvas checkerboard */
-    --color-canvas-grid-a: #ffffff;
-    --color-canvas-grid-b: #ebebeb;
+    --color-canvas-grid-a: #f8f8f2;
+    --color-canvas-grid-b: #efefea;
+
+    /* Elevation shadows */
+    --shadow-sm:     0 1px 4px rgba(40, 42, 54, 0.08);
+    --shadow-md:     0 2px 8px rgba(40, 42, 54, 0.10);
+    --shadow-lg:     0 4px 12px rgba(40, 42, 54, 0.12);
+    --shadow-dialog: 0 8px 24px rgba(40, 42, 54, 0.14), 0 2px 6px rgba(40, 42, 54, 0.08);
 }
 
 [data-theme="dark"] {
-    /* Accent — unchanged, violet reads well on dark */
-    --color-accent-subtle: #2e1f5e;
-    --color-accent-border: #4c2d9c;
-    --color-accent-a06: rgba(139, 92, 246, 0.06);
-    --color-accent-a08: rgba(139, 92, 246, 0.08);
-    --color-accent-a12: rgba(139, 92, 246, 0.15);
-    --color-accent-a25: rgba(139, 92, 246, 0.30);
+    /* Accent — Dracula purple */
+    --color-accent:        #bd93f9;
+    --color-accent-hover:  #a57ef7;
+    --color-accent-subtle: #3a2f52;
+    --color-accent-border: #6d4f9f;
+    --color-accent-a06: rgba(189, 147, 249, 0.06);
+    --color-accent-a08: rgba(189, 147, 249, 0.09);
+    --color-accent-a12: rgba(189, 147, 249, 0.14);
+    --color-accent-a25: rgba(189, 147, 249, 0.28);
 
-    /* Surface */
-    --color-surface:        #1e1f22;
-    --color-surface-raised: #2e3035;
-    --color-surface-sunken: #17181a;
+    /* Surface — Dracula background scale */
+    --color-surface:        #282a36;
+    --color-surface-raised: #44475a;
+    --color-surface-sunken: #21222c;
 
     /* Border */
-    --color-border:        #3b3d44;
-    --color-border-strong: #4e5058;
+    --color-border:        #44475a;
+    --color-border-strong: #6272a4;
 
-    /* Text */
-    --color-text:             #f2f3f5;
-    --color-text-secondary:   #dbdee1;
-    --color-text-muted:       #b5bac1;
-    --color-text-faint:       #80848e;
-    --color-text-placeholder: #4e5058;
+    /* Text — Dracula foreground scale */
+    --color-text:             #f8f8f2;
+    --color-text-secondary:   #e8e8dc;
+    --color-text-muted:       #c8c8be;
+    --color-text-faint:       #6272a4;
+    --color-text-placeholder: #44475a;
 
-    /* Danger */
-    --color-danger:        #f87171;
-    --color-danger-border: #7f1d1d;
-    --color-danger-subtle: #2d1515;
+    /* Danger — Dracula red */
+    --color-danger:        #ff5555;
+    --color-danger-border: #6b1e1e;
+    --color-danger-subtle: #2a1010;
 
     /* Transparent canvas checkerboard */
-    --color-canvas-grid-a: #1e1f22;
-    --color-canvas-grid-b: #28292d;
+    --color-canvas-grid-a: #282a36;
+    --color-canvas-grid-b: #21222c;
+
+    /* No elevation — borders separate elements instead */
+    --shadow-sm:     none;
+    --shadow-md:     none;
+    --shadow-lg:     none;
+    --shadow-dialog: none;
 }

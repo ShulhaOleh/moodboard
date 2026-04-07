@@ -11,3 +11,10 @@ body {
     width: 100%;
     height: 100%;
 }
+
+input,
+select,
+textarea {
+    color: var(--color-text);
+    background-color: var(--color-surface-sunken);
+}

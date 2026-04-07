@@ -9,7 +9,7 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     padding: 4px;
     display: flex;
     align-items: center;
@@ -155,7 +155,7 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     padding: 4px;
     display: flex;
     flex-direction: column;
@@ -211,7 +211,7 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     padding: 8px;
     display: flex;
     flex-direction: column;
