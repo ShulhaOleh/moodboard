@@ -26,7 +26,7 @@ export interface BoardRecord {
     boardName?: string
 }
 
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 class MoodboardDB extends Dexie {
     boards!: EntityTable<BoardRecord, 'id'>

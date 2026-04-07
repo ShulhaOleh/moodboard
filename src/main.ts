@@ -6,10 +6,10 @@ import { ImageBlock } from './board/ImageBlock'
 import { ShapeBlock } from './board/ShapeBlock'
 import { LineBlock } from './board/LineBlock'
 import { PathBlock } from './board/PathBlock'
-import { rdp } from './board/pathUtils'
+import { rdp, buildSvgPath } from './board/pathUtils'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { LayersPanel } from './ui/LayersPanel'
-import { AddBar, BoardMode } from './ui/AddBar'
+import { AddBar, BoardMode, type PencilSettings } from './ui/AddBar'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
@@ -65,9 +65,9 @@ let pencilActive = false
 // Called to abort an in-progress stroke — set by startDrawing, cleared on mouseup or cancel.
 let cancelCurrentStroke: (() => void) | null = null
 
-const PENCIL_STROKE = '#333333'
-const PENCIL_STROKE_WIDTH = 2
-const PENCIL_SMOOTHING = 50
+// Fraction of the gap to close per animation frame — higher = snappier, lower = more elastic lag.
+const PENCIL_ELASTIC = 0.25
+let pencilSettings: PencilSettings = addBar.getPencilSettings()
 
 const guideOverlay = new GuideOverlay()
 app.appendChild(guideOverlay.el)
@@ -147,9 +147,14 @@ async function saveBoard() {
 async function loadBoard(): Promise<boolean> {
     const record = await db.boards.get('default')
     if (!record) return false
-    // Version 1 → 2: PathBlock added; existing block types are unchanged.
-    // Accept version 1 boards and let them re-save at version 2 on next write.
-    if (record.schemaVersion !== SCHEMA_VERSION && record.schemaVersion !== 1) return false
+    // Versions 1–2 are forward-compatible: PathBlock added in v2, gradient/taper in v3.
+    // Accept older boards and let them re-save at the current version on the next write.
+    if (
+        record.schemaVersion !== SCHEMA_VERSION &&
+        record.schemaVersion !== 2 &&
+        record.schemaVersion !== 1
+    )
+        return false
     panX = record.panX
     panY = record.panY
     zoom = record.zoom
@@ -312,6 +317,9 @@ addBar.onModeChange = (newMode) => {
 }
 
 addBar.onTogglePencil = () => setPencilActive(!pencilActive)
+addBar.onPencilSettingsChange = (s) => {
+    pencilSettings = s
+}
 
 function setPencilActive(active: boolean) {
     pencilActive = active
@@ -577,11 +585,22 @@ document.addEventListener('keydown', (e) => {
 // ── Pencil drawing ────────────────────────────────────────────────────────────
 
 function startDrawing(e: MouseEvent) {
-    const rawPoints: Array<{ x: number; y: number }> = [
-        { x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom },
-    ]
-    let lastClientX = e.clientX
-    let lastClientY = e.clientY
+    const toBoard = (cx: number, cy: number) => ({
+        x: (cx - panX) / zoom,
+        y: (cy - panY) / zoom,
+    })
+
+    const startPt = toBoard(e.clientX, e.clientY)
+    const rawPoints = [startPt]
+
+    // Elastic band: a "nib" position that chases the real cursor with exponential decay.
+    // This produces naturally smooth input without post-processing.
+    let targetX = startPt.x
+    let targetY = startPt.y
+    let nibX = startPt.x
+    let nibY = startPt.y
+    let lastAddedX = startPt.x
+    let lastAddedY = startPt.y
 
     // Temporary preview path in the overlay (board-space coordinates).
     // width/height 100% covers the full overlay so the SVG viewport isn't zero-sized.
@@ -593,8 +612,8 @@ function startDrawing(e: MouseEvent) {
 
     const previewPath = document.createElementNS(ns, 'path')
     previewPath.setAttribute('fill', 'none')
-    previewPath.setAttribute('stroke', PENCIL_STROKE)
-    previewPath.setAttribute('stroke-width', String(PENCIL_STROKE_WIDTH))
+    previewPath.setAttribute('stroke', pencilSettings.stroke)
+    previewPath.setAttribute('stroke-width', String(pencilSettings.strokeWidth))
     previewPath.setAttribute('stroke-linecap', 'round')
     previewPath.setAttribute('stroke-linejoin', 'round')
     previewSvg.appendChild(previewPath)
@@ -602,29 +621,40 @@ function startDrawing(e: MouseEvent) {
 
     let committed = false
     let cancelled = false
+    let animFrame: number
+
+    const tick = () => {
+        nibX += (targetX - nibX) * PENCIL_ELASTIC
+        nibY += (targetY - nibY) * PENCIL_ELASTIC
+
+        // Add a new point when the nib has moved at least 1.5 screen pixels in board units.
+        if (Math.hypot(nibX - lastAddedX, nibY - lastAddedY) > 1.5 / zoom) {
+            rawPoints.push({ x: nibX, y: nibY })
+            lastAddedX = nibX
+            lastAddedY = nibY
+            // Show smooth preview using the same Catmull-Rom the committed block will use.
+            previewPath.setAttribute('d', buildSvgPath(rawPoints, pencilSettings.smoothing))
+        }
+
+        animFrame = requestAnimationFrame(tick)
+    }
+    animFrame = requestAnimationFrame(tick)
 
     cancelCurrentStroke = () => {
         cancelled = true
+        cancelAnimationFrame(animFrame)
         previewSvg.remove()
         cancelCurrentStroke = null
     }
 
-    const onMove = (e: MouseEvent) => {
-        if (Math.hypot(e.clientX - lastClientX, e.clientY - lastClientY) < 3) return
-        lastClientX = e.clientX
-        lastClientY = e.clientY
-        rawPoints.push({ x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom })
-        // Update live preview as a simple polyline (fast; smoothing applied on commit).
-        const d =
-            `M ${rawPoints[0].x.toFixed(2)} ${rawPoints[0].y.toFixed(2)}` +
-            rawPoints
-                .slice(1)
-                .map((p) => ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
-                .join('')
-        previewPath.setAttribute('d', d)
+    const onMove = (ev: MouseEvent) => {
+        const pt = toBoard(ev.clientX, ev.clientY)
+        targetX = pt.x
+        targetY = pt.y
     }
 
     const onUp = () => {
+        cancelAnimationFrame(animFrame)
         window.removeEventListener('mousemove', onMove)
         window.removeEventListener('mouseup', onUp)
         cancelCurrentStroke = null
@@ -674,10 +704,12 @@ function commitDrawing(rawPoints: Array<{ x: number; y: number }>) {
             height: h,
             rotation: 0,
             points: localPoints,
-            stroke: PENCIL_STROKE,
-            strokeWidth: PENCIL_STROKE_WIDTH,
+            stroke: pencilSettings.stroke,
+            strokeEnd: pencilSettings.strokeEnd || undefined,
+            strokeWidth: pencilSettings.strokeWidth,
+            taper: pencilSettings.taper,
             opacity: 100,
-            smoothing: PENCIL_SMOOTHING,
+            smoothing: pencilSettings.smoothing,
         })
     )
     scheduleSave()

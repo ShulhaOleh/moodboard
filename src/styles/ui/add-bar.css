@@ -202,3 +202,98 @@
     width: 20px;
     height: 20px;
 }
+
+/* Pencil options panel — appears below the pencil button when the tool is active */
+.pencil-options {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+    z-index: 200;
+}
+
+.pencil-options.hidden {
+    display: none;
+}
+
+.pencil-option-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pencil-option-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    width: 46px;
+    flex-shrink: 0;
+}
+
+.pencil-number-input {
+    width: 56px;
+    height: 24px;
+    padding: 0 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+    font-size: 12px;
+    text-align: right;
+}
+
+.pencil-slider {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--color-accent);
+    cursor: pointer;
+}
+
+/* Gradient add/remove controls */
+.pencil-grad-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+}
+
+.pencil-color-with-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pencil-add-grad,
+.pencil-grad-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-faint);
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.pencil-add-grad:hover,
+.pencil-grad-toggle:hover {
+    background: var(--color-surface-sunken);
+    color: var(--color-text);
+}
+
+.pencil-add-grad svg,
+.pencil-grad-toggle svg {
+    width: 10px;
+    height: 10px;
+}

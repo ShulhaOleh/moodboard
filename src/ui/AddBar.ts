@@ -1,8 +1,26 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
+import { ColorPicker } from './ColorPicker'
+
 export type BoardMode = 'edit' | 'explore'
 
 export type DrawableShape = 'rectangle' | 'line' | 'arrow' | 'ellipse' | 'polygon' | 'star'
+
+export interface PencilSettings {
+    stroke: string
+    strokeEnd: string
+    strokeWidth: number
+    taper: number
+    smoothing: number
+}
+
+const DEFAULT_PENCIL_SETTINGS: PencilSettings = {
+    stroke: '#333333',
+    strokeEnd: '',
+    strokeWidth: 2,
+    taper: 0,
+    smoothing: 50,
+}
 
 const MODES: { mode: BoardMode; label: string; icon: string }[] = [
     {
@@ -63,6 +81,7 @@ export class AddBar {
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
     onTogglePencil: (() => void) | null = null
+    onPencilSettingsChange: ((settings: PencilSettings) => void) | null = null
 
     private modeTriggerBtn: HTMLButtonElement
     private modeDropdownEl: HTMLElement
@@ -75,6 +94,10 @@ export class AddBar {
     private selectedShape: DrawableShape = 'rectangle'
 
     private pencilBtn: HTMLButtonElement
+    private pencilOptionsEl: HTMLElement
+    private pencilSettings: PencilSettings = { ...DEFAULT_PENCIL_SETTINGS }
+    private strokePicker!: ColorPicker
+    private strokeEndPicker!: ColorPicker
     private addButtons: HTMLButtonElement[]
 
     constructor(container: HTMLElement) {
@@ -135,8 +158,6 @@ export class AddBar {
         imageBtn.addEventListener('click', () => this.onAddImage?.())
 
         // ── Shape split-button ─────────────────────────────────────────────────
-        // Left part: icon — adds the current shape immediately.
-        // Right part: chevron — opens the shape-type dropdown.
         const shapePicker = document.createElement('div')
         shapePicker.className = 'mode-picker'
 
@@ -179,9 +200,12 @@ export class AddBar {
         shapeSplitBtn.append(this.shapeIconBtn, this.shapeChevronBtn)
         shapePicker.append(shapeSplitBtn, this.shapeDropdownEl)
 
-        // ── Pencil tool ────────────────────────────────────────────────────────
+        // ── Pencil tool + options ──────────────────────────────────────────────
         const pencilDivider = document.createElement('div')
         pencilDivider.className = 'add-bar-divider'
+
+        const pencilPicker = document.createElement('div')
+        pencilPicker.className = 'mode-picker'
 
         this.pencilBtn = this.makeButton(
             'Pencil (P)',
@@ -191,6 +215,10 @@ export class AddBar {
         )
         this.pencilBtn.addEventListener('click', () => this.onTogglePencil?.())
 
+        this.pencilOptionsEl = this.buildPencilOptions()
+        this.pencilOptionsEl.classList.add('hidden')
+        pencilPicker.append(this.pencilBtn, this.pencilOptionsEl)
+
         this.addButtons = [
             textBtn,
             imageBtn,
@@ -198,7 +226,7 @@ export class AddBar {
             this.shapeChevronBtn,
             this.pencilBtn,
         ]
-        this.el.append(textBtn, imageBtn, shapePicker, pencilDivider, this.pencilBtn)
+        this.el.append(textBtn, imageBtn, shapePicker, pencilDivider, pencilPicker)
         container.appendChild(this.el)
 
         document.addEventListener('mousedown', (e) => {
@@ -214,6 +242,11 @@ export class AddBar {
 
     setPencilActive(active: boolean) {
         this.pencilBtn.classList.toggle('is-active', active)
+        this.pencilOptionsEl.classList.toggle('hidden', !active)
+    }
+
+    getPencilSettings(): PencilSettings {
+        return { ...this.pencilSettings }
     }
 
     setMode(mode: BoardMode) {
@@ -229,6 +262,124 @@ export class AddBar {
 
         this.addButtons.forEach((btn) => (btn.disabled = mode !== 'edit'))
         this.onModeChange?.(mode)
+    }
+
+    private buildPencilOptions(): HTMLElement {
+        const panel = document.createElement('div')
+        panel.className = 'pencil-options'
+
+        // ── Stroke color ───────────────────────────────────────────────────────
+        this.strokePicker = new ColorPicker(this.pencilSettings.stroke, (color) => {
+            this.pencilSettings.stroke = color
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+
+        const strokeRow = this.makeOptionRow('Stroke', this.strokePicker.el)
+
+        // ── Gradient end color ─────────────────────────────────────────────────
+        this.strokeEndPicker = new ColorPicker(
+            this.pencilSettings.strokeEnd || '#333333',
+            (color) => {
+                this.pencilSettings.strokeEnd = color
+                this.onPencilSettingsChange?.({ ...this.pencilSettings })
+            }
+        )
+
+        // Toggle button to enable/disable the gradient end color.
+        const gradToggle = document.createElement('button')
+        gradToggle.className = 'pencil-grad-toggle'
+        gradToggle.title = 'Remove gradient'
+        gradToggle.innerHTML = `<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>`
+        gradToggle.style.display = 'none'
+
+        const strokeEndWrapper = document.createElement('div')
+        strokeEndWrapper.className = 'pencil-color-with-toggle'
+        strokeEndWrapper.style.display = 'none'
+        strokeEndWrapper.append(this.strokeEndPicker.el, gradToggle)
+
+        // "+" button to add a gradient end color.
+        const addGradBtn = document.createElement('button')
+        addGradBtn.className = 'pencil-add-grad'
+        addGradBtn.title = 'Add gradient end color'
+        addGradBtn.innerHTML = `<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="2" x2="5" y2="8"/><line x1="2" y1="5" x2="8" y2="5"/></svg>`
+
+        addGradBtn.addEventListener('click', () => {
+            this.pencilSettings.strokeEnd = this.pencilSettings.stroke
+            this.strokeEndPicker.setValue(this.pencilSettings.stroke)
+            addGradBtn.style.display = 'none'
+            strokeEndWrapper.style.display = ''
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+
+        gradToggle.addEventListener('click', () => {
+            this.pencilSettings.strokeEnd = ''
+            strokeEndWrapper.style.display = 'none'
+            addGradBtn.style.display = ''
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+
+        const gradCell = document.createElement('div')
+        gradCell.className = 'pencil-grad-cell'
+        gradCell.append(addGradBtn, strokeEndWrapper)
+
+        const gradRow = this.makeOptionRow('Gradient', gradCell)
+
+        // ── Width ──────────────────────────────────────────────────────────────
+        const widthInput = document.createElement('input')
+        widthInput.type = 'number'
+        widthInput.className = 'pencil-number-input'
+        widthInput.min = '1'
+        widthInput.max = '80'
+        widthInput.value = String(this.pencilSettings.strokeWidth)
+        widthInput.addEventListener('input', () => {
+            const v = Math.max(1, Math.min(80, parseInt(widthInput.value) || 1))
+            this.pencilSettings.strokeWidth = v
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+        widthInput.addEventListener('mousedown', (e) => e.stopPropagation())
+
+        const widthRow = this.makeOptionRow('Width', widthInput)
+
+        // ── Taper ──────────────────────────────────────────────────────────────
+        const taperRow = this.makeSliderRow('Taper', this.pencilSettings.taper, (v) => {
+            this.pencilSettings.taper = v
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+
+        // ── Smoothing ──────────────────────────────────────────────────────────
+        const smoothingRow = this.makeSliderRow('Smooth', this.pencilSettings.smoothing, (v) => {
+            this.pencilSettings.smoothing = v
+            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        })
+
+        panel.append(strokeRow, gradRow, widthRow, taperRow, smoothingRow)
+        return panel
+    }
+
+    private makeOptionRow(label: string, control: HTMLElement): HTMLElement {
+        const row = document.createElement('div')
+        row.className = 'pencil-option-row'
+        const lbl = document.createElement('span')
+        lbl.className = 'pencil-option-label'
+        lbl.textContent = label
+        row.append(lbl, control)
+        return row
+    }
+
+    private makeSliderRow(
+        label: string,
+        initial: number,
+        onChange: (v: number) => void
+    ): HTMLElement {
+        const slider = document.createElement('input')
+        slider.type = 'range'
+        slider.className = 'pencil-slider'
+        slider.min = '0'
+        slider.max = '100'
+        slider.value = String(initial)
+        slider.addEventListener('input', () => onChange(parseInt(slider.value)))
+        slider.addEventListener('mousedown', (e) => e.stopPropagation())
+        return this.makeOptionRow(label, slider)
     }
 
     private updateShapeTrigger() {

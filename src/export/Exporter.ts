@@ -8,7 +8,7 @@ import { ImageBlock } from '../board/ImageBlock'
 import { ShapeBlock, type ShapeBlockData, type ShapeType } from '../board/ShapeBlock'
 import { LineBlock, type PointStyle } from '../board/LineBlock'
 import { PathBlock } from '../board/PathBlock'
-import { traceCanvasPath } from '../board/pathUtils'
+import { traceCanvasPath, traceOutlineCanvas } from '../board/pathUtils'
 import { parseHtmlText, type StyledParagraph, type TextRun } from './parseHtmlText'
 
 const PADDING = 40
@@ -704,13 +704,46 @@ function renderPathBlock(ctx: CanvasRenderingContext2D, block: PathBlock) {
     applyBoxTransform(ctx, x, y, w, h, rotation)
     ctx.globalAlpha = data.opacity / 100
 
+    const stroke = data.stroke || '#000000'
+    const strokeEnd = data.strokeEnd
+    const hasGradient = !!strokeEnd && strokeEnd !== stroke
+    const taperVal = data.taper ?? 0
+    const hasTaper = taperVal > 0
+
+    // Build the paint: gradient along first→last point direction, or solid color.
+    let paint: string | CanvasGradient = stroke
+    if (hasGradient) {
+        const pts = data.points
+        const x1 = pts.length > 0 ? pts[0].x : 0
+        const y1 = pts.length > 0 ? pts[0].y : 0
+        const x2 = pts.length > 1 ? pts[pts.length - 1].x : w
+        const y2 = pts.length > 1 ? pts[pts.length - 1].y : 0
+        const grad = ctx.createLinearGradient(x1, y1, x2, y2)
+        grad.addColorStop(0, stroke)
+        grad.addColorStop(1, strokeEnd!)
+        paint = grad
+    }
+
     ctx.beginPath()
-    traceCanvasPath(ctx, data.points, data.smoothing)
-    ctx.strokeStyle = data.stroke || '#000000'
-    ctx.lineWidth = data.strokeWidth
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.stroke()
+
+    if (hasTaper) {
+        const sw = data.strokeWidth
+        const taper = taperVal / 100
+        const getHalfWidth = (t: number) => {
+            const factor = 1 - taper + taper * Math.sin(t * Math.PI)
+            return (sw / 2) * Math.max(0, factor)
+        }
+        traceOutlineCanvas(ctx, data.points, data.smoothing, getHalfWidth)
+        ctx.fillStyle = paint
+        ctx.fill()
+    } else {
+        traceCanvasPath(ctx, data.points, data.smoothing)
+        ctx.strokeStyle = paint
+        ctx.lineWidth = data.strokeWidth
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.stroke()
+    }
 }
 
 // ── Shared transform ──────────────────────────────────────────────────────────
