@@ -2,13 +2,16 @@
 
 A moodboard editor that runs entirely in the browser with local persistence.
 
-## Stack
+## Shortcuts
 
-- **TypeScript** — strict mode, no framework
-- **TipTap** — rich text editing with per-character formatting
-- **Dexie** — IndexedDB wrapper for local storage
-- **Tailwind CSS** — utility-first styling
-- **Vite** — dev server and bundler
+| Key | Action |
+|---|---|
+| P | Toggle pencil tool |
+| Ctrl+Z | Undo |
+| Ctrl+C / X / V | Copy / Cut / Paste |
+| Delete / Backspace | Delete selection |
+| Ctrl+scroll | Zoom |
+| Escape | Cancel stroke / deselect |
 
 ## Scripts
 
