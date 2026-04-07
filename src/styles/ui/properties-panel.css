@@ -274,14 +274,28 @@
     background: var(--color-danger-subtle);
 }
 
-/* Clear button on clearable color fields */
-.prop-row > button {
+/* Buttons next to color fields */
+.prop-color-clear-btn,
+.prop-color-theme-btn {
     font-size: 11px;
     color: var(--color-text-placeholder);
     cursor: pointer;
     padding: 2px 4px;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
 }
 
-.prop-row > button:hover {
+.prop-color-clear-btn:hover {
     color: var(--color-danger);
+}
+
+.prop-color-theme-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.prop-color-theme-btn:hover {
+    color: var(--color-accent);
 }

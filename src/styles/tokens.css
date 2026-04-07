@@ -34,6 +34,10 @@
     --color-danger:        #ef4444;
     --color-danger-border: #fecaca;
     --color-danger-subtle: #fef2f2;
+
+    /* Transparent canvas checkerboard */
+    --color-canvas-grid-a: #ffffff;
+    --color-canvas-grid-b: #ebebeb;
 }
 
 [data-theme="dark"] {
@@ -65,4 +69,8 @@
     --color-danger:        #f87171;
     --color-danger-border: #7f1d1d;
     --color-danger-subtle: #2d1515;
+
+    /* Transparent canvas checkerboard */
+    --color-canvas-grid-a: #1e1f22;
+    --color-canvas-grid-b: #28292d;
 }

@@ -167,7 +167,7 @@ async function loadBoard(): Promise<boolean> {
     zoom = record.zoom
     applyTransform()
     zoomWidget.sync(zoom)
-    canvasBoard.setBackground(record.canvasBackground ?? '#ffffff')
+    canvasBoard.setBackground(record.canvasBackground ?? '')
     boardName = record.boardName ?? 'Untitled board'
     layersPanel.setName(boardName)
     for (const snap of migrateBlocks(record.blocks, record.schemaVersion)) {
@@ -1044,7 +1044,7 @@ async function newBoard() {
     zoom = 1
     applyTransform()
     zoomWidget.sync(zoom)
-    canvasBoard.setBackground('#ffffff')
+    canvasBoard.setBackground('')
     boardName = 'Untitled board'
     layersPanel.setName(boardName)
     void db.boards.delete('default')
@@ -1126,7 +1126,7 @@ function importBoard() {
             zoom = data.zoom ?? 1
             applyTransform()
             zoomWidget.sync(zoom)
-            canvasBoard.setBackground(data.canvasBackground ?? '#ffffff')
+            canvasBoard.setBackground(data.canvasBackground ?? '')
             boardName = data.boardName ?? 'Untitled board'
             layersPanel.setName(boardName)
             for (const snap of migrateBlocks(data.blocks ?? [], data.schemaVersion)) {

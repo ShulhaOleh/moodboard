@@ -21,7 +21,14 @@ export type PropertyField =
           max: number
           step?: number
       }
-    | { type: 'color'; key: string; label: string; value: string; clearable?: boolean }
+    | {
+          type: 'color'
+          key: string
+          label: string
+          value: string
+          clearable?: boolean
+          themeDefault?: boolean
+      }
     | {
           type: 'text'
           key: string

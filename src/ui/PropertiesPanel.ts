@@ -366,8 +366,24 @@ export class PropertiesPanel {
                 })
                 row.appendChild(picker.el)
 
+                if (field.themeDefault) {
+                    const themeBtn = document.createElement('button')
+                    themeBtn.className = 'prop-color-theme-btn'
+                    themeBtn.title = 'Set to theme background'
+                    themeBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 1.5A4.5 4.5 0 0 1 8 12V3.5Z"/></svg>`
+                    themeBtn.addEventListener('click', () => {
+                        const color = getComputedStyle(document.documentElement)
+                            .getPropertyValue('--color-surface')
+                            .trim()
+                        this.object?.setAppearanceProperty(field.key, color)
+                        picker.setValue(color)
+                    })
+                    row.appendChild(themeBtn)
+                }
+
                 if (field.clearable) {
                     const clear = document.createElement('button')
+                    clear.className = 'prop-color-clear-btn'
                     clear.textContent = '✕'
                     clear.addEventListener('click', () => {
                         this.object?.setAppearanceProperty(field.key, 'transparent')

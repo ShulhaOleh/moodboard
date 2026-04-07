@@ -3,6 +3,11 @@
 
 import { BoardObject, PropertyField } from './BoardObject'
 
+function parseAlpha(color: string): number {
+    const m = color.match(/rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\s*\)/)
+    return m ? parseFloat(m[1]) : 1
+}
+
 export class CanvasBoard implements BoardObject {
     readonly el = document.createElement('div')
     readonly omitCommonProps = true as const
@@ -28,7 +33,7 @@ export class CanvasBoard implements BoardObject {
     private bg: string
 
     constructor(private readonly appEl: HTMLElement) {
-        this.bg = '#ffffff'
+        this.bg = ''
     }
 
     getPosition() {
@@ -58,8 +63,10 @@ export class CanvasBoard implements BoardObject {
     }
 
     setBackground(bg: string) {
-        this.bg = bg
-        this.appEl.style.backgroundColor = bg
+        const transparent = !bg || bg === 'transparent' || parseAlpha(bg) === 0
+        this.bg = transparent ? '' : bg
+        this.appEl.style.backgroundColor = this.bg
+        this.appEl.classList.toggle('canvas-transparent', transparent)
     }
 
     getAppearanceFields(): PropertyField[] {
@@ -69,6 +76,7 @@ export class CanvasBoard implements BoardObject {
                 key: 'background',
                 label: 'Background',
                 value: this.bg,
+                themeDefault: true,
                 clearable: true,
             },
             { type: 'section', label: 'Board' },
@@ -82,8 +90,7 @@ export class CanvasBoard implements BoardObject {
 
     setAppearanceProperty(key: string, value: string | number) {
         if (key === 'background') {
-            this.bg = value as string
-            this.appEl.style.backgroundColor = this.bg
+            this.setBackground(value as string)
             this.onChange?.()
         }
         if (key === 'newBoard') this.onNewBoard?.()
