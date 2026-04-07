@@ -7,6 +7,8 @@ import { TextBlock } from '../board/TextBlock'
 import { ImageBlock } from '../board/ImageBlock'
 import { ShapeBlock, type ShapeBlockData, type ShapeType } from '../board/ShapeBlock'
 import { LineBlock, type PointStyle } from '../board/LineBlock'
+import { PathBlock } from '../board/PathBlock'
+import { traceCanvasPath } from '../board/pathUtils'
 import { parseHtmlText, type StyledParagraph, type TextRun } from './parseHtmlText'
 
 const PADDING = 40
@@ -161,6 +163,7 @@ function renderBlock(
     else if (block instanceof ImageBlock) renderImageBlock(ctx, block, images, boardBg)
     else if (block instanceof ShapeBlock) renderShapeBlock(ctx, block)
     else if (block instanceof LineBlock) renderLineBlock(ctx, block)
+    else if (block instanceof PathBlock) renderPathBlock(ctx, block)
 }
 
 // ── TextBlock ─────────────────────────────────────────────────────────────────
@@ -686,6 +689,28 @@ function makeFallbackRun(para: StyledParagraph): TextRun {
         underline: false,
         strikethrough: false,
     }
+}
+
+// ── PathBlock ─────────────────────────────────────────────────────────────────
+
+function renderPathBlock(ctx: CanvasRenderingContext2D, block: PathBlock) {
+    const data = block.getData()
+    if (data.points.length === 0) return
+
+    const { x, y } = block.getPosition()
+    const { width: w, height: h } = block.getSize()
+    const rotation = block.getRotation()
+
+    applyBoxTransform(ctx, x, y, w, h, rotation)
+    ctx.globalAlpha = data.opacity / 100
+
+    ctx.beginPath()
+    traceCanvasPath(ctx, data.points, data.smoothing)
+    ctx.strokeStyle = data.stroke || '#000000'
+    ctx.lineWidth = data.strokeWidth
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.stroke()
 }
 
 // ── Shared transform ──────────────────────────────────────────────────────────

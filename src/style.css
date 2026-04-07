@@ -8,6 +8,7 @@
 @import './styles/panel.css';
 
 @import './styles/board/line-block.css';
+@import './styles/board/path-block.css';
 @import './styles/board/shape-block.css';
 @import './styles/board/image-block.css';
 @import './styles/board/text-block.css';

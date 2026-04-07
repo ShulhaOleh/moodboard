@@ -62,6 +62,7 @@ export class AddBar {
     onAddImage: (() => void) | null = null
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
+    onTogglePencil: (() => void) | null = null
 
     private modeTriggerBtn: HTMLButtonElement
     private modeDropdownEl: HTMLElement
@@ -73,6 +74,7 @@ export class AddBar {
     private shapeDropdownOpen = false
     private selectedShape: DrawableShape = 'rectangle'
 
+    private pencilBtn: HTMLButtonElement
     private addButtons: HTMLButtonElement[]
 
     constructor(container: HTMLElement) {
@@ -177,8 +179,26 @@ export class AddBar {
         shapeSplitBtn.append(this.shapeIconBtn, this.shapeChevronBtn)
         shapePicker.append(shapeSplitBtn, this.shapeDropdownEl)
 
-        this.addButtons = [textBtn, imageBtn, this.shapeIconBtn, this.shapeChevronBtn]
-        this.el.append(textBtn, imageBtn, shapePicker)
+        // ── Pencil tool ────────────────────────────────────────────────────────
+        const pencilDivider = document.createElement('div')
+        pencilDivider.className = 'add-bar-divider'
+
+        this.pencilBtn = this.makeButton(
+            'Pencil (P)',
+            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.5 3.5a2.12 2.12 0 0 1 3 3L6 18l-4 1 1-4L14.5 3.5z"/>
+            </svg>`
+        )
+        this.pencilBtn.addEventListener('click', () => this.onTogglePencil?.())
+
+        this.addButtons = [
+            textBtn,
+            imageBtn,
+            this.shapeIconBtn,
+            this.shapeChevronBtn,
+            this.pencilBtn,
+        ]
+        this.el.append(textBtn, imageBtn, shapePicker, pencilDivider, this.pencilBtn)
         container.appendChild(this.el)
 
         document.addEventListener('mousedown', (e) => {
@@ -190,6 +210,10 @@ export class AddBar {
 
         this.setMode('edit')
         this.updateShapeTrigger()
+    }
+
+    setPencilActive(active: boolean) {
+        this.pencilBtn.classList.toggle('is-active', active)
     }
 
     setMode(mode: BoardMode) {

@@ -6,12 +6,14 @@ import type { TextBlockData } from '../board/TextBlock'
 import type { ImageBlockData } from '../board/ImageBlock'
 import type { ShapeBlockData } from '../board/ShapeBlock'
 import type { LineBlockData } from '../board/LineBlock'
+import type { PathBlockData } from '../board/PathBlock'
 
 export type PersistedBlock =
     | { type: 'text'; data: TextBlockData }
     | { type: 'image'; data: ImageBlockData }
     | { type: 'shape'; data: ShapeBlockData }
     | { type: 'line'; data: LineBlockData }
+    | { type: 'path'; data: PathBlockData }
 
 export interface BoardRecord {
     id: string
@@ -24,7 +26,7 @@ export interface BoardRecord {
     boardName?: string
 }
 
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 class MoodboardDB extends Dexie {
     boards!: EntityTable<BoardRecord, 'id'>

@@ -5,6 +5,8 @@ import { TextBlock } from './board/TextBlock'
 import { ImageBlock } from './board/ImageBlock'
 import { ShapeBlock } from './board/ShapeBlock'
 import { LineBlock } from './board/LineBlock'
+import { PathBlock } from './board/PathBlock'
+import { rdp } from './board/pathUtils'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { LayersPanel } from './ui/LayersPanel'
 import { AddBar, BoardMode } from './ui/AddBar'
@@ -57,6 +59,15 @@ let panX = 0
 let panY = 0
 let zoom = 1
 let boardName = 'Untitled board'
+
+// Pencil tool state
+let pencilActive = false
+// Called to abort an in-progress stroke — set by startDrawing, cleared on mouseup or cancel.
+let cancelCurrentStroke: (() => void) | null = null
+
+const PENCIL_STROKE = '#333333'
+const PENCIL_STROKE_WIDTH = 2
+const PENCIL_SMOOTHING = 50
 
 const guideOverlay = new GuideOverlay()
 app.appendChild(guideOverlay.el)
@@ -136,7 +147,9 @@ async function saveBoard() {
 async function loadBoard(): Promise<boolean> {
     const record = await db.boards.get('default')
     if (!record) return false
-    if (record.schemaVersion !== SCHEMA_VERSION) return false
+    // Version 1 → 2: PathBlock added; existing block types are unchanged.
+    // Accept version 1 boards and let them re-save at version 2 on next write.
+    if (record.schemaVersion !== SCHEMA_VERSION && record.schemaVersion !== 1) return false
     panX = record.panX
     panY = record.panY
     zoom = record.zoom
@@ -165,6 +178,7 @@ function snapshotBlock(block: BoardObject): BlockSnapshot {
     if (block instanceof ImageBlock) return { type: 'image', data: { ...block.getData() } }
     if (block instanceof ShapeBlock) return { type: 'shape', data: { ...block.getData() } }
     if (block instanceof LineBlock) return { type: 'line', data: { ...block.getData() } }
+    if (block instanceof PathBlock) return { type: 'path', data: block.getData() }
     throw new Error('Unknown block type')
 }
 
@@ -182,6 +196,8 @@ function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
             return new ShapeBlock(overlay, snap.data)
         case 'line':
             return new LineBlock(overlay, snap.data)
+        case 'path':
+            return new PathBlock(overlay, snap.data)
     }
 }
 
@@ -248,6 +264,16 @@ function paste() {
                     y: snap.data.y + offset,
                 },
             }
+        } else if (snap.type === 'path') {
+            newSnap = {
+                type: 'path',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x: snap.data.x + offset,
+                    y: snap.data.y + offset,
+                },
+            }
         } else {
             newSnap = {
                 type: 'shape',
@@ -276,12 +302,21 @@ addBar.onModeChange = (newMode) => {
     mode = newMode
     app.classList.toggle('explore-mode', mode === 'explore')
     if (mode === 'edit') return
-    // Deselect everything when switching to explore
+    // Deselect everything and cancel pencil when switching to explore
+    if (pencilActive) setPencilActive(false)
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
     panel.show(canvasBoard)
     selectionBox.setBlocks([])
     layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+addBar.onTogglePencil = () => setPencilActive(!pencilActive)
+
+function setPencilActive(active: boolean) {
+    pencilActive = active
+    addBar.setPencilActive(active)
+    app.classList.toggle('pencil-mode', active)
 }
 
 // Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.
@@ -519,7 +554,134 @@ document.addEventListener('keydown', (e) => {
             return
         }
     }
+
+    // P — toggle pencil tool
+    if (e.key === 'p' && !inEditable) {
+        setPencilActive(!pencilActive)
+        return
+    }
+
+    // Escape — cancel in-progress stroke, or deactivate pencil tool
+    if (e.key === 'Escape' && !inEditable) {
+        if (cancelCurrentStroke) {
+            cancelCurrentStroke()
+            return
+        }
+        if (pencilActive) {
+            setPencilActive(false)
+            return
+        }
+    }
 })
+
+// ── Pencil drawing ────────────────────────────────────────────────────────────
+
+function startDrawing(e: MouseEvent) {
+    const rawPoints: Array<{ x: number; y: number }> = [
+        { x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom },
+    ]
+    let lastClientX = e.clientX
+    let lastClientY = e.clientY
+
+    // Temporary preview path in the overlay (board-space coordinates).
+    // width/height 100% covers the full overlay so the SVG viewport isn't zero-sized.
+    const ns = 'http://www.w3.org/2000/svg'
+    const previewSvg = document.createElementNS(ns, 'svg')
+    previewSvg.style.cssText = 'position:absolute;inset:0;overflow:visible;pointer-events:none'
+    previewSvg.setAttribute('width', '100%')
+    previewSvg.setAttribute('height', '100%')
+
+    const previewPath = document.createElementNS(ns, 'path')
+    previewPath.setAttribute('fill', 'none')
+    previewPath.setAttribute('stroke', PENCIL_STROKE)
+    previewPath.setAttribute('stroke-width', String(PENCIL_STROKE_WIDTH))
+    previewPath.setAttribute('stroke-linecap', 'round')
+    previewPath.setAttribute('stroke-linejoin', 'round')
+    previewSvg.appendChild(previewPath)
+    overlay.appendChild(previewSvg)
+
+    let committed = false
+    let cancelled = false
+
+    cancelCurrentStroke = () => {
+        cancelled = true
+        previewSvg.remove()
+        cancelCurrentStroke = null
+    }
+
+    const onMove = (e: MouseEvent) => {
+        if (Math.hypot(e.clientX - lastClientX, e.clientY - lastClientY) < 3) return
+        lastClientX = e.clientX
+        lastClientY = e.clientY
+        rawPoints.push({ x: (e.clientX - panX) / zoom, y: (e.clientY - panY) / zoom })
+        // Update live preview as a simple polyline (fast; smoothing applied on commit).
+        const d =
+            `M ${rawPoints[0].x.toFixed(2)} ${rawPoints[0].y.toFixed(2)}` +
+            rawPoints
+                .slice(1)
+                .map((p) => ` L ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
+                .join('')
+        previewPath.setAttribute('d', d)
+    }
+
+    const onUp = () => {
+        window.removeEventListener('mousemove', onMove)
+        window.removeEventListener('mouseup', onUp)
+        cancelCurrentStroke = null
+        previewSvg.remove()
+        if (cancelled || committed) return
+        committed = true
+        commitDrawing(rawPoints)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+}
+
+function commitDrawing(rawPoints: Array<{ x: number; y: number }>) {
+    if (rawPoints.length < 2) return
+
+    // Simplify with RDP (epsilon in board units ≈ 1.5 screen pixels at current zoom).
+    const reduced = rdp(rawPoints, 1.5 / zoom)
+    if (reduced.length < 1) return
+
+    // Compute bounding box.
+    let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
+    for (const p of reduced) {
+        if (p.x < minX) minX = p.x
+        if (p.y < minY) minY = p.y
+        if (p.x > maxX) maxX = p.x
+        if (p.y > maxY) maxY = p.y
+    }
+
+    // Ensure non-zero dimensions so the bounding box is always valid.
+    const w = Math.max(maxX - minX, 1)
+    const h = Math.max(maxY - minY, 1)
+
+    // Convert to local space (relative to bounding box origin).
+    const localPoints = reduced.map((p) => ({ x: p.x - minX, y: p.y - minY }))
+
+    pushHistory()
+    addBlock(
+        new PathBlock(overlay, {
+            id: crypto.randomUUID(),
+            x: minX,
+            y: minY,
+            width: w,
+            height: h,
+            rotation: 0,
+            points: localPoints,
+            stroke: PENCIL_STROKE,
+            strokeWidth: PENCIL_STROKE_WIDTH,
+            opacity: 100,
+            smoothing: PENCIL_SMOOTHING,
+        })
+    )
+    scheduleSave()
+}
 
 function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
     return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
@@ -551,7 +713,16 @@ document.addEventListener('mousedown', (e) => {
         return
     }
 
-    if (target.closest('.text-block, .image-block, .shape-block, .line-block')) return
+    // Pencil tool: start freehand drawing instead of marquee.
+    if (pencilActive) {
+        if (target.closest('.text-block, .image-block, .shape-block, .line-block, .path-block'))
+            return
+        e.preventDefault()
+        startDrawing(e)
+        return
+    }
+
+    if (target.closest('.text-block, .image-block, .shape-block, .line-block, .path-block')) return
 
     const startX = e.clientX
     const startY = e.clientY

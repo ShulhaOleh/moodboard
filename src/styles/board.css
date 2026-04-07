@@ -33,3 +33,8 @@
 #app.explore-mode.panning {
     cursor: grabbing;
 }
+
+/* Pencil tool — crosshair cursor on the canvas */
+#app.pencil-mode {
+    cursor: crosshair;
+}

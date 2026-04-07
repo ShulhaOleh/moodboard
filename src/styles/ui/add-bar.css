@@ -41,6 +41,16 @@
     cursor: default;
 }
 
+.add-bar-btn.is-active {
+    background: var(--color-accent);
+    color: var(--color-surface);
+}
+
+.add-bar-btn.is-active:hover {
+    background: var(--color-accent-hover);
+    color: var(--color-surface);
+}
+
 .add-bar-btn svg {
     width: 18px;
     height: 18px;

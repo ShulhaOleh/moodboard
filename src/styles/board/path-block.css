@@ -1,0 +1,13 @@
+/* PathBlock — absolutely-positioned freehand drawn path with SVG hit area and visual stroke. */
+
+.path-block {
+    position: absolute;
+    pointer-events: none;
+    user-select: none;
+}
+
+.path-block svg {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+}

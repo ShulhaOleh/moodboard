@@ -2,7 +2,7 @@
 
 import { BoardObject, PropertyField } from './BoardObject'
 
-const BLOCK_SELECTOR = '.text-block, .image-block, .shape-block, .line-block'
+const BLOCK_SELECTOR = '.text-block, .image-block, .shape-block, .line-block, .path-block'
 
 export abstract class BaseBlock implements BoardObject {
     readonly el: HTMLElement
