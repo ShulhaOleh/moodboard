@@ -535,11 +535,102 @@ document.addEventListener('mouseup', () => {
     scheduleSave()
 })
 
+// ── Arrow-key nudge ───────────────────────────────────────────────────────────
+// Tap → 1 px immediately. Hold → rAF loop after NUDGE_INITIAL_DELAY ms.
+// Time-based speed with subpixel accumulation gives smooth, frame-rate-independent motion.
+
+const NUDGE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
+const NUDGE_INITIAL_DELAY = 500
+const NUDGE_SPEED_START = 80 // px/s when hold begins
+const NUDGE_SPEED_MAX = 500 // px/s at full acceleration
+const NUDGE_ACCEL_DURATION = 1500 // ms to ramp from start to max speed
+const heldArrows = new Set<string>()
+let nudgeDelayId: number | null = null
+let nudgeRafId: number | null = null
+let nudgeStartTime = 0
+let nudgeLastTime = 0
+let nudgeAccumX = 0
+let nudgeAccumY = 0
+let nudgeHistoryPushed = false
+
+function nudgeTick(ts: number) {
+    if (heldArrows.size === 0 || selectedBlocks.size === 0) {
+        nudgeRafId = null
+        return
+    }
+    nudgeRafId = requestAnimationFrame(nudgeTick)
+
+    // First frame: initialize timestamps and skip movement to avoid a large dt jump.
+    if (nudgeLastTime === 0) {
+        nudgeLastTime = ts
+        nudgeStartTime = ts
+        return
+    }
+
+    const dt = (ts - nudgeLastTime) / 1000
+    nudgeLastTime = ts
+    const t = Math.min(1, (ts - nudgeStartTime) / NUDGE_ACCEL_DURATION)
+    const speed = NUDGE_SPEED_START + (NUDGE_SPEED_MAX - NUDGE_SPEED_START) * t
+
+    if (heldArrows.has('ArrowLeft')) nudgeAccumX -= speed * dt
+    if (heldArrows.has('ArrowRight')) nudgeAccumX += speed * dt
+    if (heldArrows.has('ArrowUp')) nudgeAccumY -= speed * dt
+    if (heldArrows.has('ArrowDown')) nudgeAccumY += speed * dt
+
+    const dx = Math.trunc(nudgeAccumX)
+    const dy = Math.trunc(nudgeAccumY)
+    if (dx === 0 && dy === 0) return
+
+    nudgeAccumX -= dx
+    nudgeAccumY -= dy
+
+    for (const b of selectedBlocks) {
+        const pos = b.getPosition()
+        b.setPosition(pos.x + dx, pos.y + dy)
+        b.onChange?.()
+    }
+    selectionBox.update()
+    scheduleSave()
+}
+
 // Keyboard shortcuts: delete, undo, copy, cut, paste.
 document.addEventListener('keydown', (e) => {
     const active = document.activeElement as HTMLElement
     const inEditable =
         active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'
+
+    // Arrow-key nudge — move selected blocks in board space
+    if (NUDGE_KEYS.has(e.key) && !inEditable && selectedBlocks.size > 0) {
+        e.preventDefault()
+        if (!heldArrows.has(e.key)) {
+            heldArrows.add(e.key)
+            if (!nudgeHistoryPushed) {
+                pushHistory()
+                nudgeHistoryPushed = true
+            }
+            // 1 px immediately on tap
+            for (const b of selectedBlocks) {
+                const pos = b.getPosition()
+                const dx = heldArrows.has('ArrowRight') ? 1 : heldArrows.has('ArrowLeft') ? -1 : 0
+                const dy = heldArrows.has('ArrowDown') ? 1 : heldArrows.has('ArrowUp') ? -1 : 0
+                b.setPosition(pos.x + dx, pos.y + dy)
+                b.onChange?.()
+            }
+            selectionBox.update()
+            scheduleSave()
+            if (nudgeDelayId === null && nudgeRafId === null) {
+                nudgeDelayId = window.setTimeout(() => {
+                    nudgeDelayId = null
+                    if (heldArrows.size === 0) return
+                    nudgeAccumX = 0
+                    nudgeAccumY = 0
+                    nudgeLastTime = 0
+                    nudgeRafId = requestAnimationFrame(nudgeTick)
+                }, NUDGE_INITIAL_DELAY)
+            }
+        }
+        return
+    }
 
     if ((e.key === 'Delete' || e.key === 'Backspace') && !inEditable) {
         deleteSelected()
@@ -586,6 +677,22 @@ document.addEventListener('keydown', (e) => {
             setPencilActive(false)
             return
         }
+    }
+})
+
+document.addEventListener('keyup', (e) => {
+    if (!NUDGE_KEYS.has(e.key)) return
+    heldArrows.delete(e.key)
+    if (heldArrows.size === 0) {
+        if (nudgeDelayId !== null) {
+            clearTimeout(nudgeDelayId)
+            nudgeDelayId = null
+        }
+        if (nudgeRafId !== null) {
+            cancelAnimationFrame(nudgeRafId)
+            nudgeRafId = null
+        }
+        nudgeHistoryPushed = false
     }
 })
 
