@@ -1,5 +1,11 @@
 // IndexedDB persistence via Dexie — single board stored under the key 'default'.
-// Bump SCHEMA_VERSION and add a migration branch in loadBoard() whenever PersistedBlock changes.
+//
+// To add a new schema version:
+//   1. Bump SCHEMA_VERSION.
+//   2. Add a migration function to MIGRATIONS keyed by the version it produces.
+//   3. Update PersistedBlock / BoardRecord types as needed.
+//
+// To drop support for very old versions, raise MIN_SUPPORTED_VERSION.
 
 import Dexie, { type EntityTable } from 'dexie'
 import type { TextBlockData } from '../board/TextBlock'
@@ -27,6 +33,23 @@ export interface BoardRecord {
 }
 
 export const SCHEMA_VERSION = 3
+export const MIN_SUPPORTED_VERSION = 1
+
+// One entry per version that requires a migration. Each function receives the
+// block array from the previous version and returns the updated array.
+// Versions 1–3 used additive-only changes, so no transformation is needed yet.
+const MIGRATIONS: Record<number, (blocks: PersistedBlock[]) => PersistedBlock[]> = {
+    // example for a future breaking change:
+    // 4: (blocks) => blocks.map(migrateV3toV4),
+}
+
+// Runs all necessary migrations to bring blocks from fromVersion up to SCHEMA_VERSION.
+export function migrateBlocks(blocks: PersistedBlock[], fromVersion: number): PersistedBlock[] {
+    for (let v = fromVersion + 1; v <= SCHEMA_VERSION; v++) {
+        blocks = MIGRATIONS[v]?.(blocks) ?? blocks
+    }
+    return blocks
+}
 
 class MoodboardDB extends Dexie {
     boards!: EntityTable<BoardRecord, 'id'>

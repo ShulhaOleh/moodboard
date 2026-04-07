@@ -14,7 +14,13 @@ import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
 import { ZoomWidget } from './ui/ZoomWidget'
-import { db, type PersistedBlock, SCHEMA_VERSION } from './lib/db'
+import {
+    db,
+    type PersistedBlock,
+    SCHEMA_VERSION,
+    MIN_SUPPORTED_VERSION,
+    migrateBlocks,
+} from './lib/db'
 import { Dialog } from './ui/Dialog'
 import { Exporter } from './export/Exporter'
 import { GuideOverlay } from './ui/GuideOverlay'
@@ -147,13 +153,7 @@ async function saveBoard() {
 async function loadBoard(): Promise<boolean> {
     const record = await db.boards.get('default')
     if (!record) return false
-    // Versions 1–2 are forward-compatible: PathBlock added in v2, gradient/taper in v3.
-    // Accept older boards and let them re-save at the current version on the next write.
-    if (
-        record.schemaVersion !== SCHEMA_VERSION &&
-        record.schemaVersion !== 2 &&
-        record.schemaVersion !== 1
-    )
+    if (record.schemaVersion < MIN_SUPPORTED_VERSION || record.schemaVersion > SCHEMA_VERSION)
         return false
     panX = record.panX
     panY = record.panY
@@ -163,7 +163,7 @@ async function loadBoard(): Promise<boolean> {
     canvasBoard.setBackground(record.canvasBackground ?? '#ffffff')
     boardName = record.boardName ?? 'Untitled board'
     layersPanel.setName(boardName)
-    for (const snap of record.blocks) {
+    for (const snap of migrateBlocks(record.blocks, record.schemaVersion)) {
         if (snap.type === 'image' && snap.data.imageBlob) {
             addBlock(
                 blockFromSnapshot({
@@ -1096,7 +1096,7 @@ function importBoard() {
                 void Dialog.alert('Invalid JSON file.')
                 return
             }
-            if (data.schemaVersion !== SCHEMA_VERSION) {
+            if (data.schemaVersion < MIN_SUPPORTED_VERSION || data.schemaVersion > SCHEMA_VERSION) {
                 void Dialog.alert(
                     `Cannot import: schema version ${data.schemaVersion} is not supported.`
                 )
@@ -1122,7 +1122,7 @@ function importBoard() {
             canvasBoard.setBackground(data.canvasBackground ?? '#ffffff')
             boardName = data.boardName ?? 'Untitled board'
             layersPanel.setName(boardName)
-            for (const snap of data.blocks ?? []) {
+            for (const snap of migrateBlocks(data.blocks ?? [], data.schemaVersion)) {
                 if (
                     snap.type === 'image' &&
                     typeof snap.data.src === 'string' &&
