@@ -256,7 +256,7 @@
     cursor: pointer;
 }
 
-/* Gradient add/remove controls */
+/* Gradient end color row */
 .pencil-grad-cell {
     display: flex;
     align-items: center;
@@ -264,36 +264,17 @@
     flex: 1;
 }
 
-.pencil-color-with-toggle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.pencil-add-grad,
-.pencil-grad-toggle {
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
+.pencil-clear-btn {
+    font-size: 10px;
+    color: var(--color-text-placeholder);
     background: none;
+    border: none;
     cursor: pointer;
-    color: var(--color-text-faint);
-    padding: 0;
+    padding: 0 2px;
+    line-height: 1;
     flex-shrink: 0;
 }
 
-.pencil-add-grad:hover,
-.pencil-grad-toggle:hover {
-    background: var(--color-surface-sunken);
+.pencil-clear-btn:hover {
     color: var(--color-text);
-}
-
-.pencil-add-grad svg,
-.pencil-grad-toggle svg {
-    width: 10px;
-    height: 10px;
 }

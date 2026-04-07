@@ -325,6 +325,13 @@ function setPencilActive(active: boolean) {
     pencilActive = active
     addBar.setPencilActive(active)
     app.classList.toggle('pencil-mode', active)
+    if (active) {
+        selectedBlocks.forEach((b) => b.markDeselected())
+        selectedBlocks.clear()
+        panel.show(canvasBoard)
+        selectionBox.setBlocks([])
+        layersPanel.notifySelectionChanged(selectedBlocks)
+    }
 }
 
 // Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.

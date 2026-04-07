@@ -34,7 +34,22 @@
     cursor: grabbing;
 }
 
-/* Pencil tool — crosshair cursor on the canvas */
+/* Pencil tool — crosshair cursor; blocks are non-interactive while drawing */
 #app.pencil-mode {
     cursor: crosshair;
+}
+
+#app.pencil-mode .text-block,
+#app.pencil-mode .image-block,
+#app.pencil-mode .shape-block,
+#app.pencil-mode .line-block,
+#app.pencil-mode .path-block {
+    pointer-events: none;
+}
+
+/* SVG hit elements inside path/line blocks carry inline pointer-events styles set in JS;
+   !important is required to override inline styles from the stylesheet. */
+#app.pencil-mode .path-block svg *,
+#app.pencil-mode .line-block svg * {
+    pointer-events: none !important;
 }

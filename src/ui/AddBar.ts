@@ -285,42 +285,29 @@ export class AddBar {
             }
         )
 
-        // Toggle button to enable/disable the gradient end color.
-        const gradToggle = document.createElement('button')
-        gradToggle.className = 'pencil-grad-toggle'
-        gradToggle.title = 'Remove gradient'
-        gradToggle.innerHTML = `<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>`
-        gradToggle.style.display = 'none'
-
-        const strokeEndWrapper = document.createElement('div')
-        strokeEndWrapper.className = 'pencil-color-with-toggle'
-        strokeEndWrapper.style.display = 'none'
-        strokeEndWrapper.append(this.strokeEndPicker.el, gradToggle)
-
-        // "+" button to add a gradient end color.
-        const addGradBtn = document.createElement('button')
-        addGradBtn.className = 'pencil-add-grad'
-        addGradBtn.title = 'Add gradient end color'
-        addGradBtn.innerHTML = `<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="5" y1="2" x2="5" y2="8"/><line x1="2" y1="5" x2="8" y2="5"/></svg>`
-
-        addGradBtn.addEventListener('click', () => {
-            this.pencilSettings.strokeEnd = this.pencilSettings.stroke
-            this.strokeEndPicker.setValue(this.pencilSettings.stroke)
-            addGradBtn.style.display = 'none'
-            strokeEndWrapper.style.display = ''
+        const clearGradBtn = document.createElement('button')
+        clearGradBtn.className = 'pencil-clear-btn'
+        clearGradBtn.title = 'Remove gradient'
+        clearGradBtn.textContent = '✕'
+        clearGradBtn.style.visibility = this.pencilSettings.strokeEnd ? '' : 'hidden'
+        clearGradBtn.addEventListener('click', () => {
+            this.pencilSettings.strokeEnd = ''
+            clearGradBtn.style.visibility = 'hidden'
             this.onPencilSettingsChange?.({ ...this.pencilSettings })
         })
 
-        gradToggle.addEventListener('click', () => {
-            this.pencilSettings.strokeEnd = ''
-            strokeEndWrapper.style.display = 'none'
-            addGradBtn.style.display = ''
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
+        // Show the clear button as soon as a gradient color is chosen.
+        this.strokeEndPicker.el.addEventListener('mousedown', () => {
+            if (!this.pencilSettings.strokeEnd) {
+                this.pencilSettings.strokeEnd = this.pencilSettings.stroke
+                this.strokeEndPicker.setValue(this.pencilSettings.stroke)
+            }
+            clearGradBtn.style.visibility = ''
         })
 
         const gradCell = document.createElement('div')
         gradCell.className = 'pencil-grad-cell'
-        gradCell.append(addGradBtn, strokeEndWrapper)
+        gradCell.append(this.strokeEndPicker.el, clearGradBtn)
 
         const gradRow = this.makeOptionRow('Gradient', gradCell)
 
