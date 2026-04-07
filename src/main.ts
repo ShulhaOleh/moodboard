@@ -26,10 +26,15 @@ import { Exporter } from './export/Exporter'
 import { GuideOverlay } from './ui/GuideOverlay'
 import { computeSnap } from './snap/SnapEngine'
 import { BoxBlock } from './board/BoxBlock'
+import { loadSettings, applyTheme } from './lib/settings'
+import { SettingsPanel } from './ui/SettingsPanel'
 
 type BlockSnapshot = PersistedBlock
 
 const app = document.getElementById('app')!
+
+const userSettings = loadSettings()
+applyTheme(userSettings.theme)
 
 const panel = new PropertiesPanel(app)
 const layersPanel = new LayersPanel(app)
@@ -43,6 +48,8 @@ app.classList.add('layers-panel-docked') // docked by default
 const canvasBoard = new CanvasBoard(app)
 panel.show(canvasBoard)
 const addBar = new AddBar(app)
+const settingsPanel = new SettingsPanel(app, userSettings)
+addBar.onSettingsOpen = () => settingsPanel.open()
 
 const overlay = document.createElement('div')
 overlay.id = 'overlay'

@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>moodboard</title>
+    <!-- Apply theme synchronously to avoid a flash of the wrong colors on load. -->
+    <script>
+      (function () {
+        try {
+          var s = localStorage.getItem('moodboard-settings')
+          var theme = s ? JSON.parse(s).theme : 'system'
+          var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+        } catch (_) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="app" class="relative w-full h-full overflow-hidden"></div>
