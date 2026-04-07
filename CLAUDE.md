@@ -21,7 +21,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Key dependencies:**
 - **TipTap** (`@tiptap/core`, `starter-kit`, `extension-text-style`, `extension-color`, `extension-underline`, `extension-text-align`) — rich text editing inside text blocks. Content is stored as HTML strings.
-- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`. Schema is versioned via `SCHEMA_VERSION` in `src/lib/db.ts` — bump it and add a migration branch in `loadBoard()` in `main.ts` whenever `PersistedBlock` changes.
+- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`. Schema is versioned via `SCHEMA_VERSION` in `src/lib/db.ts` (currently 3) — bump it and add a migration branch in `loadBoard()` in `main.ts` whenever `PersistedBlock` changes. `loadBoard()` currently accepts versions 1–3; add new accepted versions alongside the bump.
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
 **Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget in the bottom-left mirrors the scroll-wheel zoom — it has `−`/`+` buttons (click or hold to repeat with a 500 ms initial delay), a clickable percentage label that accepts direct numeric input (Enter/Escape to confirm/cancel), and a range slider. Its `left` position is driven by `--layers-panel-offset` CSS variable, updated by `LayersPanel.updateOffset()` whenever the panel docks, undocks, collapses, or resizes.
@@ -36,9 +36,9 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - `getWorldCorners()` — returns the world-space corner points of the block (4 rotated corners for standard blocks, 2 endpoints for `LineBlock`); used by `SelectionBox` to compute the group AABB.
 - `layerLabel` — read-only type label (e.g. `'Rectangle'`, `'Line'`); used as the default `name` on construction.
 
-**Block class hierarchy:** All blocks extend `BaseBlock` (abstract), which holds the seven callbacks, `visible`/`locked`/`name`/`el`, selection state, the outside-click deselect listener, and `setVisible`/`setLocked`/`setName`/`destroy`/`markSelected`/`markDeselected`. Bounding-box blocks (Text, Image, Shape) additionally extend `BoxBlock<D>` (abstract), which holds `data: D`, `applyPosition`/`applySize`/`applyTransform`, `startDrag`, `getPosition`/`getSize`/`getRotation`/`getWorldCorners`, and `setPosition`/`setSize`/`setRotation`. `LineBlock` extends `BaseBlock` directly because its spatial model (two absolute endpoints) doesn't fit the bounding-box pattern. Extension points on `BoxBlock`: `minResizeWidth`/`minResizeHeight` getters (overridden by `TextBlock` and `ShapeBlock`), `isEditing()` (overridden by `TextBlock` to block drag during TipTap session).
+**Block class hierarchy:** All blocks extend `BaseBlock` (abstract), which holds the seven callbacks, `visible`/`locked`/`name`/`el`, selection state, the outside-click deselect listener, and `setVisible`/`setLocked`/`setName`/`destroy`/`markSelected`/`markDeselected`. Bounding-box blocks (Text, Image, Shape, Path) additionally extend `BoxBlock<D>` (abstract), which holds `data: D`, `applyPosition`/`applySize`/`applyTransform`, `startDrag`, `getPosition`/`getSize`/`getRotation`/`getWorldCorners`, and `setPosition`/`setSize`/`setRotation`. `LineBlock` extends `BaseBlock` directly because its spatial model (two absolute endpoints) doesn't fit the bounding-box pattern. Extension points on `BoxBlock`: `minResizeWidth`/`minResizeHeight` getters (overridden by `TextBlock`, `ShapeBlock`, and `PathBlock`), `isEditing()` (overridden by `TextBlock` to block drag during TipTap session).
 
-**Block types:** `TextBlock` (pure floating rich text — no background, border, or shadow; only font/size/color/align properties), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star; supports optional inline text), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation).
+**Block types:** `TextBlock` (pure floating rich text — no background, border, or shadow; only font/size/color/align properties), `ImageBlock` (bitmap), `ShapeBlock` (SVG shapes: rectangle, ellipse, polygon, star; supports optional inline text), `LineBlock` (SVG line/arrow with draggable endpoints; position is stored as two absolute board coordinates `x1,y1→x2,y2` rather than a bounding box + rotation), `PathBlock` (freehand pencil strokes; points stored in local space relative to bounding box origin; supports Catmull-Rom smoothing, width tapering rendered as a filled outline polygon, and start→end color gradients via SVG `<linearGradient>`). `PathBlock.setSize()` scales all local points proportionally so the stroke shape is preserved on resize.
 
 **Text editing flow:** Double-clicking a `TextBlock` or `ShapeBlock` starts a TipTap editing session. For `TextBlock`, TipTap mounts into the block's content element and a `TextFormatToolbar` (floating above the selection) appears on text selection; the block temporarily resets rotation to 0° during editing. For `ShapeBlock`, TipTap mounts into `textInnerEl` (a flex child of `textEl`, which is a flex column container positioned `inset: 0`); the flex `justifyContent` on `textEl` drives vertical alignment so that the rendered and editing states stay visually identical. Both destroy TipTap on blur. `ShapeBlock` fires `onTextEditChange` when editing starts/ends so `PropertiesPanel` can refresh the text section — the text section is hidden when the shape has no text and is not currently being edited.
 
@@ -53,9 +53,11 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Snap and alignment guides** (`src/snap/SnapEngine.ts`, `src/ui/GuideOverlay.ts`): `computeSnap(dragged, candidates, threshold)` is a pure function — no DOM, no side effects. It returns a snapped position and a `SnapGuide[]` list. Threshold is always `6 / zoom` board units (= 6 screen pixels at any zoom). `BoxBlock` exposes a `snapPosition: ((x, y) => {x, y}) | null` hook; `main.ts` injects a closure that calls `computeSnap` and forwards guides to `GuideOverlay.draw()`. Co-traveling selected blocks naturally receive the post-snap delta because `onDragMove(dx, dy)` propagates the already-corrected delta. `GuideOverlay.el` is appended to `#app` (not `#overlay`) as `position: fixed; inset: 0` so it is never subject to the overlay's CSS transform or stacking context; draw() converts board coordinates to screen coordinates via `panX + bx * zoom`. Guides clear on `mouseup` via `guideOverlay.clear()`.
 
-**History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all four block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` (Ctrl+Z) restores the previous snapshot. `copySelected()` (Ctrl+C/X) writes snapshots to `clipboard[]`. `paste()` (Ctrl+V) reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset.
+**History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all five block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` (Ctrl+Z) restores the previous snapshot. `copySelected()` (Ctrl+C/X) writes snapshots to `clipboard[]`. `paste()` (Ctrl+V) reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset.
 
 **Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee.
+
+**Pencil tool** (`main.ts`, `AddBar`): Toggled by `setPencilActive()` — sets `pencilActive`, toggles `#app.pencil-mode` (crosshair cursor), and shows/hides the pencil options panel in `AddBar`. `AddBar` exposes a `PencilSettings` interface (`stroke`, `strokeEnd`, `strokeWidth`, `taper`, `smoothing`) via `onPencilSettingsChange`; `main.ts` stores the current settings in `pencilSettings` and passes them to `PathBlock` on commit. Drawing uses a `requestAnimationFrame` loop: a "nib" position chases the real cursor with exponential decay (`PENCIL_ELASTIC = 0.25`), accumulates smoothed points, and updates a live SVG preview path. On mouseup, `commitDrawing()` runs RDP simplification (epsilon = `1.5 / zoom` board units), computes the bounding box, converts to local space, and creates a `PathBlock`.
 
 **Marquee selection:** Dragging on empty board space in edit mode draws a `.marquee` div (`position: fixed`) and on mouseup selects all blocks whose `getBoundingClientRect()` intersects it. Capture the rect before calling `.remove()` — after removal it returns zeros.
 
@@ -77,6 +79,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 - Font loading: `document.fonts.load("16px family")` is called explicitly per font family alongside `document.fonts.ready` — `document.fonts.ready` alone does not guarantee dynamically-injected Google Fonts `<link>` tags have resolved.
 - `runFont()` omits "normal" style/weight tokens from the CSS font shorthand to avoid parser edge cases in some canvas implementations.
 - `parseHtmlText` converts TipTap HTML into `StyledParagraph[]` (block elements → paragraphs, inline elements → styled runs) for `wrapRuns` / `renderParagraphs` to lay out. `wrapRuns` stores each token separately; `drawTextRun` must receive `{ ...seg.run, text: seg.text }` — passing `seg.run` directly would render the entire run string at every token position.
+- `PathBlock` rendering: when `taper > 0`, `traceOutlineCanvas` builds a filled variable-width outline (sampled from the Catmull-Rom curve) instead of stroking the centerline. When `strokeEnd` differs from `stroke`, a `ctx.createLinearGradient` running from the first to the last point is used as the fill/stroke style.
 
 **Module structure:**
 ```
@@ -91,8 +94,10 @@ src/
     ImageBlock.ts     # bitmap block (extends BoxBlock)
     ShapeBlock.ts     # SVG shape block (extends BoxBlock)
     LineBlock.ts      # line/arrow block with two draggable endpoints (extends BaseBlock)
+    PathBlock.ts      # freehand path block with smoothing, taper, gradient (extends BoxBlock)
+    pathUtils.ts      # pure geometry: RDP, Catmull-Rom SVG/canvas, outline path builder
   ui/
-    AddBar.ts             # top-center toolbar: mode picker dropdown + add buttons
+    AddBar.ts             # top-center toolbar: mode/shape pickers, add buttons, pencil options panel
     LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
     SelectionBox.ts       # AABB outline + corner/side resize handles + rotate handle (single and multi)
     TextFormatToolbar.ts  # floating toolbar shown on text selection
@@ -122,6 +127,7 @@ src/
       shape-block.css
       image-block.css
       text-block.css
+      path-block.css
     ui/
       add-bar.css
       properties-panel.css
