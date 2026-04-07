@@ -127,7 +127,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-text-placeholder);
+    color: var(--color-text-faint);
     padding: 0 4px;
 }
 
