@@ -43,7 +43,8 @@
     cursor: grab;
 }
 
-#app.explore-mode.panning {
+#app.explore-mode.panning,
+#app.panning {
     cursor: grabbing;
 }
 

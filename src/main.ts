@@ -840,8 +840,51 @@ function rectsIntersect(a: DOMRect, b: DOMRect): boolean {
     return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
-// Drag on empty board space: pan in explore mode, marquee select in edit mode.
+// Right-click drag and middle-click drag pan the canvas in edit mode.
+// A right-click that never moves past the threshold is not considered a pan, so
+// the contextmenu event is only suppressed when a drag actually occurred.
+let rightDragPanned = false
+
+document.addEventListener('contextmenu', (e) => {
+    if (rightDragPanned) {
+        e.preventDefault()
+        rightDragPanned = false
+    }
+})
+
 document.addEventListener('mousedown', (e) => {
+    if (e.button === 2 || e.button === 1) {
+        const target = e.target as HTMLElement
+        if (target.closest('#properties-panel, #layers-panel, #add-bar, #zoom-widget')) return
+        e.preventDefault()
+
+        const startX = e.clientX - panX
+        const startY = e.clientY - panY
+        let panning = false
+
+        const onMove = (e: MouseEvent) => {
+            if (!panning) {
+                if (Math.hypot(e.clientX - (startX + panX), e.clientY - (startY + panY)) < 4) return
+                panning = true
+                if (e.buttons & 2) rightDragPanned = true
+                app.classList.add('panning')
+            }
+            panX = e.clientX - startX
+            panY = e.clientY - startY
+            applyTransform()
+        }
+
+        const onUp = () => {
+            if (panning) app.classList.remove('panning')
+            window.removeEventListener('mousemove', onMove)
+            window.removeEventListener('mouseup', onUp)
+        }
+
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+        return
+    }
+
     if (e.button !== 0) return
     const target = e.target as HTMLElement
     if (target.closest('#properties-panel, #layers-panel, #add-bar, #zoom-widget')) return
