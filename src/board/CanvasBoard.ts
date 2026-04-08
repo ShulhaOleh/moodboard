@@ -65,8 +65,7 @@ export class CanvasBoard implements BoardObject {
     setBackground(bg: string) {
         const transparent = !bg || bg === 'transparent' || parseAlpha(bg) === 0
         this.bg = transparent ? '' : bg
-        this.appEl.style.backgroundColor = this.bg
-        this.appEl.classList.toggle('canvas-transparent', transparent)
+        this.appEl.style.setProperty('--canvas-color', this.bg || 'transparent')
     }
 
     getAppearanceFields(): PropertyField[] {

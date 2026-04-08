@@ -1,16 +1,19 @@
 /* Board-level overlays: marquee selection, drag-over highlight, and explore-mode cursor. */
 
-/* Checkerboard pattern shown when canvas background is transparent.
-   Fixed to the viewport — does not pan or zoom with the board. */
-#app.canvas-transparent {
+/* Checkerboard is always the base background — it represents transparency.
+   --canvas-color overlays on top as a solid gradient layer; when transparent (default)
+   the checkerboard is fully visible; a semi-transparent color blends over it correctly
+   instead of compositing against the white page body. */
+#app {
     background-color: var(--color-canvas-grid-b);
     background-image:
+        linear-gradient(var(--canvas-color, transparent), var(--canvas-color, transparent)),
         linear-gradient(45deg, var(--color-canvas-grid-a) 25%, transparent 25%),
         linear-gradient(-45deg, var(--color-canvas-grid-a) 25%, transparent 25%),
         linear-gradient(45deg, transparent 75%, var(--color-canvas-grid-a) 75%),
         linear-gradient(-45deg, transparent 75%, var(--color-canvas-grid-a) 75%);
-    background-size: 20px 20px;
-    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    background-size: auto, 20px 20px, 20px 20px, 20px 20px, 20px 20px;
+    background-position: 0 0, 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 
 /* Marquee selection rectangle */
