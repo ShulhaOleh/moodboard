@@ -38,6 +38,10 @@
     --color-canvas-grid-a: #f8f8f2;
     --color-canvas-grid-b: #efefea;
 
+    /* Scrollbar */
+    --color-scrollbar-thumb: #c0c0b8;
+    --color-scrollbar-track: transparent;
+
     /* Elevation shadows */
     --shadow-sm:     0 1px 4px rgba(40, 42, 54, 0.08);
     --shadow-md:     0 2px 8px rgba(40, 42, 54, 0.10);
@@ -80,6 +84,10 @@
     /* Transparent canvas checkerboard */
     --color-canvas-grid-a: #282a36;
     --color-canvas-grid-b: #21222c;
+
+    /* Scrollbar */
+    --color-scrollbar-thumb: #44475a;
+    --color-scrollbar-track: transparent;
 
     /* No elevation — borders separate elements instead */
     --shadow-sm:     none;

@@ -12,6 +12,35 @@ body {
     height: 100%;
 }
 
+/* Themed scrollbars — standard (Firefox, Chrome 121+) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-scrollbar-thumb) var(--color-scrollbar-track);
+}
+
+/* Webkit fallback */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--color-scrollbar-track);
+}
+
 input,
 select,
 textarea {
