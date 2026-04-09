@@ -156,3 +156,168 @@
     background: var(--color-accent);
     color: #fff;
 }
+
+/* ── Page description ────────────────────────────────────────────────────────── */
+
+.settings-page-desc {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 0 0 4px;
+    line-height: 1.5;
+}
+
+/* ── Keyboard shortcut rows ──────────────────────────────────────────────────── */
+
+.keybinding-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.keybinding-pair {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.keybinding-badge {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    border-radius: 5px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    font-size: 12px;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 88px;
+    transition: border-color 0.12s, background 0.12s, color 0.12s;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.keybinding-badge:hover:not(.is-capturing):not(.is-conflict) {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-a08);
+}
+
+.keybinding-badge.is-capturing {
+    border-color: var(--color-accent);
+    background: var(--color-accent-a12);
+    color: var(--color-accent);
+    animation: kb-pulse 1.2s ease-in-out infinite;
+    cursor: default;
+}
+
+@keyframes kb-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--color-accent-a25); }
+    50%       { box-shadow: 0 0 0 3px var(--color-accent-a25); }
+}
+
+.keybinding-badge.is-conflict {
+    border-color: var(--color-danger-border);
+    background: var(--color-danger-subtle);
+    color: var(--color-danger);
+}
+
+.keybinding-badge.is-empty {
+    border-style: dashed;
+    background: none;
+}
+
+.keybinding-badge.is-empty:hover {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-a06);
+}
+
+/* Shared auxiliary button style — small, unobtrusive, sits next to its badge. */
+.keybinding-aux-btn {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--color-text-faint);
+    border-radius: 3px;
+    flex-shrink: 0;
+    transition: color 0.1s, background 0.12s;
+}
+
+.keybinding-aux-btn:hover {
+    color: var(--color-text-muted);
+    background: var(--color-surface-raised);
+}
+
+.keybinding-aux-btn svg {
+    width: 11px;
+    height: 11px;
+}
+
+/* Clear secondary: danger hover since it removes a binding. */
+.keybinding-clear-sec:hover {
+    color: var(--color-danger);
+    background: var(--color-danger-subtle);
+}
+
+/* Invisible when no secondary set — still occupies space to keep columns aligned. */
+.keybinding-clear-sec.is-hidden {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* ── Conflict confirmation bar (inserted after the conflicting row) ───────────── */
+
+.keybinding-conflict-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.keybinding-conflict-msg {
+    flex: 1;
+    font-size: 13px;
+    color: var(--color-danger);
+}
+
+.keybinding-conflict-override,
+.keybinding-conflict-cancel {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid;
+    white-space: nowrap;
+}
+
+.keybinding-conflict-override {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    color: #fff;
+}
+
+.keybinding-conflict-override:hover {
+    background: color-mix(in srgb, var(--color-danger) 82%, black);
+    border-color: color-mix(in srgb, var(--color-danger) 82%, black);
+}
+
+.keybinding-conflict-cancel {
+    background: none;
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.keybinding-conflict-cancel:hover {
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+}

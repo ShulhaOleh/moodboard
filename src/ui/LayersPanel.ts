@@ -37,6 +37,8 @@ export class LayersPanel {
 
     // Called whenever the panel docks or undocks — main.ts uses it to reposition overlapping widgets.
     onDockChange: ((docked: boolean) => void) | null = null
+    // Overridden by main.ts to use the user's configured keybinding instead of the hardcoded default.
+    isRenameKey: (e: KeyboardEvent) => boolean = (e) => e.key === 'F2'
     private docked = true
     private listEl: HTMLUListElement
     private nameInput: HTMLInputElement
@@ -95,7 +97,7 @@ export class LayersPanel {
         })
 
         document.addEventListener('keydown', (e) => {
-            if (e.key !== 'F2') return
+            if (!this.isRenameKey(e)) return
             const selected = this.listEl.querySelector<HTMLLIElement>('.layer-row.is-selected')
             if (!selected) return
             e.preventDefault()

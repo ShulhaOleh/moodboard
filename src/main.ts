@@ -28,6 +28,7 @@ import { computeSnap } from './snap/SnapEngine'
 import { BoxBlock } from './board/BoxBlock'
 import { loadSettings, applyTheme } from './lib/settings'
 import { SettingsPanel } from './ui/SettingsPanel'
+import { loadKeybindings, matchesAction, type KeybindingMap } from './lib/keybindings'
 
 type BlockSnapshot = PersistedBlock
 
@@ -35,6 +36,8 @@ const app = document.getElementById('app')!
 
 const userSettings = loadSettings()
 applyTheme(userSettings.theme)
+
+let keybindings: KeybindingMap = loadKeybindings()
 
 const panel = new PropertiesPanel(app)
 const layersPanel = new LayersPanel(app)
@@ -48,8 +51,12 @@ app.classList.add('layers-panel-docked') // docked by default
 const canvasBoard = new CanvasBoard(app)
 panel.show(canvasBoard)
 const addBar = new AddBar(app)
-const settingsPanel = new SettingsPanel(app, userSettings)
+const settingsPanel = new SettingsPanel(app, userSettings, keybindings)
 addBar.onSettingsOpen = () => settingsPanel.open()
+settingsPanel.onKeybindingsChange = (updated) => {
+    keybindings = updated
+}
+layersPanel.isRenameKey = (e) => matchesAction(e, keybindings.renameLayer)
 
 const overlay = document.createElement('div')
 overlay.id = 'overlay'
@@ -639,37 +646,34 @@ document.addEventListener('keydown', (e) => {
         return
     }
 
-    if ((e.key === 'Delete' || e.key === 'Backspace') && !inEditable) {
+    if (matchesAction(e, keybindings.delete) && !inEditable) {
         deleteSelected()
         return
     }
 
-    if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !inEditable) {
-            e.preventDefault()
-            undo()
-            return
-        }
-        if (e.key === 'c' && !inEditable) {
-            e.preventDefault()
-            copySelected()
-            return
-        }
-        if (e.key === 'x' && !inEditable) {
-            e.preventDefault()
-            copySelected()
-            deleteSelected()
-            return
-        }
-        if (e.key === 'v' && !inEditable) {
-            e.preventDefault()
-            paste()
-            return
-        }
+    if (matchesAction(e, keybindings.undo) && !inEditable) {
+        e.preventDefault()
+        undo()
+        return
+    }
+    if (matchesAction(e, keybindings.copy) && !inEditable) {
+        e.preventDefault()
+        copySelected()
+        return
+    }
+    if (matchesAction(e, keybindings.cut) && !inEditable) {
+        e.preventDefault()
+        copySelected()
+        deleteSelected()
+        return
+    }
+    if (matchesAction(e, keybindings.paste) && !inEditable) {
+        e.preventDefault()
+        paste()
+        return
     }
 
-    // P — toggle pencil tool
-    if (e.key === 'p' && !inEditable) {
+    if (matchesAction(e, keybindings.pencilToggle) && !inEditable) {
         setPencilActive(!pencilActive)
         return
     }
