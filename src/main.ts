@@ -1279,4 +1279,8 @@ const exporter = new Exporter()
 // Load persisted board, or show demo objects on first visit.
 void loadBoard().then((loaded) => {
     if (!loaded) loadDemo()
+    // Refresh the panel so the canvas background color reflects the loaded value.
+    // panel.show(canvasBoard) was called synchronously before loadBoard resolved,
+    // so it captured bg = '' regardless of what was stored.
+    else panel.show(canvasBoard)
 })
