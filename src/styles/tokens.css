@@ -95,3 +95,112 @@
     --shadow-lg:     none;
     --shadow-dialog: none;
 }
+
+/* ── Accent palettes ─────────────────────────────────────────────────────────
+   Each block overrides only the accent tokens; all other tokens fall through
+   from :root / [data-theme="dark"]. Purple is the default (no data-accent).  */
+
+:root[data-accent="blue"] {
+    --color-accent:        #2563eb;
+    --color-accent-hover:  #1d4ed8;
+    --color-accent-subtle: #eff6ff;
+    --color-accent-border: #93c5fd;
+    --color-accent-a06: rgba(37, 99, 235, 0.06);
+    --color-accent-a08: rgba(37, 99, 235, 0.08);
+    --color-accent-a12: rgba(37, 99, 235, 0.12);
+    --color-accent-a25: rgba(37, 99, 235, 0.25);
+}
+[data-theme="dark"][data-accent="blue"] {
+    --color-accent:        #60a5fa;
+    --color-accent-hover:  #3b82f6;
+    --color-accent-subtle: #1e3a5f;
+    --color-accent-border: #2563eb;
+    --color-accent-a06: rgba(96, 165, 250, 0.06);
+    --color-accent-a08: rgba(96, 165, 250, 0.09);
+    --color-accent-a12: rgba(96, 165, 250, 0.14);
+    --color-accent-a25: rgba(96, 165, 250, 0.28);
+}
+
+:root[data-accent="teal"] {
+    --color-accent:        #0d9488;
+    --color-accent-hover:  #0f766e;
+    --color-accent-subtle: #f0fdfa;
+    --color-accent-border: #5eead4;
+    --color-accent-a06: rgba(13, 148, 136, 0.06);
+    --color-accent-a08: rgba(13, 148, 136, 0.08);
+    --color-accent-a12: rgba(13, 148, 136, 0.12);
+    --color-accent-a25: rgba(13, 148, 136, 0.25);
+}
+[data-theme="dark"][data-accent="teal"] {
+    --color-accent:        #2dd4bf;
+    --color-accent-hover:  #14b8a6;
+    --color-accent-subtle: #0d2f2b;
+    --color-accent-border: #0f766e;
+    --color-accent-a06: rgba(45, 212, 191, 0.06);
+    --color-accent-a08: rgba(45, 212, 191, 0.09);
+    --color-accent-a12: rgba(45, 212, 191, 0.14);
+    --color-accent-a25: rgba(45, 212, 191, 0.28);
+}
+
+:root[data-accent="green"] {
+    --color-accent:        #16a34a;
+    --color-accent-hover:  #15803d;
+    --color-accent-subtle: #f0fdf4;
+    --color-accent-border: #86efac;
+    --color-accent-a06: rgba(22, 163, 74, 0.06);
+    --color-accent-a08: rgba(22, 163, 74, 0.08);
+    --color-accent-a12: rgba(22, 163, 74, 0.12);
+    --color-accent-a25: rgba(22, 163, 74, 0.25);
+}
+[data-theme="dark"][data-accent="green"] {
+    --color-accent:        #4ade80;
+    --color-accent-hover:  #22c55e;
+    --color-accent-subtle: #052e16;
+    --color-accent-border: #16a34a;
+    --color-accent-a06: rgba(74, 222, 128, 0.06);
+    --color-accent-a08: rgba(74, 222, 128, 0.09);
+    --color-accent-a12: rgba(74, 222, 128, 0.14);
+    --color-accent-a25: rgba(74, 222, 128, 0.28);
+}
+
+:root[data-accent="orange"] {
+    --color-accent:        #ea580c;
+    --color-accent-hover:  #c2410c;
+    --color-accent-subtle: #fff7ed;
+    --color-accent-border: #fdba74;
+    --color-accent-a06: rgba(234, 88, 12, 0.06);
+    --color-accent-a08: rgba(234, 88, 12, 0.08);
+    --color-accent-a12: rgba(234, 88, 12, 0.12);
+    --color-accent-a25: rgba(234, 88, 12, 0.25);
+}
+[data-theme="dark"][data-accent="orange"] {
+    --color-accent:        #fb923c;
+    --color-accent-hover:  #f97316;
+    --color-accent-subtle: #431407;
+    --color-accent-border: #c2410c;
+    --color-accent-a06: rgba(251, 146, 60, 0.06);
+    --color-accent-a08: rgba(251, 146, 60, 0.09);
+    --color-accent-a12: rgba(251, 146, 60, 0.14);
+    --color-accent-a25: rgba(251, 146, 60, 0.28);
+}
+
+:root[data-accent="pink"] {
+    --color-accent:        #db2777;
+    --color-accent-hover:  #be185d;
+    --color-accent-subtle: #fdf2f8;
+    --color-accent-border: #f9a8d4;
+    --color-accent-a06: rgba(219, 39, 119, 0.06);
+    --color-accent-a08: rgba(219, 39, 119, 0.08);
+    --color-accent-a12: rgba(219, 39, 119, 0.12);
+    --color-accent-a25: rgba(219, 39, 119, 0.25);
+}
+[data-theme="dark"][data-accent="pink"] {
+    --color-accent:        #f472b6;
+    --color-accent-hover:  #ec4899;
+    --color-accent-subtle: #4a044e;
+    --color-accent-border: #be185d;
+    --color-accent-a06: rgba(244, 114, 182, 0.06);
+    --color-accent-a08: rgba(244, 114, 182, 0.09);
+    --color-accent-a12: rgba(244, 114, 182, 0.14);
+    --color-accent-a25: rgba(244, 114, 182, 0.28);
+}

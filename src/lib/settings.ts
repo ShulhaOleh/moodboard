@@ -3,12 +3,16 @@
 
 const STORAGE_KEY = 'moodboard-settings'
 
+export type AccentColor = 'purple' | 'blue' | 'teal' | 'green' | 'orange' | 'pink'
+
 export interface UserSettings {
     theme: 'light' | 'dark' | 'system'
+    accent: AccentColor
 }
 
 const DEFAULTS: UserSettings = {
     theme: 'system',
+    accent: 'purple',
 }
 
 export function loadSettings(): UserSettings {
@@ -32,4 +36,14 @@ export function applyTheme(theme: UserSettings['theme']): void {
         theme === 'dark' ||
         (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+}
+
+// Sets data-accent on <html> to activate the chosen accent palette.
+// Purple is the default (defined in :root), so its attribute is removed to keep the DOM clean.
+export function applyAccent(accent: AccentColor): void {
+    if (accent === 'purple') {
+        document.documentElement.removeAttribute('data-accent')
+    } else {
+        document.documentElement.setAttribute('data-accent', accent)
+    }
 }

@@ -1,7 +1,13 @@
 // Settings overlay — full-screen panel for managing user preferences.
 // Structured like Discord: fixed sidebar on the left, scrollable content on the right.
 
-import { type UserSettings, saveSettings, applyTheme } from '../lib/settings'
+import {
+    type UserSettings,
+    type AccentColor,
+    saveSettings,
+    applyTheme,
+    applyAccent,
+} from '../lib/settings'
 import {
     type KeybindingMap,
     type ActionBindings,
@@ -167,6 +173,7 @@ export class SettingsPanel {
         const page = document.createElement('div')
         page.appendChild(this.buildPageTitle('Appearance'))
         page.appendChild(this.buildThemeField())
+        page.appendChild(this.buildAccentField())
         return page
     }
 
@@ -206,6 +213,49 @@ export class SettingsPanel {
         }
 
         field.appendChild(segmented)
+        return field
+    }
+
+    private buildAccentField(): HTMLElement {
+        const field = document.createElement('div')
+        field.className = 'settings-field'
+
+        const labelEl = document.createElement('div')
+        labelEl.className = 'settings-field-label'
+        labelEl.textContent = 'Accent color'
+        field.appendChild(labelEl)
+
+        const swatches = document.createElement('div')
+        swatches.className = 'accent-swatches'
+
+        const options: { value: AccentColor; label: string }[] = [
+            { value: 'purple', label: 'Purple' },
+            { value: 'blue', label: 'Blue' },
+            { value: 'teal', label: 'Teal' },
+            { value: 'green', label: 'Green' },
+            { value: 'orange', label: 'Orange' },
+            { value: 'pink', label: 'Pink' },
+        ]
+
+        for (const opt of options) {
+            const swatch = document.createElement('button')
+            swatch.className = 'accent-swatch'
+            swatch.dataset.accentColor = opt.value
+            swatch.title = opt.label
+            swatch.classList.toggle('is-active', this.settings.accent === opt.value)
+            swatch.addEventListener('click', () => {
+                swatches
+                    .querySelectorAll<HTMLButtonElement>('.accent-swatch')
+                    .forEach((s) => s.classList.remove('is-active'))
+                swatch.classList.add('is-active')
+                this.settings.accent = opt.value
+                saveSettings(this.settings)
+                applyAccent(opt.value)
+            })
+            swatches.appendChild(swatch)
+        }
+
+        field.appendChild(swatches)
         return field
     }
 
