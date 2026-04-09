@@ -53,7 +53,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Snap and alignment guides** (`src/snap/SnapEngine.ts`, `src/ui/GuideOverlay.ts`): `computeSnap(dragged, candidates, threshold)` is a pure function — no DOM, no side effects. It returns a snapped position and a `SnapGuide[]` list. Threshold is always `6 / zoom` board units (= 6 screen pixels at any zoom). `BoxBlock` exposes a `snapPosition: ((x, y) => {x, y}) | null` hook; `main.ts` injects a closure that calls `computeSnap` and forwards guides to `GuideOverlay.draw()`. Co-traveling selected blocks naturally receive the post-snap delta because `onDragMove(dx, dy)` propagates the already-corrected delta. `GuideOverlay.el` is appended to `#app` (not `#overlay`) as `position: fixed; inset: 0` so it is never subject to the overlay's CSS transform or stacking context; draw() converts board coordinates to screen coordinates via `panX + bx * zoom`. Guides clear on `mouseup` via `guideOverlay.clear()`.
 
-**History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all five block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` (Ctrl+Z) restores the previous snapshot. `copySelected()` (Ctrl+C/X) writes snapshots to `clipboard[]`. `paste()` (Ctrl+V) reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset.
+**History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all five block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` restores the previous snapshot. `copySelected()` writes snapshots to `clipboard[]`. `paste()` reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset. The keys for all these operations are user-configurable — see **Settings and keybindings** below.
 
 **Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee. In both modes, right-click drag (`button === 2`) and middle-click drag (`button === 1`) also pan — the `contextmenu` event is suppressed only when a right-drag actually moved past the 4 px threshold (`rightDragPanned` flag).
 
@@ -61,7 +61,9 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Marquee selection:** Dragging on empty board space in edit mode draws a `.marquee` div (`position: fixed`) and on mouseup selects all blocks whose `getBoundingClientRect()` intersects it. Capture the rect before calling `.remove()` — after removal it returns zeros.
 
-**Layers panel** (`src/ui/LayersPanel.ts`): Left-docked panel listing all blocks in z-order (last `blocks[]` entry = frontmost = top row). Supports drag-to-reorder (HTML5 DnD), per-row visibility and lock toggles, and inline name editing (double-click or F2). Mirrors the dock/undock/collapse/resize behavior of `PropertiesPanel`. `onReorder` callback in `main.ts` splices `blocks[]` then calls `overlay.appendChild` on every block to re-sync DOM order. `refresh()` rebuilds all rows; `notifySelectionChanged()` only toggles `is-selected` classes. The panel uses `data-array-index` on each row to map between the reversed visual order and the actual array index.
+**Layers panel** (`src/ui/LayersPanel.ts`): Left-docked panel listing all blocks in z-order (last `blocks[]` entry = frontmost = top row). Supports drag-to-reorder (HTML5 DnD), per-row visibility and lock toggles, and inline name editing (double-click or the rename shortcut). Mirrors the dock/undock/collapse/resize behavior of `PropertiesPanel`. `onReorder` callback in `main.ts` splices `blocks[]` then calls `overlay.appendChild` on every block to re-sync DOM order. `refresh()` rebuilds all rows; `notifySelectionChanged()` only toggles `is-selected` classes. The panel uses `data-array-index` on each row to map between the reversed visual order and the actual array index. The rename key is injected via `layersPanel.isRenameKey` from `main.ts` so it respects the user's configured binding.
+
+**Settings and keybindings** (`src/lib/settings.ts`, `src/lib/keybindings.ts`, `src/ui/SettingsPanel.ts`): User preferences live in `localStorage`. `UserSettings` (key `moodboard-settings`) holds `theme`. `KeybindingMap` (key `moodboard-keybindings`) maps each `ShortcutAction` to `ActionBindings = { primary: Keybinding; secondary: Keybinding | null }` — every action supports an optional second binding. `matchesAction(e, bindings)` checks both slots; `ctrl: true` accepts either Ctrl or Cmd. All board shortcut checks in `main.ts` use `matchesAction`; `LayersPanel.isRenameKey` is the one exception wired via a callback. `SettingsPanel` is a full-screen overlay with a Discord-style sidebar — `open()` registers a capture-phase Escape listener that intercepts before the board's handler. To add a new shortcut: add the action to `ShortcutAction`, `ACTION_LABELS`, and `DEFAULT_KEYBINDINGS` in `keybindings.ts`; add it to the `actions` array in `SettingsPanel.buildKeybindingsPage()`; use `matchesAction(e, keybindings.yourAction)` in `main.ts`.
 
 **Dialogs:** Never use native `alert()` or `confirm()`. Use `Dialog.alert(message)` and `Dialog.confirm(message, { confirmLabel?, destructive? })` from `src/ui/Dialog.ts` — both return Promises and render styled modal popups.
 
@@ -109,6 +111,7 @@ src/
     FontPicker.ts         # searchable Google Fonts dropdown
     Dialog.ts             # styled alert/confirm modals; use instead of native alert/confirm
     GuideOverlay.ts       # fixed SVG overlay that draws alignment lines and spacing indicators
+    SettingsPanel.ts      # full-screen settings overlay (appearance + keyboard shortcuts)
   snap/
     SnapEngine.ts     # pure snap computation: edge/center alignment + equal-spacing detection
   export/
@@ -117,6 +120,8 @@ src/
   lib/
     fonts.ts          # font list + lazy Google Fonts loader
     db.ts             # Dexie schema, PersistedBlock union, SCHEMA_VERSION
+    settings.ts       # UserSettings type, load/save, applyTheme — localStorage key moodboard-settings
+    keybindings.ts    # KeybindingMap, ActionBindings, matchesAction, formatBinding — localStorage key moodboard-keybindings
   main.ts             # board state: blocks[], selectedBlocks, history, clipboard, pan, mode
   style.css           # entry point — @imports Tailwind and all component stylesheets
   styles/
@@ -140,6 +145,7 @@ src/
       font-picker.css
       selection-box.css
       dialog.css
+      settings-panel.css
 ```
 
 ## Code Style
