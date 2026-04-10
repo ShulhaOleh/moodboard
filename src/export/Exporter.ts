@@ -202,16 +202,18 @@ function renderImageBlock(
     const rotation = block.getRotation()
 
     applyBoxTransform(ctx, x, y, w, h, rotation)
-    ctx.globalAlpha = data.opacity / 100
 
+    const opacity = data.opacity / 100
     const radius = Math.min(data.borderRadius, w / 2, h / 2)
     const clipPath = new Path2D()
     clipPath.roundRect(0, 0, w, h, radius)
 
-    // Shadow: draw opaque shape to generate correct shadow strength, then clear settings.
-    // The opaque fill inside the clip will be overdrawn by the actual block content.
+    // Shadow: draw the block shape at the target opacity to generate a correctly-faded
+    // shadow (CSS box-shadow is also faded by element opacity), then erase the proxy
+    // fill inside the clip so it does not cover the actual block content.
     if (data.shadowColor) {
         ctx.save()
+        ctx.globalAlpha = opacity
         ctx.shadowColor = data.shadowColor
         ctx.shadowBlur = data.shadowBlur
         ctx.shadowOffsetX = data.shadowX
@@ -219,29 +221,39 @@ function renderImageBlock(
         ctx.fillStyle = '#ffffff'
         ctx.fill(clipPath)
         ctx.restore()
-    }
 
-    ctx.clip(clipPath)
-
-    // Overdraw the opaque shadow-source fill only when a shadow was actually drawn.
-    // Without this guard the entire clip area would be painted with boardBg and would
-    // cover any blocks that sit beneath the transparent regions of this image block.
-    if (data.shadowColor) {
+        ctx.save()
+        ctx.clip(clipPath)
         if (boardBg) {
             ctx.fillStyle = boardBg
             ctx.fillRect(0, 0, w, h)
         } else {
             ctx.clearRect(0, 0, w, h)
         }
+        ctx.restore()
     }
 
+    // CSS opacity creates a compositing group: background fill and image are rendered
+    // at full opacity inside the group, then composited at the target opacity.
+    // Replicate this with an intermediate canvas so the two draws blend correctly
+    // before opacity is applied — otherwise they each composite independently at the
+    // reduced alpha, which makes the block appear brighter than it does on canvas.
+    const offscreen = makeCanvas(Math.ceil(w), Math.ceil(h))
+    const oc = offscreen.getContext('2d') as CanvasRenderingContext2D
+    const offClip = new Path2D()
+    offClip.roundRect(0, 0, w, h, radius)
+    oc.clip(offClip)
+
     if (data.background) {
-        ctx.fillStyle = data.background
-        ctx.fillRect(0, 0, w, h)
+        oc.fillStyle = data.background
+        oc.fillRect(0, 0, w, h)
     }
 
     const img = data.src ? images.get(data.src) : undefined
-    if (img && img.naturalWidth > 0) drawImageFit(ctx, img, 0, 0, w, h, data.objectFit)
+    if (img && img.naturalWidth > 0) drawImageFit(oc, img, 0, 0, w, h, data.objectFit)
+
+    ctx.globalAlpha = opacity
+    ctx.drawImage(offscreen as unknown as HTMLCanvasElement, 0, 0)
 }
 
 function drawImageFit(
@@ -276,9 +288,48 @@ function renderShapeBlock(ctx: CanvasRenderingContext2D, block: ShapeBlock) {
     const rotation = block.getRotation()
 
     applyBoxTransform(ctx, x, y, w, h, rotation)
-    ctx.globalAlpha = data.opacity / 100
 
     const path = buildShapePath(data, w, h)
+    const opacity = data.opacity / 100
+    const hasFill = !!data.fill
+    const hasStroke = !!(data.stroke && data.strokeWidth > 0)
+
+    // CSS opacity on an element creates a compositing group: fill and stroke are painted
+    // at full opacity first, then the group is composited at the target opacity.
+    // Canvas globalAlpha applies per draw call, so when both fill and stroke are present
+    // at opacity < 1 the stroke bleeds fill color at the overlap. Use an intermediate
+    // canvas to replicate the CSS compositing group in that case.
+    if (opacity < 1 && hasFill && hasStroke) {
+        const sw = data.strokeWidth
+        // Expand by half the stroke width so the outer edge of the stroke is not clipped.
+        const pad = Math.ceil(sw / 2)
+        const ow = Math.ceil(w) + pad * 2
+        const oh = Math.ceil(h) + pad * 2
+        const offscreen = makeCanvas(ow, oh)
+        const oc = offscreen.getContext('2d') as CanvasRenderingContext2D
+        oc.translate(pad, pad)
+        oc.fillStyle = data.fill
+        oc.fill(path)
+        oc.strokeStyle = data.stroke
+        oc.lineWidth = sw
+        oc.stroke(path)
+        if (data.text?.trim()) renderShapeText(oc, data, w, h)
+
+        // Shadow follows the composited group, matching CSS drop-shadow behavior.
+        if (data.shadowColor) {
+            ctx.shadowColor = data.shadowColor
+            ctx.shadowBlur = data.shadowBlur
+            ctx.shadowOffsetX = data.shadowX
+            ctx.shadowOffsetY = data.shadowY
+        }
+        ctx.globalAlpha = opacity
+        ctx.drawImage(offscreen as unknown as HTMLCanvasElement, -pad, -pad)
+        ctx.shadowColor = 'transparent'
+        return
+    }
+
+    // Simple path: only fill or only stroke (or opacity = 1), no compositing group needed.
+    ctx.globalAlpha = opacity
 
     // Shadow applied on the first fill/stroke draw, then cleared so subsequent draws don't repeat it
     if (data.shadowColor) {
@@ -288,13 +339,13 @@ function renderShapeBlock(ctx: CanvasRenderingContext2D, block: ShapeBlock) {
         ctx.shadowOffsetY = data.shadowY
     }
 
-    if (data.fill) {
+    if (hasFill) {
         ctx.fillStyle = data.fill
         ctx.fill(path)
         ctx.shadowColor = 'transparent'
     }
 
-    if (data.stroke && data.strokeWidth > 0) {
+    if (hasStroke) {
         // vector-effect: non-scaling-stroke — lineWidth is in block-local pixels (no viewBox scaling)
         ctx.strokeStyle = data.stroke
         ctx.lineWidth = data.strokeWidth
@@ -568,10 +619,15 @@ function renderParagraphs(
             const line = lines[li]
             const lineH = (line.maxFontSize || para.blockFontSize) * 1.2
 
-            // Bullet prefix: rendered left of the indent on the first line only
+            // Bullet prefix: rendered inside the indent area, right-aligned against the text start.
+            // CSS uses list-style-position: outside with padding-left: 1.25em, so the bullet's
+            // right edge should land at or just before the text content edge (para.indent).
             if (li === 0 && para.bullet) {
                 const bulletRun = line.segments[0]?.run ?? makeFallbackRun(para)
-                drawTextRun(ctx, { ...bulletRun, text: para.bullet }, para.indent * -0.9, y)
+                ctx.font = runFont(bulletRun)
+                const bulletW = ctx.measureText(para.bullet).width
+                const bulletX = para.indent - bulletW - para.blockFontSize * 0.15
+                drawTextRun(ctx, { ...bulletRun, text: para.bullet }, bulletX, y)
             }
 
             let startX = para.indent

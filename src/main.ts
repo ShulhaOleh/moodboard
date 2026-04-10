@@ -1215,8 +1215,12 @@ function importBoard() {
 
 async function exportBoardPng() {
     let blob: Blob
+    // When no explicit canvas background is set, fall back to the app element's computed
+    // CSS background so the PNG matches what the user sees (dark/light theme checkerboard
+    // base color). Without this, a transparent PNG at low opacity looks white in viewers.
+    const exportBg = canvasBoard.getBackground() || window.getComputedStyle(app).backgroundColor
     try {
-        blob = await exporter.exportToPng(blocks, canvasBoard.getBackground(), 2)
+        blob = await exporter.exportToPng(blocks, exportBg, 2)
     } catch (err) {
         void Dialog.alert(err instanceof Error ? err.message : 'Export failed.')
         return
