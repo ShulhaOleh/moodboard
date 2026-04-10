@@ -32,6 +32,7 @@ import {
     loadKeybindings,
     matchesAction,
     formatBinding,
+    type ActionBindings,
     type KeybindingMap,
 } from './lib/keybindings'
 
@@ -623,14 +624,14 @@ function nudgeTick(ts: number) {
     scheduleSave()
 }
 
-// Keyboard shortcuts: delete, undo, copy, cut, paste.
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     const active = document.activeElement as HTMLElement
-    const inEditable =
-        active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'
+    if (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+        return
 
     // Arrow-key nudge — move selected blocks in board space
-    if (NUDGE_KEYS.has(e.key) && !inEditable && selectedBlocks.size > 0) {
+    if (NUDGE_KEYS.has(e.key) && selectedBlocks.size > 0) {
         e.preventDefault()
         if (!heldArrows.has(e.key)) {
             heldArrows.add(e.key)
@@ -662,50 +663,32 @@ document.addEventListener('keydown', (e) => {
         return
     }
 
-    if (matchesAction(e, keybindings.delete) && !inEditable) {
-        deleteSelected()
-        return
-    }
-
-    if (matchesAction(e, keybindings.undo) && !inEditable) {
-        e.preventDefault()
-        undo()
-        return
-    }
-    if (matchesAction(e, keybindings.copy) && !inEditable) {
-        e.preventDefault()
-        copySelected()
-        return
-    }
-    if (matchesAction(e, keybindings.cut) && !inEditable) {
-        e.preventDefault()
-        copySelected()
-        deleteSelected()
-        return
-    }
-    if (matchesAction(e, keybindings.paste) && !inEditable) {
-        e.preventDefault()
-        paste()
-        return
-    }
-
-    if (matchesAction(e, keybindings.pencilToggle) && !inEditable) {
-        setPencilActive(!pencilActive)
-        return
-    }
-
-    if (matchesAction(e, keybindings.switchToEdit) && !inEditable) {
-        addBar.setMode('edit')
-        return
-    }
-
-    if (matchesAction(e, keybindings.switchToExplore) && !inEditable) {
-        addBar.setMode('explore')
-        return
+    const shortcuts: [ActionBindings, () => void][] = [
+        [keybindings.delete, () => deleteSelected()],
+        [keybindings.undo, () => undo()],
+        [keybindings.copy, () => copySelected()],
+        [
+            keybindings.cut,
+            () => {
+                copySelected()
+                deleteSelected()
+            },
+        ],
+        [keybindings.paste, () => paste()],
+        [keybindings.pencilToggle, () => setPencilActive(!pencilActive)],
+        [keybindings.switchToEdit, () => addBar.setMode('edit')],
+        [keybindings.switchToExplore, () => addBar.setMode('explore')],
+    ]
+    for (const [binding, handler] of shortcuts) {
+        if (matchesAction(e, binding)) {
+            e.preventDefault()
+            handler()
+            return
+        }
     }
 
     // Escape — cancel in-progress stroke, or deactivate pencil tool
-    if (e.key === 'Escape' && !inEditable) {
+    if (e.key === 'Escape') {
         if (cancelCurrentStroke) {
             cancelCurrentStroke()
             return
