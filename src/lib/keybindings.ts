@@ -10,6 +10,8 @@ export type ShortcutAction =
     | 'paste'
     | 'pencilToggle'
     | 'renameLayer'
+    | 'switchToEdit'
+    | 'switchToExplore'
 
 export interface Keybinding {
     key: string // e.g. 'z', 'Delete', 'p'
@@ -34,6 +36,8 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
     paste: 'Paste',
     pencilToggle: 'Toggle pencil tool',
     renameLayer: 'Rename selected layer',
+    switchToEdit: 'Switch to Edit mode',
+    switchToExplore: 'Switch to Explore mode',
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingMap = {
@@ -47,6 +51,11 @@ export const DEFAULT_KEYBINDINGS: KeybindingMap = {
     paste: { primary: { key: 'v', ctrl: true, shift: false, alt: false }, secondary: null },
     pencilToggle: { primary: { key: 'p', ctrl: false, shift: false, alt: false }, secondary: null },
     renameLayer: { primary: { key: 'F2', ctrl: false, shift: false, alt: false }, secondary: null },
+    switchToEdit: { primary: { key: 'e', ctrl: false, shift: false, alt: false }, secondary: null },
+    switchToExplore: {
+        primary: { key: 'r', ctrl: false, shift: false, alt: false },
+        secondary: null,
+    },
 }
 
 export function loadKeybindings(): KeybindingMap {

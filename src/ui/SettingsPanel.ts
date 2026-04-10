@@ -278,6 +278,8 @@ export class SettingsPanel {
             'paste',
             'pencilToggle',
             'renameLayer',
+            'switchToEdit',
+            'switchToExplore',
         ]
         for (const action of actions) {
             page.appendChild(this.buildKeybindingRow(action))

@@ -87,6 +87,7 @@ export class AddBar {
     private modeTriggerBtn: HTMLButtonElement
     private modeDropdownEl: HTMLElement
     private modeDropdownOpen = false
+    private modeHintEls: Map<BoardMode, HTMLElement> = new Map()
 
     private shapeIconBtn: HTMLButtonElement
     private shapeChevronBtn: HTMLButtonElement
@@ -124,7 +125,11 @@ export class AddBar {
             const option = document.createElement('button')
             option.className = 'mode-option'
             option.dataset.mode = mode
+            const hintEl = document.createElement('span')
+            hintEl.className = 'mode-option-hint'
             option.innerHTML = `${icon}<span>${label}</span>`
+            option.appendChild(hintEl)
+            this.modeHintEls.set(mode, hintEl)
             option.addEventListener('click', () => {
                 this.setMode(mode)
                 this.closeModeDropdown()
@@ -258,6 +263,13 @@ export class AddBar {
 
         this.setMode('edit')
         this.updateShapeTrigger()
+    }
+
+    updateModeHints(hints: Partial<Record<BoardMode, string>>) {
+        for (const [mode, text] of Object.entries(hints) as [BoardMode, string][]) {
+            const el = this.modeHintEls.get(mode)
+            if (el) el.textContent = text
+        }
     }
 
     setPencilActive(active: boolean) {

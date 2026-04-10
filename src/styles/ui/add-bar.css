@@ -203,6 +203,18 @@
     height: 20px;
 }
 
+.mode-option-hint {
+    margin-left: auto;
+    font-size: 10px;
+    font-family: ui-monospace, 'Cascadia Code', 'Fira Mono', monospace;
+    color: var(--color-text-faint);
+    flex-shrink: 0;
+}
+
+.mode-option.is-active .mode-option-hint {
+    color: rgba(255, 255, 255, 0.5);
+}
+
 /* Pencil options panel — appears below the pencil button when the tool is active */
 .pencil-options {
     position: absolute;

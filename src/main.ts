@@ -28,7 +28,12 @@ import { computeSnap } from './snap/SnapEngine'
 import { BoxBlock } from './board/BoxBlock'
 import { loadSettings, applyTheme, applyAccent } from './lib/settings'
 import { SettingsPanel } from './ui/SettingsPanel'
-import { loadKeybindings, matchesAction, type KeybindingMap } from './lib/keybindings'
+import {
+    loadKeybindings,
+    matchesAction,
+    formatBinding,
+    type KeybindingMap,
+} from './lib/keybindings'
 
 type BlockSnapshot = PersistedBlock
 
@@ -54,8 +59,18 @@ panel.show(canvasBoard)
 const addBar = new AddBar(app)
 const settingsPanel = new SettingsPanel(app, userSettings, keybindings)
 addBar.onSettingsOpen = () => settingsPanel.open()
+
+function syncModeHints() {
+    addBar.updateModeHints({
+        edit: formatBinding(keybindings.switchToEdit.primary),
+        explore: formatBinding(keybindings.switchToExplore.primary),
+    })
+}
+
+syncModeHints()
 settingsPanel.onKeybindingsChange = (updated) => {
     keybindings = updated
+    syncModeHints()
 }
 layersPanel.isRenameKey = (e) => matchesAction(e, keybindings.renameLayer)
 
@@ -676,6 +691,16 @@ document.addEventListener('keydown', (e) => {
 
     if (matchesAction(e, keybindings.pencilToggle) && !inEditable) {
         setPencilActive(!pencilActive)
+        return
+    }
+
+    if (matchesAction(e, keybindings.switchToEdit) && !inEditable) {
+        addBar.setMode('edit')
+        return
+    }
+
+    if (matchesAction(e, keybindings.switchToExplore) && !inEditable) {
+        addBar.setMode('explore')
         return
     }
 
