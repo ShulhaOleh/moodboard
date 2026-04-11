@@ -43,32 +43,32 @@ const SHAPES: { shape: DrawableShape; label: string; icon: string }[] = [
     {
         shape: 'rectangle',
         label: 'Rectangle',
-        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="5" width="14" height="10" rx="2"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5" width="14" height="10" rx="2"/></svg>`,
     },
     {
         shape: 'line',
         label: 'Line',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="2" y1="10" x2="18" y2="10"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2" y1="10" x2="18" y2="10"/></svg>`,
     },
     {
         shape: 'arrow',
         label: 'Arrow',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2,10 L15,10 M11,6 L15,10 L11,14"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2,10 L15,10 M11,6 L15,10 L11,14"/></svg>`,
     },
     {
         shape: 'ellipse',
         label: 'Ellipse',
-        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><ellipse cx="10" cy="10" rx="7" ry="5"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="10" cy="10" rx="7" ry="5"/></svg>`,
     },
     {
         shape: 'polygon',
         label: 'Polygon',
-        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,7.5 15.5,17 4.5,17 2,7.5"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="10,2 18,7.5 15.5,17 4.5,17 2,7.5"/></svg>`,
     },
     {
         shape: 'star',
         label: 'Star',
-        icon: `<svg viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 12.2,7.8 18.5,8.2 13.8,12.3 15.4,18.5 10,15.1 4.6,18.5 6.2,12.3 1.5,8.2 7.8,7.8"/></svg>`,
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="10,2 12.2,7.8 18.5,8.2 13.8,12.3 15.4,18.5 10,15.1 4.6,18.5 6.2,12.3 1.5,8.2 7.8,7.8"/></svg>`,
     },
 ]
 
