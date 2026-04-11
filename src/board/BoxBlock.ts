@@ -147,6 +147,7 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
         this.data.x = x
         this.data.y = y
         this.applyPosition()
+        this.onChange?.()
     }
 
     setSize(width: number, height: number) {
@@ -154,11 +155,13 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
         this.data.width = Math.max(this.minResizeWidth, width)
         this.data.height = Math.max(this.minResizeHeight, height)
         this.applySize()
+        this.onChange?.()
     }
 
     setRotation(deg: number) {
         this.onBeforePropertyChange?.()
         this.data.rotation = deg
         this.applyTransform()
+        this.onChange?.()
     }
 }
