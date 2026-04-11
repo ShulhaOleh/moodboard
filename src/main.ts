@@ -1085,6 +1085,9 @@ addBar.onAddNote = () => {
 addBar.onAddShape = (shape) => {
     pushHistory()
     const { x, y } = centerPosition()
+    const style = getComputedStyle(document.documentElement)
+    const accentColor = style.getPropertyValue('--color-accent').trim()
+    const accentBorder = style.getPropertyValue('--color-accent-border').trim()
     if (shape === 'line' || shape === 'arrow') {
         addBlock(
             new LineBlock(overlay, {
@@ -1093,7 +1096,7 @@ addBar.onAddShape = (shape) => {
                 y1: y + 80,
                 x2: x + 200,
                 y2: y + 80,
-                stroke: '#7c3aed',
+                stroke: accentColor,
                 strokeWidth: 2,
                 opacity: 100,
                 startPoint: 'none',
@@ -1111,7 +1114,7 @@ addBar.onAddShape = (shape) => {
             height: 160,
             rotation: 0,
             shape,
-            fill: '#c4b5fd',
+            fill: accentBorder,
             stroke: '',
             strokeWidth: 0,
             borderRadius: 8,
