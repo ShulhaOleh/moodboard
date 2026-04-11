@@ -66,9 +66,10 @@
 
 .add-bar-divider {
     width: 1px;
-    align-self: stretch;
-    background: var(--color-border);
-    margin: 4px 3px;
+    height: 20px;
+    background: var(--color-border-strong);
+    flex-shrink: 0;
+    margin: 0 3px;
 }
 
 /* Mode picker — accent-colored trigger + dropdown */
@@ -94,7 +95,6 @@
 .shape-split-btn {
     display: flex;
     align-items: center;
-    gap: 1px;
 }
 
 .shape-icon-btn {
