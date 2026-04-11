@@ -226,8 +226,12 @@ function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
     switch (snap.type) {
         case 'text':
             return new TextBlock(overlay, snap.data)
-        case 'image':
-            return new ImageBlock(overlay, snap.data)
+        case 'image': {
+            const data = snap.data.imageBlob
+                ? { ...snap.data, src: URL.createObjectURL(snap.data.imageBlob) }
+                : snap.data
+            return new ImageBlock(overlay, data)
+        }
         case 'shape':
             return new ShapeBlock(overlay, snap.data)
         case 'line':
