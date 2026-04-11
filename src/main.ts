@@ -1071,7 +1071,7 @@ addBar.onAddNote = () => {
         content: '',
         color: '#fef08a',
         fontSize: 14,
-        fontFamily: '',
+        fontFamily: 'Inter',
         opacity: 100,
         shadowColor: '',
         shadowBlur: 0,
