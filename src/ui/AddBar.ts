@@ -78,6 +78,7 @@ export class AddBar {
     readonly el: HTMLElement
     onAddText: (() => void) | null = null
     onAddImage: (() => void) | null = null
+    onAddNote: (() => void) | null = null
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
     onTogglePencil: (() => void) | null = null
@@ -163,6 +164,17 @@ export class AddBar {
         )
         imageBtn.addEventListener('click', () => this.onAddImage?.())
 
+        const noteBtn = this.makeButton(
+            'Note',
+            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h12v9l-4 4H4z"/>
+                <path d="M12 13v4l4-4h-4z" fill="currentColor" stroke="none" opacity="0.4"/>
+                <line x1="7" y1="8" x2="13" y2="8"/>
+                <line x1="7" y1="11" x2="11" y2="11"/>
+            </svg>`
+        )
+        noteBtn.addEventListener('click', () => this.onAddNote?.())
+
         // ── Shape split-button ─────────────────────────────────────────────────
         const shapePicker = document.createElement('div')
         shapePicker.className = 'mode-picker'
@@ -228,6 +240,7 @@ export class AddBar {
         this.addButtons = [
             textBtn,
             imageBtn,
+            noteBtn,
             this.shapeIconBtn,
             this.shapeChevronBtn,
             this.pencilBtn,
@@ -247,6 +260,7 @@ export class AddBar {
         this.el.append(
             textBtn,
             imageBtn,
+            noteBtn,
             shapePicker,
             pencilDivider,
             pencilPicker,

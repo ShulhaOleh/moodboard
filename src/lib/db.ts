@@ -13,6 +13,7 @@ import type { ImageBlockData } from '../board/ImageBlock'
 import type { ShapeBlockData } from '../board/ShapeBlock'
 import type { LineBlockData } from '../board/LineBlock'
 import type { PathBlockData } from '../board/PathBlock'
+import type { NoteBlockData } from '../board/NoteBlock'
 
 export type PersistedBlock =
     | { type: 'text'; data: TextBlockData }
@@ -20,6 +21,7 @@ export type PersistedBlock =
     | { type: 'shape'; data: ShapeBlockData }
     | { type: 'line'; data: LineBlockData }
     | { type: 'path'; data: PathBlockData }
+    | { type: 'note'; data: NoteBlockData }
 
 export interface BoardRecord {
     id: string
@@ -32,7 +34,7 @@ export interface BoardRecord {
     boardName?: string
 }
 
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 export const MIN_SUPPORTED_VERSION = 1
 
 // One entry per version that requires a migration. Each function receives the

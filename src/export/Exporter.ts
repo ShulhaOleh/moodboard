@@ -8,6 +8,7 @@ import { ImageBlock } from '../board/ImageBlock'
 import { ShapeBlock, type ShapeBlockData, type ShapeType } from '../board/ShapeBlock'
 import { LineBlock, type PointStyle } from '../board/LineBlock'
 import { PathBlock } from '../board/PathBlock'
+import { NoteBlock, contrastColor } from '../board/NoteBlock'
 import { traceCanvasPath, traceOutlineCanvas } from '../board/pathUtils'
 import { parseHtmlText, type StyledParagraph, type TextRun } from './parseHtmlText'
 
@@ -45,6 +46,8 @@ export class Exporter {
         for (const block of visible) {
             if (block instanceof TextBlock) fontFamilies.add(block.getData().fontFamily)
             if (block instanceof ShapeBlock && block.getData().text)
+                fontFamilies.add(block.getData().fontFamily)
+            if (block instanceof NoteBlock && block.getData().fontFamily)
                 fontFamilies.add(block.getData().fontFamily)
         }
         await Promise.all([
@@ -89,6 +92,9 @@ function computeBBox(
             const d = block.getData()
             if (d.shadowColor) expand = Math.abs(d.shadowX) + Math.abs(d.shadowY) + d.shadowBlur
         } else if (block instanceof ShapeBlock) {
+            const d = block.getData()
+            if (d.shadowColor) expand = Math.abs(d.shadowX) + Math.abs(d.shadowY) + d.shadowBlur
+        } else if (block instanceof NoteBlock) {
             const d = block.getData()
             if (d.shadowColor) expand = Math.abs(d.shadowX) + Math.abs(d.shadowY) + d.shadowBlur
         }
@@ -161,6 +167,7 @@ function renderBlock(
 ) {
     if (block instanceof TextBlock) renderTextBlock(ctx, block)
     else if (block instanceof ImageBlock) renderImageBlock(ctx, block, images, boardBg)
+    else if (block instanceof NoteBlock) renderNoteBlock(ctx, block)
     else if (block instanceof ShapeBlock) renderShapeBlock(ctx, block)
     else if (block instanceof LineBlock) renderLineBlock(ctx, block)
     else if (block instanceof PathBlock) renderPathBlock(ctx, block)
@@ -186,6 +193,68 @@ function renderTextBlock(ctx: CanvasRenderingContext2D, block: TextBlock) {
     })
 
     renderParagraphs(ctx, paragraphs, width)
+}
+
+// ── NoteBlock ─────────────────────────────────────────────────────────────────
+
+const NOTE_PADDING = 16
+
+function renderNoteBlock(ctx: CanvasRenderingContext2D, block: NoteBlock) {
+    const data = block.getData()
+    const { x, y } = block.getPosition()
+    const { width: w, height: h } = block.getSize()
+    const rotation = block.getRotation()
+    const opacity = data.opacity / 100
+
+    applyBoxTransform(ctx, x, y, w, h, rotation)
+    ctx.globalAlpha = opacity
+
+    const bgPath = new Path2D()
+    bgPath.roundRect(0, 0, w, h, 6)
+
+    // Shadow — user-configured shadow takes priority; otherwise reproduce the CSS default elevation.
+    ctx.save()
+    if (data.shadowColor) {
+        ctx.shadowColor = data.shadowColor
+        ctx.shadowBlur = data.shadowBlur
+        ctx.shadowOffsetX = data.shadowX
+        ctx.shadowOffsetY = data.shadowY
+    } else {
+        ctx.shadowColor = 'rgba(0,0,0,0.18)'
+        ctx.shadowBlur = 10
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 3
+    }
+    ctx.fillStyle = data.color
+    ctx.fill(bgPath)
+    ctx.restore()
+
+    // Background (no shadow — shadow was painted in the pass above)
+    ctx.fillStyle = data.color
+    ctx.fill(bgPath)
+
+    // Text — line-height: 1.5 matches the CSS on .note-block p.
+    // Half-leading = fontSize * (1.5 - 1) / 2 = fontSize * 0.25 offsets the initial Y so
+    // the first glyph lands at the same visual position as in the browser (CSS distributes
+    // half the leading above the first line; canvas textBaseline='top' does not).
+    if (data.content?.trim()) {
+        const NOTE_LINE_HEIGHT = 1.5
+        const textColor = contrastColor(data.color)
+        const innerW = Math.max(w - NOTE_PADDING * 2, 1)
+        const halfLeading = (data.fontSize * (NOTE_LINE_HEIGHT - 1)) / 2
+        const paragraphs = parseHtmlText(data.content, {
+            fontFamily: data.fontFamily || 'sans-serif',
+            fontSize: data.fontSize,
+            color: textColor,
+            textAlign: 'left',
+        })
+
+        ctx.save()
+        ctx.clip(bgPath)
+        ctx.translate(NOTE_PADDING, NOTE_PADDING + halfLeading)
+        renderParagraphs(ctx, paragraphs, innerW, NOTE_LINE_HEIGHT)
+        ctx.restore()
+    }
 }
 
 // ── ImageBlock ────────────────────────────────────────────────────────────────
@@ -604,7 +673,8 @@ interface TextLine {
 function renderParagraphs(
     ctx: CanvasRenderingContext2D,
     paragraphs: StyledParagraph[],
-    containerW: number
+    containerW: number,
+    lineHeightMultiplier = 1.2
 ) {
     ctx.textBaseline = 'top'
     let y = 0
@@ -617,7 +687,7 @@ function renderParagraphs(
 
         for (let li = 0; li < lines.length; li++) {
             const line = lines[li]
-            const lineH = (line.maxFontSize || para.blockFontSize) * 1.2
+            const lineH = (line.maxFontSize || para.blockFontSize) * lineHeightMultiplier
 
             // Bullet prefix: rendered inside the indent area, right-aligned against the text start.
             // CSS uses list-style-position: outside with padding-left: 1.25em, so the bullet's
@@ -647,14 +717,16 @@ function renderParagraphs(
 function measureParagraphsHeight(
     ctx: CanvasRenderingContext2D,
     paragraphs: StyledParagraph[],
-    containerW: number
+    containerW: number,
+    lineHeightMultiplier = 1.2
 ): number {
     let h = 0
     for (let pi = 0; pi < paragraphs.length; pi++) {
         const para = paragraphs[pi]
         const isLast = pi === paragraphs.length - 1
         const lines = wrapRuns(ctx, para.runs, Math.max(containerW - para.indent, 1))
-        for (const line of lines) h += (line.maxFontSize || para.blockFontSize) * 1.2
+        for (const line of lines)
+            h += (line.maxFontSize || para.blockFontSize) * lineHeightMultiplier
         if (!isLast) h += para.marginBottom
     }
     return h

@@ -6,6 +6,7 @@ import { ImageBlock } from './board/ImageBlock'
 import { ShapeBlock } from './board/ShapeBlock'
 import { LineBlock } from './board/LineBlock'
 import { PathBlock } from './board/PathBlock'
+import { NoteBlock } from './board/NoteBlock'
 import { rdp, buildSvgPath } from './board/pathUtils'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { LayersPanel } from './ui/LayersPanel'
@@ -212,6 +213,7 @@ async function loadBoard(): Promise<boolean> {
 function snapshotBlock(block: BoardObject): BlockSnapshot {
     if (block instanceof TextBlock) return { type: 'text', data: { ...block.getData() } }
     if (block instanceof ImageBlock) return { type: 'image', data: { ...block.getData() } }
+    if (block instanceof NoteBlock) return { type: 'note', data: { ...block.getData() } }
     if (block instanceof ShapeBlock) return { type: 'shape', data: { ...block.getData() } }
     if (block instanceof LineBlock) return { type: 'line', data: { ...block.getData() } }
     if (block instanceof PathBlock) return { type: 'path', data: block.getData() }
@@ -232,6 +234,8 @@ function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
                 : snap.data
             return new ImageBlock(overlay, data)
         }
+        case 'note':
+            return new NoteBlock(overlay, snap.data)
         case 'shape':
             return new ShapeBlock(overlay, snap.data)
         case 'line':
@@ -307,6 +311,16 @@ function paste() {
         } else if (snap.type === 'path') {
             newSnap = {
                 type: 'path',
+                data: {
+                    ...snap.data,
+                    id: crypto.randomUUID(),
+                    x: snap.data.x + offset,
+                    y: snap.data.y + offset,
+                },
+            }
+        } else if (snap.type === 'note') {
+            newSnap = {
+                type: 'note',
                 data: {
                     ...snap.data,
                     id: crypto.randomUUID(),
@@ -402,6 +416,7 @@ function addBlock(block: BoardObject) {
         }
     }
     block.getViewport = () => ({ panX, panY, zoom })
+    block.onResize = () => selectionBox.update()
     block.onDragStart = () => pushHistory()
     block.onBeforePropertyChange = () => {
         if (!propertyChangeActive) {
@@ -929,14 +944,23 @@ document.addEventListener('mousedown', (e) => {
 
     // Pencil tool: start freehand drawing instead of marquee.
     if (pencilActive) {
-        if (target.closest('.text-block, .image-block, .shape-block, .line-block, .path-block'))
+        if (
+            target.closest(
+                '.text-block, .image-block, .shape-block, .line-block, .path-block, .note-block'
+            )
+        )
             return
         e.preventDefault()
         startDrawing(e)
         return
     }
 
-    if (target.closest('.text-block, .image-block, .shape-block, .line-block, .path-block')) return
+    if (
+        target.closest(
+            '.text-block, .image-block, .shape-block, .line-block, .path-block, .note-block'
+        )
+    )
+        return
 
     const startX = e.clientX
     const startY = e.clientY
@@ -1033,6 +1057,29 @@ addBar.onAddImage = () => {
             shadowY: 0,
         })
     )
+}
+
+addBar.onAddNote = () => {
+    pushHistory()
+    const { x, y } = centerPosition()
+    const note = new NoteBlock(overlay, {
+        id: crypto.randomUUID(),
+        x,
+        y,
+        width: 240,
+        rotation: 0,
+        content: '',
+        color: '#fef08a',
+        fontSize: 14,
+        fontFamily: '',
+        opacity: 100,
+        shadowColor: '',
+        shadowBlur: 0,
+        shadowX: 0,
+        shadowY: 0,
+    })
+    addBlock(note)
+    note.startEdit()
 }
 
 addBar.onAddShape = (shape) => {

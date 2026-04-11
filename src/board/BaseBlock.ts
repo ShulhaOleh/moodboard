@@ -2,7 +2,8 @@
 
 import { BoardObject, PropertyField } from './BoardObject'
 
-const BLOCK_SELECTOR = '.text-block, .image-block, .shape-block, .line-block, .path-block'
+const BLOCK_SELECTOR =
+    '.text-block, .image-block, .shape-block, .line-block, .path-block, .note-block'
 
 export abstract class BaseBlock implements BoardObject {
     readonly el: HTMLElement
@@ -14,6 +15,7 @@ export abstract class BaseBlock implements BoardObject {
     onBeforePropertyChange: (() => void) | null = null
     onLayerChange: (() => void) | null = null
     getViewport: (() => { panX: number; panY: number; zoom: number }) | null = null
+    onResize: (() => void) | null = null
     abstract readonly layerLabel: string
     visible = true
     locked = false

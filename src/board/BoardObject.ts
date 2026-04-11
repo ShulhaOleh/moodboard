@@ -56,6 +56,8 @@ export interface BoardObject {
     onDragStart: (() => void) | null
     // Returns the current viewport transform — injected by main.ts so drag handlers can convert screen → board coords.
     getViewport: (() => { panX: number; panY: number; zoom: number }) | null
+    // Fired when the block's bounding box changes without a drag — e.g. auto-height text reflow.
+    onResize: (() => void) | null
     // Fired before any setter (setPosition, setSize, setRotation, setAppearanceProperty) applies a change.
     onBeforePropertyChange: (() => void) | null
     // Fired when visibility or lock state changes — used by LayersPanel to update the row without a full refresh.
