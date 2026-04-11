@@ -315,6 +315,7 @@ export class PropertiesPanel {
                     fileInput.accept = 'image/*'
                     fileInput.className = 'hidden'
                     const browseBtn = document.createElement('button')
+                    browseBtn.className = 'prop-browse-btn'
                     browseBtn.textContent = '…'
                     browseBtn.title = 'Browse file'
                     browseBtn.addEventListener('click', () => fileInput.click())

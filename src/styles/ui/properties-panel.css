@@ -274,6 +274,12 @@
     background: var(--color-danger-subtle);
 }
 
+/* Browse (…) button next to the source text field */
+.prop-browse-btn {
+    cursor: pointer;
+    color: var(--color-text-faint);
+}
+
 /* Buttons next to color fields */
 .prop-color-clear-btn,
 .prop-color-theme-btn {
