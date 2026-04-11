@@ -47,9 +47,9 @@ export class FontPicker {
         this.el.appendChild(this.trigger)
         document.body.appendChild(this.dropdown)
 
-        // Prevent clicks inside the dropdown from bubbling to document, which would
-        // trigger board objects' "click outside → deselect" handlers.
+        // Prevent clicks and scrolls inside the dropdown from reaching board handlers.
         this.dropdown.addEventListener('mousedown', (e) => e.stopPropagation())
+        this.dropdown.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
 
         this.updateTrigger()
 
