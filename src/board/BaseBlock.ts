@@ -13,6 +13,7 @@ export abstract class BaseBlock implements BoardObject {
     onDragStart: (() => void) | null = null
     onBeforePropertyChange: (() => void) | null = null
     onLayerChange: (() => void) | null = null
+    getViewport: (() => { panX: number; panY: number; zoom: number }) | null = null
     abstract readonly layerLabel: string
     visible = true
     locked = false

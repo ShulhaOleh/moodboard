@@ -401,6 +401,7 @@ function addBlock(block: BoardObject) {
             if (selectedBlocks.has(block) && selectedBlocks.size === 1) panel.show(block)
         }
     }
+    block.getViewport = () => ({ panX, panY, zoom })
     block.onDragStart = () => pushHistory()
     block.onBeforePropertyChange = () => {
         if (!propertyChangeActive) {

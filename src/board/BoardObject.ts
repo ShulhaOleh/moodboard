@@ -54,6 +54,8 @@ export interface BoardObject {
     onDragMove: ((dx: number, dy: number) => void) | null
     // Fired once when a drag/resize/rotate gesture commits (threshold exceeded or handle pressed).
     onDragStart: (() => void) | null
+    // Returns the current viewport transform — injected by main.ts so drag handlers can convert screen → board coords.
+    getViewport: (() => { panX: number; panY: number; zoom: number }) | null
     // Fired before any setter (setPosition, setSize, setRotation, setAppearanceProperty) applies a change.
     onBeforePropertyChange: (() => void) | null
     // Fired when visibility or lock state changes — used by LayersPanel to update the row without a full refresh.

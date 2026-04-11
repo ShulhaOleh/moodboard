@@ -342,8 +342,9 @@ export class LineBlock extends BaseBlock {
                 dragging = true
                 this.onDragStart?.()
             }
-            const dx = e.clientX - prevX
-            const dy = e.clientY - prevY
+            const { zoom } = this.getViewport!()
+            const dx = (e.clientX - prevX) / zoom
+            const dy = (e.clientY - prevY) / zoom
             prevX = e.clientX
             prevY = e.clientY
             this.data.x1 += dx
@@ -368,13 +369,21 @@ export class LineBlock extends BaseBlock {
         e.preventDefault()
         this.onDragStart?.()
 
+        let prevX = e.clientX
+        let prevY = e.clientY
+
         const onMove = (e: MouseEvent) => {
+            const { zoom } = this.getViewport!()
+            const dx = (e.clientX - prevX) / zoom
+            const dy = (e.clientY - prevY) / zoom
+            prevX = e.clientX
+            prevY = e.clientY
             if (point === 1) {
-                this.data.x1 += e.movementX
-                this.data.y1 += e.movementY
+                this.data.x1 += dx
+                this.data.y1 += dy
             } else {
-                this.data.x2 += e.movementX
-                this.data.y2 += e.movementY
+                this.data.x2 += dx
+                this.data.y2 += dy
             }
             this.applyLayout()
             this.onChange?.()

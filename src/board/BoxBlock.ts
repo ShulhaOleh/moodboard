@@ -82,11 +82,13 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
                 if (Math.hypot(e.clientX - startX, e.clientY - startY) < 4) return
                 dragging = true
                 this.onDragStart?.()
-                this.dragOffset.x = startX - this.data.x
-                this.dragOffset.y = startY - this.data.y
+                const { panX, panY, zoom } = this.getViewport!()
+                this.dragOffset.x = (startX - panX) / zoom - this.data.x
+                this.dragOffset.y = (startY - panY) / zoom - this.data.y
             }
-            const rawX = e.clientX - this.dragOffset.x
-            const rawY = e.clientY - this.dragOffset.y
+            const { panX, panY, zoom } = this.getViewport!()
+            const rawX = (e.clientX - panX) / zoom - this.dragOffset.x
+            const rawY = (e.clientY - panY) / zoom - this.dragOffset.y
             // dragOffset always tracks the raw mouse position so snap can't drift the offset.
             const snapped = this.snapPosition ? this.snapPosition(rawX, rawY) : { x: rawX, y: rawY }
             const dx = snapped.x - this.data.x

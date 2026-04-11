@@ -23,6 +23,7 @@ export class CanvasBoard implements BoardObject {
     onDragMove = null
     onDragStart = null
     onBeforePropertyChange = null
+    getViewport = null
     onLayerChange = null
     readonly layerLabel = 'Canvas'
     readonly hideName = true as const
