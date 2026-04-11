@@ -8,11 +8,13 @@ export type AccentColor = 'purple' | 'blue' | 'teal' | 'green' | 'orange' | 'pin
 export interface UserSettings {
     theme: 'light' | 'dark' | 'system'
     accent: AccentColor
+    uiFont: string
 }
 
 const DEFAULTS: UserSettings = {
     theme: 'system',
     accent: 'purple',
+    uiFont: 'Inter',
 }
 
 export function loadSettings(): UserSettings {
@@ -36,6 +38,11 @@ export function applyTheme(theme: UserSettings['theme']): void {
         theme === 'dark' ||
         (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
+}
+
+// Applies the UI font by setting font-family on <html>. Empty string restores the system default.
+export function applyUiFont(font: string): void {
+    document.documentElement.style.fontFamily = font || ''
 }
 
 // Sets data-accent on <html> to activate the chosen accent palette.

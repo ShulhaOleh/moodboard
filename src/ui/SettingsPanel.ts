@@ -7,7 +7,10 @@ import {
     saveSettings,
     applyTheme,
     applyAccent,
+    applyUiFont,
 } from '../lib/settings'
+import { FontPicker } from './FontPicker'
+import { loadFont } from '../lib/fonts'
 import {
     type KeybindingMap,
     type ActionBindings,
@@ -174,6 +177,7 @@ export class SettingsPanel {
         page.appendChild(this.buildPageTitle('Appearance'))
         page.appendChild(this.buildThemeField())
         page.appendChild(this.buildAccentField())
+        page.appendChild(this.buildUiFontField())
         return page
     }
 
@@ -256,6 +260,27 @@ export class SettingsPanel {
         }
 
         field.appendChild(swatches)
+        return field
+    }
+
+    private buildUiFontField(): HTMLElement {
+        const field = document.createElement('div')
+        field.className = 'settings-field'
+
+        const labelEl = document.createElement('div')
+        labelEl.className = 'settings-field-label'
+        labelEl.textContent = 'Interface font'
+        field.appendChild(labelEl)
+
+        const picker = new FontPicker(this.settings.uiFont, (family) => {
+            loadFont(family)
+            this.settings.uiFont = family
+            saveSettings(this.settings)
+            applyUiFont(family)
+        })
+        picker.el.classList.add('settings-font-picker')
+        field.appendChild(picker.el)
+
         return field
     }
 

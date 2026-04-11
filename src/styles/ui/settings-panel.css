@@ -207,6 +207,15 @@
 [data-theme="dark"] .accent-swatch[data-accent-color="orange"] { background: #fb923c; }
 [data-theme="dark"] .accent-swatch[data-accent-color="pink"]   { background: #f472b6; }
 
+/* ── Interface font picker ───────────────────────────────────────────────────── */
+
+.settings-font-picker .font-picker-trigger {
+    min-width: 160px;
+    max-width: 200px;
+    height: 30px;
+    font-size: 14px;
+}
+
 /* ── Keyboard shortcut rows ──────────────────────────────────────────────────── */
 
 .keybinding-right {

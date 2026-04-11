@@ -27,7 +27,8 @@ import { Exporter } from './export/Exporter'
 import { GuideOverlay } from './ui/GuideOverlay'
 import { computeSnap } from './snap/SnapEngine'
 import { BoxBlock } from './board/BoxBlock'
-import { loadSettings, applyTheme, applyAccent } from './lib/settings'
+import { loadSettings, applyTheme, applyAccent, applyUiFont } from './lib/settings'
+import { loadFont } from './lib/fonts'
 import { SettingsPanel } from './ui/SettingsPanel'
 import {
     loadKeybindings,
@@ -44,6 +45,10 @@ const app = document.getElementById('app')!
 const userSettings = loadSettings()
 applyTheme(userSettings.theme)
 applyAccent(userSettings.accent)
+if (userSettings.uiFont) {
+    loadFont(userSettings.uiFont)
+    applyUiFont(userSettings.uiFont)
+}
 
 let keybindings: KeybindingMap = loadKeybindings()
 
