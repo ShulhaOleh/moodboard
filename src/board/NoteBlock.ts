@@ -49,6 +49,8 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         el.className = 'note-block'
         super(el, 'Note', data)
 
+        if (!this.data.fontFamily) this.data.fontFamily = 'Inter'
+
         this.contentEl = document.createElement('div')
         this.contentEl.className = 'note-block-content'
         this.el.appendChild(this.contentEl)
