@@ -14,14 +14,18 @@ A moodboard editor that runs entirely in the browser with local persistence.
 
 | Key | Action |
 |---|---|
-| P | Toggle pencil tool |
+| Double-click | Edit text / shape inline |
 | Ctrl+Z | Undo |
 | Ctrl+C / X / V | Copy / Cut / Paste |
 | Delete / Backspace | Delete selection |
+| E | Switch to Edit mode |
+| R | Switch to Explore mode |
+| P | Toggle pencil tool |
+| F2 | Rename selected layer |
+| Arrow keys | Move selection 1 px (hold to accelerate) |
 | Scroll | Pan vertically |
 | Shift+scroll | Pan horizontally |
 | Ctrl+scroll | Zoom |
-| Arrow keys | Move selection 1 px (hold to accelerate) |
 | Escape | Cancel stroke / deselect |
 
 ## Scripts
