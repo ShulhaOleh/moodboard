@@ -61,6 +61,11 @@ export class SelectionBox {
             this.el.style.display = 'none'
             return
         }
+        // Suppress N/S handles when every selected block has a fixed height.
+        this.el.classList.toggle(
+            'sb-fixed-height',
+            this.blocks.every((b) => b.fixedHeight)
+        )
         this.update()
     }
 

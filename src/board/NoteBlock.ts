@@ -34,6 +34,7 @@ export interface NoteBlockData {
 
 export class NoteBlock extends BoxBlock<NoteBlockData> {
     readonly layerLabel = 'Note'
+    readonly fixedHeight = true as const
     private editing = false
     private contentEl: HTMLElement
     private editorInstance: Editor | null = null

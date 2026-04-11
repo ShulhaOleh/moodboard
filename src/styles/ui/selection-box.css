@@ -73,3 +73,10 @@ body.sb-rotating * {
 body.sb-ctrl .sb-handle {
     cursor: grab;
 }
+
+/* When all selected blocks have a fixed height, N/S side handles are non-interactive. */
+.sb-fixed-height .sb-n,
+.sb-fixed-height .sb-s {
+    pointer-events: none;
+    cursor: default;
+}

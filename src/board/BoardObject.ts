@@ -77,6 +77,8 @@ export interface BoardObject {
     setLocked(v: boolean): void
     // When true, the panel hides the Position/Size/Rotation fields for this object.
     readonly omitCommonProps?: true
+    // When true, height cannot be changed by the user — SelectionBox hides N/S resize handles.
+    readonly fixedHeight?: true
     // When true, the panel hides the Delete button for this object.
     readonly hideDelete?: true
     getPosition(): { x: number; y: number }
