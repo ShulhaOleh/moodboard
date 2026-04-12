@@ -1038,6 +1038,9 @@ function nextName(label: string): string {
 addBar.onAddText = () => {
     pushHistory()
     const { x, y } = centerPosition()
+    const textColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--color-text')
+        .trim()
     addBlock(
         new TextBlock(overlay, {
             id: crypto.randomUUID(),
@@ -1049,7 +1052,7 @@ addBar.onAddText = () => {
             autoHeight: true,
             content: '',
             fontSize: 16,
-            color: '#333333',
+            color: textColor,
             fontFamily: 'Inter',
             textAlign: 'left',
         })
@@ -1111,6 +1114,7 @@ addBar.onAddShape = (shape) => {
     const style = getComputedStyle(document.documentElement)
     const accentColor = style.getPropertyValue('--color-accent').trim()
     const accentBorder = style.getPropertyValue('--color-accent-border').trim()
+    const textColor = style.getPropertyValue('--color-text').trim()
     if (shape === 'line' || shape === 'arrow') {
         addBlock(
             new LineBlock(overlay, {
@@ -1151,7 +1155,7 @@ addBar.onAddShape = (shape) => {
             shadowX: 0,
             shadowY: 0,
             text: '',
-            textColor: '#000000',
+            textColor: textColor,
             fontSize: 16,
             fontFamily: 'Inter',
             textAlign: 'center',
