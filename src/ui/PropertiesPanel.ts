@@ -419,10 +419,31 @@ export class PropertiesPanel {
             btn.className = 'number-spin-btn'
             btn.tabIndex = -1
             btn.textContent = dir === 1 ? '▴' : '▾'
+
+            let timeout: ReturnType<typeof setTimeout> | null = null
+            let interval: ReturnType<typeof setInterval> | null = null
+
             btn.addEventListener('mousedown', (e) => {
                 e.preventDefault()
                 this.stepInput(input, dir)
+                timeout = setTimeout(() => {
+                    interval = setInterval(() => this.stepInput(input, dir), 80)
+                }, 500)
             })
+
+            const stop = () => {
+                if (timeout !== null) {
+                    clearTimeout(timeout)
+                    timeout = null
+                }
+                if (interval !== null) {
+                    clearInterval(interval)
+                    interval = null
+                }
+            }
+            btn.addEventListener('mouseup', stop)
+            btn.addEventListener('mouseleave', stop)
+
             btns.appendChild(btn)
         }
 
