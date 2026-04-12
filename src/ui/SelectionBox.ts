@@ -66,6 +66,11 @@ export class SelectionBox {
             'sb-fixed-height',
             this.blocks.every((b) => b.fixedHeight)
         )
+        // Hide all transform handles when every selected block is locked.
+        this.el.classList.toggle(
+            'sb-locked',
+            this.blocks.every((b) => b.locked)
+        )
         this.update()
     }
 

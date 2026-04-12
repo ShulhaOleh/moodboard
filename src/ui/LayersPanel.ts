@@ -264,7 +264,6 @@ export class LayersPanel {
         // Selecting a layer row.
         row.addEventListener('mousedown', (e) => {
             if ((e.target as HTMLElement).closest('.layer-vis-btn, .layer-lock-btn')) return
-            if (block.locked) return
             this.onSelectBlock?.(block)
         })
 

@@ -80,3 +80,10 @@ body.sb-ctrl .sb-handle {
     pointer-events: none;
     cursor: default;
 }
+
+/* When all selected blocks are locked, hide all transform handles. */
+.sb-locked .sb-handle,
+.sb-locked .sb-side,
+.sb-locked .sb-rotate {
+    display: none;
+}
