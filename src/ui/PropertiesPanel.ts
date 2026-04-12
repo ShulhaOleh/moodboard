@@ -566,6 +566,9 @@ export class PropertiesPanel {
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
+        ;(this.inputs.height.closest('.prop-row') as HTMLElement).style.display = object.fixedHeight
+            ? 'none'
+            : ''
         this.renderAppearanceFields(object.getAppearanceFields())
         this.nameInputEl.value = object.name
         ;(this.nameInputEl.closest('.prop-name-row') as HTMLElement).style.display = object.hideName

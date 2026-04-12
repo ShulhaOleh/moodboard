@@ -26,6 +26,7 @@ export interface TextBlockData {
     color: string
     fontFamily: string
     textAlign: string
+    autoHeight?: boolean
     name?: string
 }
 
@@ -34,12 +35,17 @@ export class TextBlock extends BoxBlock<TextBlockData> {
     private editing = false
     private contentEl: HTMLElement
     private editorInstance: Editor | null = null
+    private resizeObserver: ResizeObserver
 
     protected override get minResizeWidth(): number {
         return 120
     }
     protected override get minResizeHeight(): number {
         return 40
+    }
+
+    get fixedHeight(): true | undefined {
+        return this.data.autoHeight ? true : undefined
     }
 
     constructor(container: HTMLElement, data: TextBlockData) {
@@ -58,9 +64,12 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         this.applyTextAlign()
         this.el.style.color = this.data.color
         if (data.width) this.el.style.width = `${data.width}px`
-        if (data.height) this.el.style.height = `${data.height}px`
+        if (data.height && !data.autoHeight) this.el.style.height = `${data.height}px`
         this.renderContent()
         this.setupInteraction()
+
+        this.resizeObserver = new ResizeObserver(() => this.onResize?.())
+        if (this.data.autoHeight) this.resizeObserver.observe(this.el)
 
         this.el.addEventListener('dblclick', (e) => {
             if ((e.target as HTMLElement).closest('.tb-handles')) return
@@ -159,6 +168,17 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         })
     }
 
+    override setSize(width: number, height: number) {
+        if (this.data.autoHeight) {
+            this.onBeforePropertyChange?.()
+            this.data.width = Math.max(this.minResizeWidth, width)
+            this.el.style.width = `${this.data.width}px`
+            this.onChange?.()
+        } else {
+            super.setSize(width, height)
+        }
+    }
+
     setFontFamilyBlock(family: string) {
         this.data.fontFamily = family
         this.applyFontFamily()
@@ -204,6 +224,16 @@ export class TextBlock extends BoxBlock<TextBlockData> {
                 ],
             },
             { type: 'color', key: 'color', label: 'Color', value: this.data.color },
+            {
+                type: 'select',
+                key: 'autoHeight',
+                label: 'Height',
+                value: this.data.autoHeight ? 'auto' : 'fixed',
+                options: [
+                    { value: 'auto', label: 'Auto' },
+                    { value: 'fixed', label: 'Fixed' },
+                ],
+            },
         ]
     }
 
@@ -213,9 +243,28 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         if (key === 'fontSize') this.setFontSize(Number(value))
         if (key === 'textAlign') this.setTextAlign(String(value))
         if (key === 'color') this.setColor(String(value))
+        if (key === 'autoHeight') this.setAutoHeight(value === 'auto')
+    }
+
+    private setAutoHeight(auto: boolean) {
+        if (auto === !!this.data.autoHeight) return
+        if (auto) {
+            this.data.autoHeight = true
+            this.data.height = undefined
+            this.el.style.height = ''
+            this.resizeObserver.observe(this.el)
+        } else {
+            this.data.autoHeight = false
+            this.data.height = this.el.offsetHeight
+            this.el.style.height = `${this.data.height}px`
+            this.resizeObserver.disconnect()
+        }
+        this.onChange?.()
+        this.onResize?.()
     }
 
     override destroy() {
+        this.resizeObserver.disconnect()
         this.editorInstance?.destroy()
         super.destroy()
     }

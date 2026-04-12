@@ -421,7 +421,7 @@ function addBlock(block: BoardObject) {
         }
     }
     block.getViewport = () => ({ panX, panY, zoom })
-    block.onResize = () => selectionBox.update()
+    block.onResize = () => selectionBox.setBlocks([...selectedBlocks])
     block.onDragStart = () => pushHistory()
     block.onBeforePropertyChange = () => {
         if (!propertyChangeActive) {
@@ -1046,6 +1046,7 @@ addBar.onAddText = () => {
             y,
             width: 240,
             rotation: 0,
+            autoHeight: true,
             content: '',
             fontSize: 16,
             color: '#333333',
