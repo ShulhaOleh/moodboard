@@ -539,6 +539,10 @@ layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
     blocks.splice(insertAt, 0, block)
     // Reorder DOM to match the new array order — last element is topmost (frontmost).
     blocks.forEach((b) => overlay.appendChild(b.el))
+    // Re-insert stacked note back cards before their front card after the DOM reorder.
+    blocks.forEach((b) => {
+        if (b instanceof NoteBlock) b.syncLayerOrder()
+    })
     layersPanel.refresh(blocks, selectedBlocks)
     scheduleSave()
 }
@@ -1087,7 +1091,7 @@ addBar.onAddImage = () => {
     )
 }
 
-addBar.onAddNote = () => {
+addBar.onAddNote = (shape) => {
     pushHistory()
     const { x, y } = centerPosition()
     const note = new NoteBlock(overlay, {
@@ -1106,6 +1110,7 @@ addBar.onAddNote = () => {
         shadowBlur: 0,
         shadowX: 0,
         shadowY: 0,
+        shape,
     })
     addBlock(note)
     note.startEdit()

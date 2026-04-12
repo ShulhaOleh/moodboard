@@ -8,7 +8,7 @@ import { ImageBlock } from '../board/ImageBlock'
 import { ShapeBlock, type ShapeBlockData, type ShapeType } from '../board/ShapeBlock'
 import { LineBlock, type PointStyle } from '../board/LineBlock'
 import { PathBlock } from '../board/PathBlock'
-import { NoteBlock, contrastColor } from '../board/NoteBlock'
+import { NoteBlock, NOTE_FOLD_SIZE, contrastColor } from '../board/NoteBlock'
 import { traceCanvasPath, traceOutlineCanvas } from '../board/pathUtils'
 import { parseHtmlText, type StyledParagraph, type TextRun } from './parseHtmlText'
 
@@ -209,8 +209,24 @@ function renderNoteBlock(ctx: CanvasRenderingContext2D, block: NoteBlock) {
     applyBoxTransform(ctx, x, y, w, h, rotation)
     ctx.globalAlpha = opacity
 
-    const bgPath = new Path2D()
-    bgPath.roundRect(0, 0, w, h, 6)
+    const bgPath = buildNotePath(data.shape, w, h)
+
+    // Stacked: draw back card first so it sits behind the front card.
+    if (data.shape === 'stacked') {
+        const backPath = new Path2D()
+        backPath.roundRect(8, 6, w, h, 6)
+        ctx.save()
+        ctx.shadowColor = 'rgba(0,0,0,0.12)'
+        ctx.shadowBlur = 6
+        ctx.shadowOffsetX = 0
+        ctx.shadowOffsetY = 2
+        // brightness(0.88) equivalent: darken the color by 12%
+        ctx.fillStyle = darkenColor(data.color, 0.12)
+        ctx.fill(backPath)
+        ctx.restore()
+        ctx.fillStyle = darkenColor(data.color, 0.12)
+        ctx.fill(backPath)
+    }
 
     // Shadow — user-configured shadow takes priority; otherwise reproduce the CSS default elevation.
     ctx.save()
@@ -232,6 +248,18 @@ function renderNoteBlock(ctx: CanvasRenderingContext2D, block: NoteBlock) {
     // Background (no shadow — shadow was painted in the pass above)
     ctx.fillStyle = data.color
     ctx.fill(bgPath)
+
+    // Dog-ear fold shadow: right-triangle at the inner corner of the cut edge.
+    if (data.shape === 'dog-ear') {
+        const fold = NOTE_FOLD_SIZE
+        const foldPath = new Path2D()
+        foldPath.moveTo(w - fold, 0)
+        foldPath.lineTo(w - fold, fold)
+        foldPath.lineTo(w, fold)
+        foldPath.closePath()
+        ctx.fillStyle = 'rgba(0,0,0,0.12)'
+        ctx.fill(foldPath)
+    }
 
     // Text — line-height: 1.5 matches the CSS on .note-block p.
     // Half-leading = fontSize * (1.5 - 1) / 2 = fontSize * 0.25 offsets the initial Y so
@@ -255,6 +283,31 @@ function renderNoteBlock(ctx: CanvasRenderingContext2D, block: NoteBlock) {
         renderParagraphs(ctx, paragraphs, innerW, NOTE_LINE_HEIGHT)
         ctx.restore()
     }
+}
+
+// Darkens a hex color by the given factor (0 = no change, 1 = black).
+function darkenColor(hex: string, factor: number): string {
+    if (!hex.startsWith('#') || hex.length < 7) return hex
+    const r = Math.round(parseInt(hex.slice(1, 3), 16) * (1 - factor))
+    const g = Math.round(parseInt(hex.slice(3, 5), 16) * (1 - factor))
+    const b = Math.round(parseInt(hex.slice(5, 7), 16) * (1 - factor))
+    return `rgb(${r},${g},${b})`
+}
+
+function buildNotePath(shape: string, w: number, h: number): Path2D {
+    const path = new Path2D()
+    if (shape === 'dog-ear') {
+        const fold = NOTE_FOLD_SIZE
+        path.moveTo(0, 0)
+        path.lineTo(w - fold, 0)
+        path.lineTo(w, fold)
+        path.lineTo(w, h)
+        path.lineTo(0, h)
+        path.closePath()
+    } else {
+        path.roundRect(0, 0, w, h, 6)
+    }
+    return path
 }
 
 // ── ImageBlock ────────────────────────────────────────────────────────────────

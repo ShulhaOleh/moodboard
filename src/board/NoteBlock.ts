@@ -14,6 +14,8 @@ import { TextFormatToolbar } from '../ui/TextFormatToolbar'
 import { PropertyField } from './BoardObject'
 import { BoxBlock } from './BoxBlock'
 
+export type NoteShape = 'rectangle' | 'dog-ear' | 'stacked'
+
 export interface NoteBlockData {
     id: string
     x: number
@@ -29,14 +31,21 @@ export interface NoteBlockData {
     shadowBlur: number
     shadowX: number
     shadowY: number
+    shape: NoteShape
     name?: string
 }
+
+export const NOTE_FOLD_SIZE = 28
 
 export class NoteBlock extends BoxBlock<NoteBlockData> {
     readonly layerLabel = 'Note'
     readonly fixedHeight = true as const
     private editing = false
     private contentEl: HTMLElement
+    private foldEl: HTMLElement
+    // Sibling element in the overlay — renders behind this.el to create the stacked-paper look.
+    private stackBackEl: HTMLElement
+    private container: HTMLElement
     private editorInstance: Editor | null = null
     private resizeObserver: ResizeObserver
 
@@ -49,7 +58,21 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         el.className = 'note-block'
         super(el, 'Note', data)
 
+        this.container = container
+
         if (!this.data.fontFamily) this.data.fontFamily = 'Inter'
+        if (!this.data.shape) this.data.shape = 'rectangle'
+
+        // stackBackEl is a sibling in the overlay inserted before this.el so it paints behind it.
+        // A child element with z-index: -1 cannot go behind a parent's own background, so sibling
+        // is the only correct approach.
+        this.stackBackEl = document.createElement('div')
+        this.stackBackEl.className = 'note-stack-back'
+        container.appendChild(this.stackBackEl)
+
+        this.foldEl = document.createElement('div')
+        this.foldEl.className = 'note-fold'
+        this.el.appendChild(this.foldEl)
 
         this.contentEl = document.createElement('div')
         this.contentEl.className = 'note-block-content'
@@ -58,11 +81,14 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         this.applyPosition()
         this.applySize()
         this.applyTransform()
+        this.applyShape()
         this.applyAppearance()
         this.renderContent()
 
-        // Notify main.ts to update the selection box whenever the note's height changes.
+        // Notify main.ts to update the selection box whenever the note's height changes,
+        // and keep the back card in sync with the new height.
         this.resizeObserver = new ResizeObserver(() => {
+            this.syncStackBack()
             this.onResize?.()
         })
         this.resizeObserver.observe(this.el)
@@ -80,9 +106,43 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         return this.editing
     }
 
+    protected override applyPosition() {
+        super.applyPosition()
+        this.syncStackBack()
+    }
+
+    protected override applyTransform() {
+        super.applyTransform()
+        this.syncStackBack()
+    }
+
     // Only set width — height is driven by content via CSS.
     protected override applySize() {
         this.el.style.width = `${this.data.width}px`
+        this.syncStackBack()
+    }
+
+    // Re-inserts stackBackEl immediately before this.el so it stays behind after a layer reorder.
+    syncLayerOrder() {
+        this.container.insertBefore(this.stackBackEl, this.el)
+    }
+
+    private syncStackBack() {
+        if (this.data.shape !== 'stacked') {
+            this.stackBackEl.style.display = 'none'
+            return
+        }
+        const { x, y, width, rotation } = this.data
+        const height = this.el.offsetHeight
+        // Offset the back card's pivot by (8, 6) in board space — it peeks from the bottom-right.
+        const cx = x + width / 2 + 8
+        const cy = y + height / 2 + 6
+        this.stackBackEl.style.display = 'block'
+        this.stackBackEl.style.width = `${width}px`
+        this.stackBackEl.style.height = `${height}px`
+        this.stackBackEl.style.transform = `translate(${cx}px, ${cy}px) rotate(${rotation}deg) translate(${-width / 2}px, ${-height / 2}px)`
+        this.stackBackEl.style.background = this.data.color
+        this.stackBackEl.style.opacity = String(this.data.opacity / 100)
     }
 
     // Return the live DOM height so SelectionBox and snap always have accurate dimensions.
@@ -96,6 +156,13 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         this.onBeforePropertyChange?.()
         this.data.width = Math.max(this.minResizeWidth, width)
         this.el.style.width = `${this.data.width}px`
+        this.syncStackBack()
+    }
+
+    private applyShape() {
+        this.el.classList.remove('shape-dog-ear', 'shape-stacked')
+        if (this.data.shape !== 'rectangle') this.el.classList.add(`shape-${this.data.shape}`)
+        this.foldEl.style.display = this.data.shape === 'dog-ear' ? 'block' : 'none'
     }
 
     private applyAppearance() {
@@ -107,9 +174,24 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
             loadFont(this.data.fontFamily)
             this.el.style.fontFamily = this.data.fontFamily
         }
-        this.el.style.boxShadow = this.data.shadowColor
-            ? `${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor}`
-            : ''
+
+        // Dog-ear: clip-path clips box-shadow, so use filter: drop-shadow instead.
+        if (this.data.shape === 'dog-ear') {
+            this.el.style.boxShadow = ''
+            const userDropShadow = this.data.shadowColor
+                ? ` drop-shadow(${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor})`
+                : ''
+            this.el.style.filter =
+                'drop-shadow(0 2px 8px rgba(0,0,0,0.12)) drop-shadow(0 1px 3px rgba(0,0,0,0.08))' +
+                userDropShadow
+        } else {
+            this.el.style.filter = ''
+            this.el.style.boxShadow = this.data.shadowColor
+                ? `${this.data.shadowX}px ${this.data.shadowY}px ${this.data.shadowBlur}px ${this.data.shadowColor}`
+                : ''
+        }
+
+        this.syncStackBack()
     }
 
     private renderContent() {
@@ -277,6 +359,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
     override destroy() {
         this.resizeObserver.disconnect()
         this.editorInstance?.destroy()
+        this.stackBackEl.remove()
         super.destroy()
     }
 }

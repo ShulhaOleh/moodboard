@@ -20,6 +20,43 @@
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16), 0 1px 4px rgba(0, 0, 0, 0.10);
 }
 
+/* ── Shape variants ──────────────────────────────────────────────────────────── */
+
+/* Dog-ear: top-right corner clipped; box-shadow is clipped too so shadow is
+   applied via filter: drop-shadow in JS (applyAppearance). */
+.note-block.shape-dog-ear {
+    clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 0 100%);
+    border-radius: 0 0 6px 6px;
+    box-shadow: none;
+}
+
+/* Stacked: back-card is a sibling element in the overlay, inserted before the front note
+   so it paints behind it. Position and size are set via JS to mirror the front card. */
+.note-stack-back {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: none;
+    border-radius: 6px;
+    filter: brightness(0.88);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    pointer-events: none;
+}
+
+/* The fold shadow triangle — positioned at the top-right corner.
+   clip-path on the parent clips away its top-right half, leaving a
+   visible right-triangle that reads as a depth fold at the cut edge. */
+.note-fold {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+    display: none;
+    background: rgba(0, 0, 0, 0.12);
+}
+
 /* TipTap editor */
 .note-block-content .ProseMirror {
     outline: none;

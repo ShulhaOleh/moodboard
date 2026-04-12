@@ -1,6 +1,7 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
 import { ColorPicker } from './ColorPicker'
+import { type NoteShape } from '../board/NoteBlock'
 
 export type BoardMode = 'edit' | 'explore'
 
@@ -72,13 +73,31 @@ const SHAPES: { shape: DrawableShape; label: string; icon: string }[] = [
     },
 ]
 
+const NOTE_SHAPES: { shape: NoteShape; label: string; icon: string }[] = [
+    {
+        shape: 'rectangle',
+        label: 'Plain',
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="6" y1="9" x2="14" y2="9" stroke-linecap="round"/><line x1="6" y1="12" x2="11" y2="12" stroke-linecap="round"/></svg>`,
+    },
+    {
+        shape: 'dog-ear',
+        label: 'Dog-ear',
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4h10l4 4v9H3z"/><path d="M13 4v4h4" opacity="0.4"/><line x1="6" y1="10" x2="14" y2="10" stroke-linecap="round"/><line x1="6" y1="13" x2="11" y2="13" stroke-linecap="round"/></svg>`,
+    },
+    {
+        shape: 'stacked',
+        label: 'Stacked',
+        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="5" y="2" width="12" height="10" rx="2" opacity="0.4"/><rect x="3" y="6" width="12" height="10" rx="2"/></svg>`,
+    },
+]
+
 const CHEVRON = `<svg class="mode-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>`
 
 export class AddBar {
     readonly el: HTMLElement
     onAddText: (() => void) | null = null
     onAddImage: (() => void) | null = null
-    onAddNote: (() => void) | null = null
+    onAddNote: ((shape: NoteShape) => void) | null = null
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
     onTogglePencil: (() => void) | null = null
@@ -89,6 +108,12 @@ export class AddBar {
     private modeDropdownEl: HTMLElement
     private modeDropdownOpen = false
     private modeHintEls: Map<BoardMode, HTMLElement> = new Map()
+
+    private noteIconBtn: HTMLButtonElement
+    private noteChevronBtn: HTMLButtonElement
+    private noteDropdownEl: HTMLElement
+    private noteDropdownOpen = false
+    private selectedNoteShape: NoteShape = 'rectangle'
 
     private shapeIconBtn: HTMLButtonElement
     private shapeChevronBtn: HTMLButtonElement
@@ -164,16 +189,51 @@ export class AddBar {
         )
         imageBtn.addEventListener('click', () => this.onAddImage?.())
 
-        const noteBtn = this.makeButton(
-            'Note',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 4h12v9l-4 4H4z"/>
-                <path d="M12 13v4l4-4h-4z" fill="currentColor" stroke="none" opacity="0.4"/>
-                <line x1="7" y1="8" x2="13" y2="8"/>
-                <line x1="7" y1="11" x2="11" y2="11"/>
-            </svg>`
-        )
-        noteBtn.addEventListener('click', () => this.onAddNote?.())
+        // ── Note split-button ──────────────────────────────────────────────────
+        const notePicker = document.createElement('div')
+        notePicker.className = 'mode-picker'
+
+        const noteSplitBtn = document.createElement('div')
+        noteSplitBtn.className = 'shape-split-btn'
+
+        this.noteIconBtn = document.createElement('button')
+        this.noteIconBtn.className = 'shape-icon-btn'
+        this.noteIconBtn.addEventListener('click', () => {
+            this.closeNoteDropdown()
+            this.onAddNote?.(this.selectedNoteShape)
+        })
+
+        this.noteChevronBtn = document.createElement('button')
+        this.noteChevronBtn.className = 'shape-chevron-btn'
+        this.noteChevronBtn.innerHTML = CHEVRON
+        this.noteChevronBtn.title = 'Choose note style'
+        this.noteChevronBtn.addEventListener('click', () => {
+            this.noteDropdownOpen = !this.noteDropdownOpen
+            this.noteDropdownEl.classList.toggle('hidden', !this.noteDropdownOpen)
+            if (this.noteDropdownOpen) {
+                this.closeModeDropdown()
+                this.closeShapeDropdown()
+            }
+        })
+
+        this.noteDropdownEl = document.createElement('div')
+        this.noteDropdownEl.className = 'mode-dropdown hidden'
+
+        for (const { shape, label, icon } of NOTE_SHAPES) {
+            const option = document.createElement('button')
+            option.className = 'mode-option'
+            option.dataset.noteShape = shape
+            option.innerHTML = `${icon}<span>${label}</span>`
+            option.addEventListener('click', () => {
+                this.selectedNoteShape = shape
+                this.updateNoteTrigger()
+                this.closeNoteDropdown()
+            })
+            this.noteDropdownEl.appendChild(option)
+        }
+
+        noteSplitBtn.append(this.noteIconBtn, this.noteChevronBtn)
+        notePicker.append(noteSplitBtn, this.noteDropdownEl)
 
         // ── Shape split-button ─────────────────────────────────────────────────
         const shapePicker = document.createElement('div')
@@ -196,7 +256,10 @@ export class AddBar {
         this.shapeChevronBtn.addEventListener('click', () => {
             this.shapeDropdownOpen = !this.shapeDropdownOpen
             this.shapeDropdownEl.classList.toggle('hidden', !this.shapeDropdownOpen)
-            if (this.shapeDropdownOpen) this.closeModeDropdown()
+            if (this.shapeDropdownOpen) {
+                this.closeModeDropdown()
+                this.closeNoteDropdown()
+            }
         })
 
         this.shapeDropdownEl = document.createElement('div')
@@ -240,7 +303,8 @@ export class AddBar {
         this.addButtons = [
             textBtn,
             imageBtn,
-            noteBtn,
+            this.noteIconBtn,
+            this.noteChevronBtn,
             this.shapeIconBtn,
             this.shapeChevronBtn,
             this.pencilBtn,
@@ -261,7 +325,7 @@ export class AddBar {
         this.el.append(
             textBtn,
             imageBtn,
-            noteBtn,
+            notePicker,
             shapePicker,
             pencilDivider,
             pencilPicker,
@@ -273,11 +337,13 @@ export class AddBar {
         document.addEventListener('mousedown', (e) => {
             if (!this.el.contains(e.target as Node)) {
                 this.closeModeDropdown()
+                this.closeNoteDropdown()
                 this.closeShapeDropdown()
             }
         })
 
         this.setMode('edit')
+        this.updateNoteTrigger()
         this.updateShapeTrigger()
     }
 
@@ -415,6 +481,24 @@ export class AddBar {
         slider.addEventListener('input', () => onChange(parseInt(slider.value)))
         slider.addEventListener('mousedown', (e) => e.stopPropagation())
         return this.makeOptionRow(label, slider)
+    }
+
+    private updateNoteTrigger() {
+        const def = NOTE_SHAPES.find((s) => s.shape === this.selectedNoteShape)!
+        this.noteIconBtn.innerHTML = def.icon
+        this.noteIconBtn.title = def.label
+
+        this.noteDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
+            opt.classList.toggle(
+                'is-active',
+                (opt as HTMLElement).dataset.noteShape === this.selectedNoteShape
+            )
+        })
+    }
+
+    private closeNoteDropdown() {
+        this.noteDropdownEl.classList.add('hidden')
+        this.noteDropdownOpen = false
     }
 
     private updateShapeTrigger() {
