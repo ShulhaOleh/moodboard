@@ -157,6 +157,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         this.data.width = Math.max(this.minResizeWidth, width)
         this.el.style.width = `${this.data.width}px`
         this.syncStackBack()
+        this.onChange?.()
     }
 
     private applyShape() {
