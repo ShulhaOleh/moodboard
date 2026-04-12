@@ -351,7 +351,7 @@ function paste() {
     }
 
     if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
-    else if (selectedBlocks.size > 1) panel.show(canvasBoard)
+    else if (selectedBlocks.size > 1) panel.showMultiple([...selectedBlocks])
     selectionBox.setBlocks([...selectedBlocks])
     layersPanel.notifySelectionChanged(selectedBlocks)
     scheduleSave()
@@ -442,7 +442,7 @@ function addBlock(block: BoardObject) {
             selectedBlocks.add(obj)
             // Remove handles from all — no handles in multi-selection
             selectedBlocks.forEach((b) => b.markSelected())
-            panel.show(canvasBoard)
+            panel.showMultiple([...selectedBlocks])
         } else {
             // Replace selection
             selectedBlocks.forEach((b) => {
@@ -1013,6 +1013,8 @@ document.addEventListener('mousedown', (e) => {
         }
 
         if (selectedBlocks.size === 0) panel.show(canvasBoard)
+        else if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+        else panel.showMultiple([...selectedBlocks])
         selectionBox.setBlocks([...selectedBlocks])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }

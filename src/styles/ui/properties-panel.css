@@ -199,14 +199,24 @@
     display: flex;
 }
 
-.number-input-wrap > input[type='number'] {
+.number-input-wrap > input[type='number'],
+.number-input-wrap > input[type='text'] {
     padding-right: 16px;
+}
+
+.number-input-wrap > input[type='number'] {
     -moz-appearance: textfield;
 }
 
 .number-input-wrap > input[type='number']::-webkit-inner-spin-button,
 .number-input-wrap > input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;
+}
+
+/* Mixed state: label gets a subtle dot to indicate values differ across selection */
+.prop-row.is-mixed > label::after {
+    content: ' ·';
+    color: var(--color-text-placeholder);
 }
 
 .number-spin-btns {

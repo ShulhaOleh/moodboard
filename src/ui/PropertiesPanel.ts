@@ -1,16 +1,85 @@
 // Fixed side panel that displays and edits properties of the selected board object.
 // Common properties (position, size, rotation) are always shown.
 // Appearance fields are rendered dynamically based on the object type.
+// Multi-select: shows the intersection of all selected objects' fields; differing
+// values display as "Mixed" and accept arithmetic expressions (+5, -10, *2, /3).
 
 import { BoardObject, PropertyField } from '../board/BoardObject'
 import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
 import { ColorPicker } from './ColorPicker'
 
+// Evaluates an expression like "+5", "-10", "*2", "/3", or a plain number against
+// a current value. Returns NaN when the input cannot be parsed.
+function parseOpValue(raw: string, current: number): number {
+    const s = raw.trim()
+    if (/^[+\-*/]/.test(s)) {
+        const operand = parseFloat(s.slice(1))
+        if (isNaN(operand)) return NaN
+        if (s[0] === '+') return current + operand
+        if (s[0] === '-') return current - operand
+        if (s[0] === '*') return current * operand
+        if (s[0] === '/') return operand !== 0 ? current / operand : current
+    }
+    return parseFloat(s)
+}
+
+// Returns the intersection of appearance field keys across all sets, together with
+// which keys carry different values (mixed) across the given objects.
+function intersectAppearanceFields(fieldSets: PropertyField[][]): {
+    fields: PropertyField[]
+    mixed: Set<string>
+} {
+    if (fieldSets.length === 0) return { fields: [], mixed: new Set() }
+
+    // Build key → values from the first set, then prune keys absent in any other set.
+    const keyValues = new Map<string, (string | number)[]>()
+    for (const f of fieldSets[0]) {
+        if ('key' in f && 'value' in f)
+            keyValues.set(f.key, [(f as { key: string; value: string | number }).value])
+    }
+    for (let i = 1; i < fieldSets.length; i++) {
+        for (const key of [...keyValues.keys()]) {
+            const match = fieldSets[i].find((f) => 'key' in f && f.key === key)
+            if (!match) {
+                keyValues.delete(key)
+            } else if ('value' in match) {
+                keyValues.get(key)!.push((match as { value: string | number }).value)
+            }
+        }
+    }
+
+    const mixed = new Set<string>()
+    for (const [key, values] of keyValues) {
+        if (!values.every((v) => v === values[0])) mixed.add(key)
+    }
+
+    // Re-walk the first set to preserve sections that precede included keys.
+    const included = new Set(keyValues.keys())
+    const fields: PropertyField[] = []
+    let pendingSection: PropertyField | null = null
+    for (const f of fieldSets[0]) {
+        if (f.type === 'section') {
+            pendingSection = f
+        } else if ('key' in f && included.has(f.key)) {
+            if (pendingSection) {
+                fields.push(pendingSection)
+                pendingSection = null
+            }
+            fields.push(f)
+        }
+    }
+    return { fields, mixed }
+}
+
 export class PropertiesPanel {
     readonly el: HTMLElement
     onDelete: (() => void) | null = null
     object: BoardObject | null = null
+    // Set when multiple blocks are selected simultaneously.
+    private objects: BoardObject[] | null = null
+    private multiOnChanges: ((() => void) | null)[] = []
+    private multiCleanups: (() => void)[] = []
     private appearanceEl: HTMLElement
     private commonPropsEl: HTMLElement
     private deleteBtnEl: HTMLButtonElement
@@ -201,9 +270,12 @@ export class PropertiesPanel {
         })
 
         for (const input of [x, y, width, height]) {
-            input.addEventListener('focus', () => input.select())
+            // Defer so the browser's mouseup cursor-placement fires first, then we
+            // re-select — otherwise mouseup deselects what focus just selected.
+            input.addEventListener('focus', () => setTimeout(() => input.select(), 0))
         }
 
+        // Single-select live-update handlers — no-ops when this.object is null (multi mode).
         x.addEventListener('input', () =>
             this.object?.setPosition(Number(x.value), Number(y.value))
         )
@@ -218,9 +290,11 @@ export class PropertiesPanel {
         )
         rotation.addEventListener('focus', () => {
             rotation.value = rotation.value.replace('°', '')
-            rotation.select()
+            setTimeout(() => rotation.select(), 0)
         })
         rotation.addEventListener('blur', () => {
+            // Single mode: reformat with degree suffix.
+            if (!this.object) return
             const val = parseFloat(rotation.value)
             rotation.value = isNaN(val) ? '0°' : `${Math.round(val)}°`
         })
@@ -232,7 +306,10 @@ export class PropertiesPanel {
 
     // Rebuilds the appearance section from scratch on each object selection,
     // since field types and count vary per object type.
-    private renderAppearanceFields(fields: PropertyField[]) {
+    private renderAppearanceFields(
+        fields: PropertyField[],
+        onApply: (key: string, value: string | number) => void
+    ) {
         this.appearanceEl.innerHTML = ''
         if (fields.length === 0) return
 
@@ -256,9 +333,7 @@ export class PropertiesPanel {
                     ? 'prop-action-btn is-destructive'
                     : 'prop-action-btn'
                 btn.textContent = field.label
-                btn.addEventListener('click', () =>
-                    this.object?.setAppearanceProperty(field.key, '')
-                )
+                btn.addEventListener('click', () => onApply(field.key, ''))
                 this.appearanceEl.appendChild(btn)
                 continue
             }
@@ -283,7 +358,7 @@ export class PropertiesPanel {
                 readout.textContent = `${field.value}%`
                 slider.addEventListener('input', () => {
                     readout.textContent = `${slider.value}%`
-                    this.object?.setAppearanceProperty(field.key, Number(slider.value))
+                    onApply(field.key, Number(slider.value))
                 })
                 row.appendChild(slider)
                 row.appendChild(readout)
@@ -297,9 +372,7 @@ export class PropertiesPanel {
                 if (field.max !== undefined) input.max = String(field.max)
                 if (field.step !== undefined) input.step = String(field.step)
                 input.addEventListener('focus', () => input.select())
-                input.addEventListener('input', () =>
-                    this.object?.setAppearanceProperty(field.key, Number(input.value))
-                )
+                input.addEventListener('input', () => onApply(field.key, Number(input.value)))
                 row.appendChild(input)
                 this.wrapNumberInput(input)
             }
@@ -311,9 +384,7 @@ export class PropertiesPanel {
                 input.value = field.value
                 if (field.placeholder) input.placeholder = field.placeholder
                 input.addEventListener('focus', () => input.select())
-                input.addEventListener('change', () =>
-                    this.object?.setAppearanceProperty(field.key, input.value)
-                )
+                input.addEventListener('change', () => onApply(field.key, input.value))
                 row.appendChild(input)
 
                 if (field.allowFilePick) {
@@ -335,7 +406,7 @@ export class PropertiesPanel {
                         } else {
                             const url = URL.createObjectURL(file)
                             input.value = url
-                            this.object?.setAppearanceProperty(field.key, url)
+                            onApply(field.key, url)
                         }
                     })
                     row.appendChild(browseBtn)
@@ -353,25 +424,21 @@ export class PropertiesPanel {
                     if (option.value === field.value) opt.selected = true
                     select.appendChild(opt)
                 }
-                select.addEventListener('change', () => {
-                    this.object?.setAppearanceProperty(field.key, select.value)
-                })
+                select.addEventListener('change', () => onApply(field.key, select.value))
                 row.appendChild(select)
             }
 
             if (field.type === 'font') {
                 const picker = new FontPicker(field.value, (family) => {
                     loadFont(family)
-                    this.object?.setAppearanceProperty(field.key, family)
+                    onApply(field.key, family)
                 })
                 picker.el.classList.add('prop-font-picker')
                 row.appendChild(picker.el)
             }
 
             if (field.type === 'color') {
-                const picker = new ColorPicker(field.value, (color) => {
-                    this.object?.setAppearanceProperty(field.key, color)
-                })
+                const picker = new ColorPicker(field.value, (color) => onApply(field.key, color))
                 row.appendChild(picker.el)
 
                 if (field.themeDefault) {
@@ -383,7 +450,7 @@ export class PropertiesPanel {
                         const color = getComputedStyle(document.documentElement)
                             .getPropertyValue('--color-surface')
                             .trim()
-                        this.object?.setAppearanceProperty(field.key, color)
+                        onApply(field.key, color)
                         picker.setValue(color)
                     })
                     row.appendChild(themeBtn)
@@ -394,11 +461,164 @@ export class PropertiesPanel {
                     clear.className = 'prop-color-clear-btn'
                     clear.textContent = '✕'
                     clear.addEventListener('click', () => {
-                        this.object?.setAppearanceProperty(field.key, 'transparent')
+                        onApply(field.key, 'transparent')
                         picker.setValue('transparent')
                     })
                     row.appendChild(clear)
                 }
+            }
+
+            this.appearanceEl.appendChild(row)
+        }
+    }
+
+    // Renders appearance fields for a multi-select. Mixed fields accept arithmetic
+    // expressions; absolute values apply uniformly to all selected objects.
+    private renderMultiAppearanceFields(
+        fields: PropertyField[],
+        mixed: Set<string>,
+        onApply: (key: string, raw: string | number) => void
+    ) {
+        this.appearanceEl.innerHTML = ''
+        if (fields.length === 0) return
+
+        const section = document.createElement('div')
+        section.className = 'prop-section'
+        section.textContent = 'Appearance'
+        this.appearanceEl.appendChild(section)
+
+        for (const field of fields) {
+            if (field.type === 'section') {
+                const sec = document.createElement('div')
+                sec.className = 'prop-section'
+                sec.textContent = field.label
+                this.appearanceEl.appendChild(sec)
+                continue
+            }
+
+            // Button and text fields are not meaningful for multi-select.
+            if (field.type === 'button' || field.type === 'text') continue
+
+            const isMixed = 'key' in field && mixed.has(field.key)
+
+            const row = document.createElement('div')
+            row.className = isMixed ? 'prop-row is-mixed' : 'prop-row'
+
+            const label = document.createElement('label')
+            label.textContent = field.label
+            row.appendChild(label)
+
+            if (field.type === 'number') {
+                const input = document.createElement('input')
+                // Use text type so the browser accepts expression strings like "+5".
+                input.type = 'text'
+                input.inputMode = 'numeric'
+                if (field.min !== undefined) input.dataset.min = String(field.min)
+                if (field.max !== undefined) input.dataset.max = String(field.max)
+                if (field.step !== undefined) input.dataset.step = String(field.step)
+                input.value = isMixed ? 'Mixed' : String(field.value)
+                input.addEventListener('focus', () => setTimeout(() => input.select(), 0))
+
+                const commit = () => {
+                    const raw = input.value.replace(/^Mixed/i, '').trim()
+                    if (!raw) return
+                    onApply(field.key, raw)
+                    // Refresh the displayed value from the first object's updated field.
+                    if (this.objects) {
+                        const vals = this.objects.map((o) => {
+                            const f = o
+                                .getAppearanceFields()
+                                .find((ff) => 'key' in ff && ff.key === field.key)
+                            return f && 'value' in f ? (f as { value: number }).value : NaN
+                        })
+                        const allSame = vals.length > 0 && vals.every((v) => v === vals[0])
+                        if (allSame && !isNaN(vals[0])) {
+                            input.value = String(vals[0])
+                            row.classList.remove('is-mixed')
+                        } else {
+                            input.value = 'Mixed'
+                            row.classList.add('is-mixed')
+                        }
+                    }
+                }
+                input.addEventListener('change', commit)
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        commit()
+                        input.blur()
+                    }
+                    if (e.key === 'Escape') {
+                        input.value = isMixed ? 'Mixed' : String(field.value)
+                        input.blur()
+                    }
+                })
+                row.appendChild(input)
+                this.wrapNumberInput(input)
+            }
+
+            if (field.type === 'slider') {
+                const slider = document.createElement('input')
+                slider.type = 'range'
+                slider.min = String(field.min)
+                slider.max = String(field.max)
+                slider.step = String(field.step ?? 1)
+                slider.value = String(field.value)
+                slider.className = 'color-picker-alpha-slider'
+                const readout = document.createElement('span')
+                readout.className = 'color-picker-alpha-label'
+                readout.textContent = isMixed ? 'Mixed' : `${field.value}%`
+                slider.addEventListener('input', () => {
+                    readout.textContent = `${slider.value}%`
+                    onApply(field.key, Number(slider.value))
+                })
+                row.appendChild(slider)
+                row.appendChild(readout)
+            }
+
+            if (field.type === 'color') {
+                const picker = new ColorPicker(field.value, (color) => onApply(field.key, color))
+                if (isMixed) picker.el.classList.add('is-mixed')
+                row.appendChild(picker.el)
+                if (field.clearable) {
+                    const clear = document.createElement('button')
+                    clear.className = 'prop-color-clear-btn'
+                    clear.textContent = '✕'
+                    clear.addEventListener('click', () => onApply(field.key, 'transparent'))
+                    row.appendChild(clear)
+                }
+            }
+
+            if (field.type === 'font') {
+                const picker = new FontPicker(field.value, (family) => {
+                    loadFont(family)
+                    onApply(field.key, family)
+                })
+                picker.el.classList.add('prop-font-picker')
+                if (isMixed) picker.el.classList.add('is-mixed')
+                row.appendChild(picker.el)
+            }
+
+            if (field.type === 'select') {
+                const select = document.createElement('select')
+                select.className = 'prop-select'
+                if (isMixed) {
+                    const opt = document.createElement('option')
+                    opt.value = ''
+                    opt.textContent = 'Mixed'
+                    opt.selected = true
+                    select.appendChild(opt)
+                }
+                for (const option of field.options) {
+                    const opt = document.createElement('option')
+                    opt.value = option.value
+                    opt.textContent = option.label
+                    if (!isMixed && option.value === field.value) opt.selected = true
+                    select.appendChild(opt)
+                }
+                select.addEventListener('change', () => {
+                    if (select.value) onApply(field.key, select.value)
+                })
+                row.appendChild(select)
             }
 
             this.appearanceEl.appendChild(row)
@@ -451,14 +671,28 @@ export class PropertiesPanel {
     }
 
     private stepInput(input: HTMLInputElement, dir: 1 | -1): void {
-        const step = parseFloat(input.step) || 1
+        // Read step from attribute or data attribute (text inputs don't honour the step attribute).
+        const step = parseFloat(input.step || input.dataset.step || '1') || 1
+        const decimals = (step.toString().split('.')[1] ?? '').length
+
+        if (input.value === 'Mixed') {
+            // Mixed state: emit a relative operation so each object shifts by one step.
+            input.value = dir === 1 ? `+${step.toFixed(decimals)}` : `-${step.toFixed(decimals)}`
+            input.dispatchEvent(new Event('change', { bubbles: true }))
+            // Let the change handler (commit / applyGeometryToAll) restore the value.
+            return
+        }
+
         const val = parseFloat(input.value) || 0
         let next = val + dir * step
-        if (input.min !== '') next = Math.max(parseFloat(input.min), next)
-        if (input.max !== '') next = Math.min(parseFloat(input.max), next)
-        const decimals = (step.toString().split('.')[1] ?? '').length
+        const min = input.min || input.dataset.min
+        const max = input.max || input.dataset.max
+        if (min !== '' && min !== undefined) next = Math.max(parseFloat(min), next)
+        if (max !== '' && max !== undefined) next = Math.min(parseFloat(max), next)
         input.value = next.toFixed(decimals)
         input.dispatchEvent(new Event('input', { bubbles: true }))
+        // Also fire change so multi-mode commit handlers pick it up.
+        input.dispatchEvent(new Event('change', { bubbles: true }))
     }
 
     private setupResizeHandles() {
@@ -623,16 +857,19 @@ export class PropertiesPanel {
         this.expandBtnEl.classList.toggle('hidden', !collapsed)
     }
 
-    // Binds to a board object. Appearance fields are rebuilt for the new type,
+    // Binds to a single board object. Appearance fields are rebuilt for the new type,
     // then onChange keeps inputs in sync as the user drags or resizes.
     show(object: BoardObject) {
+        this.cleanupMulti()
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
         ;(this.inputs.height.closest('.prop-row') as HTMLElement).style.display = object.fixedHeight
             ? 'none'
             : ''
-        this.renderAppearanceFields(object.getAppearanceFields())
+        this.renderAppearanceFields(object.getAppearanceFields(), (key, value) =>
+            this.object?.setAppearanceProperty(key, value)
+        )
         this.nameInputEl.value = object.name
         ;(this.nameInputEl.closest('.prop-name-row') as HTMLElement).style.display = object.hideName
             ? 'none'
@@ -646,6 +883,106 @@ export class PropertiesPanel {
         this.el.classList.remove('hidden')
     }
 
+    // Binds to multiple selected objects. Renders the field intersection with mixed
+    // state for differing values. Arithmetic expressions (+5, -10, *2, /3) apply
+    // relative to each object's current value; plain numbers set all to the same value.
+    showMultiple(objects: BoardObject[]) {
+        this.cleanupMulti()
+        if (this.object) {
+            this.object.onChange = this.prevOnChange
+            this.prevOnChange = null
+            this.object = null
+        }
+        this.objects = objects
+
+        const { fields, mixed } = intersectAppearanceFields(
+            objects.map((o) => o.getAppearanceFields())
+        )
+        this.renderMultiAppearanceFields(fields, mixed, (key, raw) =>
+            this.applyAppearanceToAll(key, raw)
+        )
+
+        // Switch geometry inputs to text type so they can accept expression strings.
+        for (const input of [this.inputs.x, this.inputs.y, this.inputs.width, this.inputs.height]) {
+            input.type = 'text'
+        }
+
+        // Wire commit handlers for all five geometry inputs.
+        const addGeo = (
+            input: HTMLInputElement,
+            key: 'x' | 'y' | 'width' | 'height' | 'rotation'
+        ) => {
+            // Guards against the change event firing after Enter-triggered blur,
+            // which would apply the same operation a second time.
+            let applying = false
+
+            const onChange = () => {
+                if (applying) return
+                this.applyGeometryToAll(key, input.value)
+            }
+            const onKeydown = (e: KeyboardEvent) => {
+                if (e.key === 'Enter') {
+                    applying = true
+                    this.applyGeometryToAll(key, input.value)
+                    input.blur() // change fires here — blocked by flag
+                    this.syncMultiple() // update now that input is no longer focused
+                    applying = false
+                }
+                if (e.key === 'Escape') {
+                    applying = true
+                    input.blur()
+                    this.syncMultiple()
+                    applying = false
+                }
+            }
+            input.addEventListener('change', onChange)
+            input.addEventListener('keydown', onKeydown)
+            this.multiCleanups.push(() => {
+                input.removeEventListener('change', onChange)
+                input.removeEventListener('keydown', onKeydown)
+            })
+        }
+        addGeo(this.inputs.x, 'x')
+        addGeo(this.inputs.y, 'y')
+        addGeo(this.inputs.width, 'width')
+        addGeo(this.inputs.height, 'height')
+        addGeo(this.inputs.rotation, 'rotation')
+        ;(this.nameInputEl.closest('.prop-name-row') as HTMLElement).style.display = 'none'
+        this.commonPropsEl.style.display = ''
+        ;(this.inputs.height.closest('.prop-row') as HTMLElement).style.display = ''
+        this.deleteBtnEl.style.display = ''
+
+        // Chain onChange on every object so geometry inputs stay in sync during drag.
+        this.multiOnChanges = objects.map((o) => o.onChange)
+        objects.forEach((obj, i) => {
+            obj.onChange = () => {
+                this.syncMultiple()
+                this.multiOnChanges[i]?.()
+            }
+        })
+
+        this.syncMultiple()
+        this.el.classList.remove('hidden')
+    }
+
+    // Removes multi-select bindings and restores geometry inputs to number type.
+    private cleanupMulti() {
+        if (this.objects) {
+            this.objects.forEach((obj, i) => {
+                obj.onChange = this.multiOnChanges[i] ?? null
+            })
+        }
+        this.multiOnChanges = []
+        this.multiCleanups.forEach((c) => c())
+        this.multiCleanups = []
+        for (const input of [this.inputs.x, this.inputs.y, this.inputs.width, this.inputs.height]) {
+            input.type = 'number'
+            input.value = ''
+        }
+        this.inputs.rotation.value = ''
+        this.objects = null
+    }
+
     private sync() {
         if (!this.object) return
         const pos = this.object.getPosition()
@@ -655,7 +992,7 @@ export class PropertiesPanel {
         this.inputs.y.value = String(Math.round(pos.y))
         this.inputs.width.value = String(Math.round(size.width))
         this.inputs.height.value = String(Math.round(size.height))
-        // Skip sync while the field is focused — the user is mid-edit without the suffix
+        // Skip sync while the field is focused — the user is mid-edit without the suffix.
         if (document.activeElement !== this.inputs.rotation) {
             this.inputs.rotation.value = `${Math.round(this.object.getRotation())}°`
         }
@@ -664,7 +1001,109 @@ export class PropertiesPanel {
         }
     }
 
+    // Refreshes the geometry inputs for multi-select, showing the shared value or
+    // a "Mixed" placeholder when blocks have differing values.
+    private syncMultiple() {
+        if (!this.objects || this.objects.length === 0) return
+        const positions = this.objects.map((o) => o.getPosition())
+        const sizes = this.objects.map((o) => o.getSize())
+        const rotations = this.objects.map((o) => o.getRotation())
+
+        const setField = (input: HTMLInputElement, values: number[], suffix = '') => {
+            if (document.activeElement === input) return
+            const allSame = values.every((v) => v === values[0])
+            if (allSame) {
+                input.value = suffix
+                    ? `${Math.round(values[0])}${suffix}`
+                    : String(Math.round(values[0]))
+            } else {
+                input.value = 'Mixed'
+            }
+        }
+
+        setField(
+            this.inputs.x,
+            positions.map((p) => p.x)
+        )
+        setField(
+            this.inputs.y,
+            positions.map((p) => p.y)
+        )
+        setField(
+            this.inputs.width,
+            sizes.map((s) => s.width)
+        )
+        setField(
+            this.inputs.height,
+            sizes.map((s) => s.height)
+        )
+        setField(this.inputs.rotation, rotations, '°')
+    }
+
+    // Applies an expression or absolute value to a geometry property on all selected objects.
+    private applyGeometryToAll(
+        key: 'x' | 'y' | 'width' | 'height' | 'rotation',
+        raw: string
+    ): void {
+        if (!this.objects) return
+        const cleaned = raw
+            .replace('°', '')
+            .replace(/^Mixed/i, '')
+            .trim()
+        if (!cleaned) return
+
+        for (const obj of this.objects) {
+            const pos = obj.getPosition()
+            const size = obj.getSize()
+            const rot = obj.getRotation()
+            const current =
+                key === 'x'
+                    ? pos.x
+                    : key === 'y'
+                      ? pos.y
+                      : key === 'width'
+                        ? size.width
+                        : key === 'height'
+                          ? size.height
+                          : rot
+            const next = parseOpValue(cleaned, current)
+            if (isNaN(next)) continue
+
+            if (key === 'x') obj.setPosition(next, pos.y)
+            else if (key === 'y') obj.setPosition(pos.x, next)
+            else if (key === 'width') obj.setSize(next, size.height)
+            else if (key === 'height') obj.setSize(size.width, next)
+            else obj.setRotation(next)
+        }
+        this.syncMultiple()
+    }
+
+    // Applies an expression or absolute value to an appearance property on all selected objects.
+    // Expressions (+, -, *, /) are evaluated against each object's current value individually.
+    private applyAppearanceToAll(key: string, raw: string | number): void {
+        if (!this.objects) return
+        const normalised = typeof raw === 'string' ? raw.replace(/^Mixed/i, '').trim() : raw
+        for (const obj of this.objects) {
+            if (typeof normalised === 'string' && /^[+\-*/]/.test(normalised)) {
+                const field = obj.getAppearanceFields().find((f) => 'key' in f && f.key === key)
+                if (field && (field.type === 'number' || field.type === 'slider')) {
+                    let next = parseOpValue(normalised, field.value)
+                    if (field.type === 'number') {
+                        if (field.min !== undefined) next = Math.max(field.min, next)
+                        if (field.max !== undefined) next = Math.min(field.max, next)
+                    } else {
+                        next = Math.max(field.min, Math.min(field.max, next))
+                    }
+                    if (!isNaN(next)) obj.setAppearanceProperty(key, next)
+                }
+            } else if (normalised !== '') {
+                obj.setAppearanceProperty(key, normalised)
+            }
+        }
+    }
+
     hide() {
+        this.cleanupMulti()
         if (this.object) this.object.onChange = this.prevOnChange
         this.prevOnChange = null
         this.object = null
