@@ -462,7 +462,10 @@ function addBlock(block: BoardObject) {
         selectionBox.setBlocks([])
         layersPanel.notifySelectionChanged(selectedBlocks)
     }
-    block.onChange = () => scheduleSave()
+    block.onChange = () => {
+        scheduleSave()
+        if (selectedBlocks.has(block)) selectionBox.update()
+    }
 
     // Snap guides — only for BoxBlock subclasses (not LineBlock).
     if (block instanceof BoxBlock) {

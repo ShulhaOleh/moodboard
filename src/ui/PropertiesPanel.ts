@@ -23,6 +23,7 @@ export class PropertiesPanel {
     }
     private nameInputEl: HTMLInputElement
     private docked = true
+    private prevOnChange: (() => void) | null = null
     private snapPreviewEl: HTMLElement
     private expandBtnEl: HTMLElement
 
@@ -616,7 +617,11 @@ export class PropertiesPanel {
             ? 'none'
             : ''
         this.sync()
-        object.onChange = () => this.sync()
+        this.prevOnChange = object.onChange
+        object.onChange = () => {
+            this.sync()
+            this.prevOnChange?.()
+        }
         this.el.classList.remove('hidden')
     }
 
@@ -639,7 +644,8 @@ export class PropertiesPanel {
     }
 
     hide() {
-        if (this.object) this.object.onChange = null
+        if (this.object) this.object.onChange = this.prevOnChange
+        this.prevOnChange = null
         this.object = null
         this.el.classList.add('hidden')
     }
