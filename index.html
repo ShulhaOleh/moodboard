@@ -14,10 +14,35 @@
           var dark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
           document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
         } catch (_) {}
+
+        // Mobile guard — set data-mobile to swap in the unsupported screen.
+        if (window.matchMedia('(max-width: 768px)').matches && navigator.maxTouchPoints > 0) {
+          document.documentElement.setAttribute('data-mobile', '')
+        }
       })()
     </script>
+
+    <!-- Mobile unsupported screen — shown instead of the app on touch devices. -->
+    <style>
+      [data-mobile] body { display: flex; align-items: center; justify-content: center; height: 100dvh; background: var(--color-surface); font-family: system-ui, sans-serif; }
+      [data-mobile] #app, [data-mobile] script[type="module"] { display: none !important; }
+      [data-mobile] #mobile-wall { display: flex !important; }
+    </style>
   </head>
   <body>
+    <!-- Shown on mobile instead of the app. Hidden by default; revealed via [data-mobile] CSS. -->
+    <div id="mobile-wall" style="display:none;flex-direction:column;align-items:center;gap:16px;padding:32px;text-align:center;max-width:320px;">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--color-text-muted);flex-shrink:0">
+        <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/>
+      </svg>
+      <p style="font-size:17px;font-weight:600;color:var(--color-text)">Desktop only</p>
+      <p style="font-size:14px;line-height:1.5;color:var(--color-text-muted)">moodboard requires a mouse and keyboard. Open it on a desktop or laptop browser.</p>
+    </div>
+
+
+
+    
+    <!-- App root -->
     <div id="app" class="relative w-full h-full overflow-hidden"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
