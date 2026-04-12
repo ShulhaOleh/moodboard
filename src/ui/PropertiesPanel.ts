@@ -93,6 +93,11 @@ export class PropertiesPanel {
             rotation: this.el.querySelector('#prop-rotation') as HTMLInputElement,
         }
 
+        this.wrapNumberInput(this.inputs.x)
+        this.wrapNumberInput(this.inputs.y)
+        this.wrapNumberInput(this.inputs.width)
+        this.wrapNumberInput(this.inputs.height)
+
         // Prevent wheel events from reaching the board's pan/zoom handler while the
         // panel itself can still scroll.
         this.el.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
@@ -295,6 +300,7 @@ export class PropertiesPanel {
                     this.object?.setAppearanceProperty(field.key, Number(input.value))
                 )
                 row.appendChild(input)
+                this.wrapNumberInput(input)
             }
 
             if (field.type === 'text') {
@@ -396,6 +402,41 @@ export class PropertiesPanel {
 
             this.appearanceEl.appendChild(row)
         }
+    }
+
+    private wrapNumberInput(input: HTMLInputElement): void {
+        const wrap = document.createElement('div')
+        wrap.className = 'number-input-wrap'
+        input.parentNode!.insertBefore(wrap, input)
+        wrap.appendChild(input)
+
+        const btns = document.createElement('div')
+        btns.className = 'number-spin-btns'
+
+        for (const dir of [1, -1] as const) {
+            const btn = document.createElement('button')
+            btn.className = 'number-spin-btn'
+            btn.tabIndex = -1
+            btn.textContent = dir === 1 ? '▴' : '▾'
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault()
+                this.stepInput(input, dir)
+            })
+            btns.appendChild(btn)
+        }
+
+        wrap.appendChild(btns)
+    }
+
+    private stepInput(input: HTMLInputElement, dir: 1 | -1): void {
+        const step = parseFloat(input.step) || 1
+        const val = parseFloat(input.value) || 0
+        let next = val + dir * step
+        if (input.min !== '') next = Math.max(parseFloat(input.min), next)
+        if (input.max !== '') next = Math.min(parseFloat(input.max), next)
+        const decimals = (step.toString().split('.')[1] ?? '').length
+        input.value = next.toFixed(decimals)
+        input.dispatchEvent(new Event('input', { bubbles: true }))
     }
 
     private setupResizeHandles() {

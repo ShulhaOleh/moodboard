@@ -3,6 +3,8 @@
    applyTheme() in settings.ts sets the attribute; index.html sets it synchronously to avoid flash. */
 
 :root {
+    color-scheme: light;
+
     /* Accent — Dracula purple, darkened for readability on light backgrounds */
     --color-accent:        #7c3aed;
     --color-accent-hover:  #6d28d9;
@@ -50,6 +52,8 @@
 }
 
 [data-theme="dark"] {
+    color-scheme: dark;
+
     /* Accent — Dracula purple */
     --color-accent:        #bd93f9;
     --color-accent-hover:  #a57ef7;
