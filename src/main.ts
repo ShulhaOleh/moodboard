@@ -563,6 +563,7 @@ app.addEventListener('drop', (e) => {
         addBlock(
             new ImageBlock(overlay, {
                 id: crypto.randomUUID(),
+                name: nextName('Image'),
                 x,
                 y,
                 width: 320,
@@ -857,6 +858,7 @@ function commitDrawing(rawPoints: Array<{ x: number; y: number }>) {
     addBlock(
         new PathBlock(overlay, {
             id: crypto.randomUUID(),
+            name: nextName('Path'),
             x: minX,
             y: minY,
             width: w,
@@ -1021,12 +1023,25 @@ function centerPosition() {
     }
 }
 
+// Returns the next available name for a given label, e.g. "Rectangle 3" when
+// "Rectangle 1" and "Rectangle 2" already exist.
+function nextName(label: string): string {
+    let max = 0
+    const re = new RegExp(`^${label} (\\d+)$`)
+    for (const b of blocks) {
+        const m = b.name.match(re)
+        if (m) max = Math.max(max, parseInt(m[1], 10))
+    }
+    return `${label} ${max + 1}`
+}
+
 addBar.onAddText = () => {
     pushHistory()
     const { x, y } = centerPosition()
     addBlock(
         new TextBlock(overlay, {
             id: crypto.randomUUID(),
+            name: nextName('Text'),
             x,
             y,
             width: 240,
@@ -1046,6 +1061,7 @@ addBar.onAddImage = () => {
     addBlock(
         new ImageBlock(overlay, {
             id: crypto.randomUUID(),
+            name: nextName('Image'),
             x,
             y,
             width: 320,
@@ -1069,6 +1085,7 @@ addBar.onAddNote = () => {
     const { x, y } = centerPosition()
     const note = new NoteBlock(overlay, {
         id: crypto.randomUUID(),
+        name: nextName('Note'),
         x,
         y,
         width: 240,
@@ -1097,6 +1114,7 @@ addBar.onAddShape = (shape) => {
         addBlock(
             new LineBlock(overlay, {
                 id: crypto.randomUUID(),
+                name: nextName('Line'),
                 x1: x,
                 y1: y + 80,
                 x2: x + 200,
@@ -1113,6 +1131,7 @@ addBar.onAddShape = (shape) => {
     addBlock(
         new ShapeBlock(overlay, {
             id: crypto.randomUUID(),
+            name: nextName(shape.charAt(0).toUpperCase() + shape.slice(1)),
             x,
             y,
             width: 160,
