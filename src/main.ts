@@ -1108,6 +1108,7 @@ addBar.onAddNote = (shape) => {
         fontSize: 14,
         fontFamily: 'Inter',
         opacity: 100,
+        borderRadius: 6,
         shadowColor: '',
         shadowBlur: 0,
         shadowX: 0,

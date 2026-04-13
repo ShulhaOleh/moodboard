@@ -27,6 +27,7 @@ export interface NoteBlockData {
     fontSize: number
     fontFamily: string
     opacity: number
+    borderRadius: number
     shadowColor: string
     shadowBlur: number
     shadowX: number
@@ -62,6 +63,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
 
         if (!this.data.fontFamily) this.data.fontFamily = 'Inter'
         if (!this.data.shape) this.data.shape = 'rectangle'
+        if (this.data.borderRadius === undefined) this.data.borderRadius = 6
 
         // stackBackEl is a sibling in the overlay inserted before this.el so it paints behind it.
         // A child element with z-index: -1 cannot go behind a parent's own background, so sibling
@@ -140,6 +142,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         this.stackBackEl.style.display = 'block'
         this.stackBackEl.style.width = `${width}px`
         this.stackBackEl.style.height = `${height}px`
+        this.stackBackEl.style.borderRadius = `${this.data.borderRadius ?? 6}px`
         this.stackBackEl.style.transform = `translate(${cx}px, ${cy}px) rotate(${rotation}deg) translate(${-width / 2}px, ${-height / 2}px)`
         this.stackBackEl.style.background = this.data.color
         this.stackBackEl.style.opacity = String(this.data.opacity / 100)
@@ -164,6 +167,9 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         this.el.classList.remove('shape-dog-ear', 'shape-stacked')
         if (this.data.shape !== 'rectangle') this.el.classList.add(`shape-${this.data.shape}`)
         this.foldEl.style.display = this.data.shape === 'dog-ear' ? 'block' : 'none'
+        const r = this.data.borderRadius ?? 6
+        // Dog-ear: only round the bottom corners — top-left is the sharp folded-paper corner.
+        this.el.style.borderRadius = this.data.shape === 'dog-ear' ? `0 0 ${r}px ${r}px` : `${r}px`
     }
 
     private applyAppearance() {
@@ -274,6 +280,15 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
                 max: 100,
                 step: 1,
             },
+            {
+                type: 'number',
+                key: 'borderRadius',
+                label: 'Radius',
+                value: this.data.borderRadius,
+                min: 0,
+                max: 100,
+                step: 1,
+            },
             { type: 'section', label: 'Shadow' },
             {
                 type: 'color',
@@ -333,6 +348,11 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         if (key === 'opacity') {
             this.data.opacity = Number(value)
             this.el.style.opacity = String(this.data.opacity / 100)
+        }
+        if (key === 'borderRadius') {
+            this.data.borderRadius = Number(value)
+            this.applyShape()
+            this.syncStackBack()
         }
         if (key === 'shadowColor') {
             this.data.shadowColor = String(value)

@@ -209,12 +209,13 @@ function renderNoteBlock(ctx: CanvasRenderingContext2D, block: NoteBlock) {
     applyBoxTransform(ctx, x, y, w, h, rotation)
     ctx.globalAlpha = opacity
 
-    const bgPath = buildNotePath(data.shape, w, h)
+    const radius = data.borderRadius ?? 6
+    const bgPath = buildNotePath(data.shape, w, h, radius)
 
     // Stacked: draw back card first so it sits behind the front card.
     if (data.shape === 'stacked') {
         const backPath = new Path2D()
-        backPath.roundRect(8, 6, w, h, 6)
+        backPath.roundRect(8, 6, w, h, radius)
         ctx.save()
         ctx.shadowColor = 'rgba(0,0,0,0.12)'
         ctx.shadowBlur = 6
@@ -294,18 +295,21 @@ function darkenColor(hex: string, factor: number): string {
     return `rgb(${r},${g},${b})`
 }
 
-function buildNotePath(shape: string, w: number, h: number): Path2D {
+function buildNotePath(shape: string, w: number, h: number, radius: number): Path2D {
     const path = new Path2D()
     if (shape === 'dog-ear') {
         const fold = NOTE_FOLD_SIZE
+        // Bottom corners use the user-defined radius; top corners are part of the fold cut.
         path.moveTo(0, 0)
         path.lineTo(w - fold, 0)
         path.lineTo(w, fold)
-        path.lineTo(w, h)
-        path.lineTo(0, h)
+        path.lineTo(w, h - radius)
+        path.arcTo(w, h, w - radius, h, radius)
+        path.lineTo(radius, h)
+        path.arcTo(0, h, 0, h - radius, radius)
         path.closePath()
     } else {
-        path.roundRect(0, 0, w, h, 6)
+        path.roundRect(0, 0, w, h, radius)
     }
     return path
 }
