@@ -583,7 +583,10 @@ export class PropertiesPanel {
                     const clear = document.createElement('button')
                     clear.className = 'prop-color-clear-btn'
                     clear.textContent = '✕'
-                    clear.addEventListener('click', () => onApply(field.key, 'transparent'))
+                    clear.addEventListener('click', () => {
+                        onApply(field.key, 'transparent')
+                        picker.setValue('transparent')
+                    })
                     row.appendChild(clear)
                 }
             }
@@ -861,6 +864,10 @@ export class PropertiesPanel {
     // then onChange keeps inputs in sync as the user drags or resizes.
     show(object: BoardObject) {
         this.cleanupMulti()
+        // Restore the previous object's onChange before rebinding. Without this,
+        // repeated show() calls for the same object build up a chain of wrappers
+        // that all read this.prevOnChange at call time — causing infinite recursion.
+        if (this.object) this.object.onChange = this.prevOnChange
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
@@ -875,10 +882,14 @@ export class PropertiesPanel {
             ? 'none'
             : ''
         this.sync()
-        this.prevOnChange = object.onChange
+        // Capture the current onChange in a local so the closure sees the value at
+        // bind time, not at call time — this.prevOnChange is mutable and would cause
+        // recursion if read from the closure after a subsequent show() call.
+        const prevOnChange = object.onChange
+        this.prevOnChange = prevOnChange
         object.onChange = () => {
             this.sync()
-            this.prevOnChange?.()
+            prevOnChange?.()
         }
         this.el.classList.remove('hidden')
     }
