@@ -447,6 +447,7 @@ export class LineBlock extends BaseBlock {
         this.data.x2 += dx
         this.data.y2 += dy
         this.applyLayout()
+        this.onChange?.()
     }
 
     setSize(width: number, height: number) {

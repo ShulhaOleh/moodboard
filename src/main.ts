@@ -422,7 +422,13 @@ function addBlock(block: BoardObject) {
     }
     block.getViewport = () => ({ panX, panY, zoom })
     block.onResize = () => selectionBox.setBlocks([...selectedBlocks])
-    block.onDragStart = () => pushHistory()
+    block.onDragStart = () => {
+        pushHistory()
+        // Guard against co-travelers' setPosition firing onBeforePropertyChange and
+        // pushing a second history entry — one where the dragged block has already moved
+        // but co-travelers have not, producing an inconsistent undo state.
+        propertyChangeActive = true
+    }
     block.onBeforePropertyChange = () => {
         if (!propertyChangeActive) {
             pushHistory()
@@ -660,7 +666,12 @@ function nudgeTick(ts: number) {
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     const active = document.activeElement as HTMLElement
-    if (active.isContentEditable || active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')
+    if (
+        active.isContentEditable ||
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.tagName === 'SELECT'
+    )
         return
 
     // Arrow-key nudge — move selected blocks in board space
@@ -671,6 +682,7 @@ document.addEventListener('keydown', (e) => {
             if (!nudgeHistoryPushed) {
                 pushHistory()
                 nudgeHistoryPushed = true
+                propertyChangeActive = true
             }
             // 1 px immediately on tap
             for (const b of selectedBlocks) {

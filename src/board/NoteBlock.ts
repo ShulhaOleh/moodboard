@@ -136,14 +136,16 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
         }
         const { x, y, width, rotation } = this.data
         const height = this.el.offsetHeight
-        // Offset the back card's pivot by (8, 6) in board space — it peeks from the bottom-right.
-        const cx = x + width / 2 + 8
-        const cy = y + height / 2 + 6
         this.stackBackEl.style.display = 'block'
+        this.stackBackEl.style.left = `${x}px`
+        this.stackBackEl.style.top = `${y}px`
         this.stackBackEl.style.width = `${width}px`
         this.stackBackEl.style.height = `${height}px`
         this.stackBackEl.style.borderRadius = `${this.data.borderRadius ?? 6}px`
-        this.stackBackEl.style.transform = `translate(${cx}px, ${cy}px) rotate(${rotation}deg) translate(${-width / 2}px, ${-height / 2}px)`
+        // Mirror the main card's left/top so both share the same rotation origin (50% 50%).
+        // translate(8px, 6px) then shifts in local (post-rotation) space so the back card
+        // peeks consistently from the bottom-right at any rotation angle.
+        this.stackBackEl.style.transform = `rotate(${rotation}deg) translate(8px, 6px)`
         this.stackBackEl.style.background = this.data.color
         this.stackBackEl.style.opacity = String(this.data.opacity / 100)
     }

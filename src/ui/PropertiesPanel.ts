@@ -960,7 +960,12 @@ export class PropertiesPanel {
         addGeo(this.inputs.rotation, 'rotation')
         ;(this.nameInputEl.closest('.prop-name-row') as HTMLElement).style.display = 'none'
         this.commonPropsEl.style.display = ''
-        ;(this.inputs.height.closest('.prop-row') as HTMLElement).style.display = ''
+        // Hide H when every selected block has a fixed/auto height — changing it would be a no-op.
+        ;(this.inputs.height.closest('.prop-row') as HTMLElement).style.display = objects.every(
+            (o) => o.fixedHeight
+        )
+            ? 'none'
+            : ''
         this.deleteBtnEl.style.display = ''
 
         // Chain onChange on every object so geometry inputs stay in sync during drag.
@@ -999,10 +1004,16 @@ export class PropertiesPanel {
         const pos = this.object.getPosition()
         const size = this.object.getSize()
 
-        this.inputs.x.value = String(Math.round(pos.x))
-        this.inputs.y.value = String(Math.round(pos.y))
-        this.inputs.width.value = String(Math.round(size.width))
-        this.inputs.height.value = String(Math.round(size.height))
+        // Skip each field when focused — programmatically setting .value resets the cursor
+        // position even when the value is unchanged, breaking mid-number editing.
+        if (document.activeElement !== this.inputs.x)
+            this.inputs.x.value = String(Math.round(pos.x))
+        if (document.activeElement !== this.inputs.y)
+            this.inputs.y.value = String(Math.round(pos.y))
+        if (document.activeElement !== this.inputs.width)
+            this.inputs.width.value = String(Math.round(size.width))
+        if (document.activeElement !== this.inputs.height)
+            this.inputs.height.value = String(Math.round(size.height))
         // Skip sync while the field is focused — the user is mid-edit without the suffix.
         if (document.activeElement !== this.inputs.rotation) {
             this.inputs.rotation.value = `${Math.round(this.object.getRotation())}°`
@@ -1014,14 +1025,16 @@ export class PropertiesPanel {
 
     // Refreshes the geometry inputs for multi-select, showing the shared value or
     // a "Mixed" placeholder when blocks have differing values.
-    private syncMultiple() {
+    // Pass force=true to update even when an input is focused — needed after a
+    // spin-button step so the input doesn't retain a stale expression string.
+    private syncMultiple(force = false) {
         if (!this.objects || this.objects.length === 0) return
         const positions = this.objects.map((o) => o.getPosition())
         const sizes = this.objects.map((o) => o.getSize())
         const rotations = this.objects.map((o) => o.getRotation())
 
         const setField = (input: HTMLInputElement, values: number[], suffix = '') => {
-            if (document.activeElement === input) return
+            if (!force && document.activeElement === input) return
             const allSame = values.every((v) => v === values[0])
             if (allSame) {
                 input.value = suffix
@@ -1083,10 +1096,15 @@ export class PropertiesPanel {
             if (key === 'x') obj.setPosition(next, pos.y)
             else if (key === 'y') obj.setPosition(pos.x, next)
             else if (key === 'width') obj.setSize(next, size.height)
-            else if (key === 'height') obj.setSize(size.width, next)
-            else obj.setRotation(next)
+            else if (key === 'height') {
+                // Skip blocks with a fixed/auto height — their setSize ignores the height
+                // parameter, so applying would be a no-op that leaves the display stale.
+                if (!obj.fixedHeight) obj.setSize(size.width, next)
+            } else obj.setRotation(next)
         }
-        this.syncMultiple()
+        // Force-update inputs even when focused — spin-button clicks preserve focus but
+        // the value must reflect the applied result, not the expression string (e.g. "+1").
+        this.syncMultiple(true)
     }
 
     // Applies an expression or absolute value to an appearance property on all selected objects.
