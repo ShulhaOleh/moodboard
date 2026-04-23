@@ -214,11 +214,23 @@ export class TextBlock extends BoxBlock<TextBlockData> {
             }
         })
 
-        if (!colorMixed && color) this.setColor(color)
-        if (!familyMixed && fontFamily) this.setFontFamilyBlock(fontFamily)
+        // Promote uniform marks to block-level data and strip the now-redundant inline marks
+        // so that subsequent block-level property changes (e.g. from the Properties Panel)
+        // apply to all text without being overridden by leftover spans.
+        if (!colorMixed && color) {
+            this.setColor(color)
+            this.editorInstance!.chain().selectAll().unsetColor().run()
+        }
+        if (!familyMixed && fontFamily) {
+            this.setFontFamilyBlock(fontFamily)
+            this.editorInstance!.chain().selectAll().unsetFontFamily().run()
+        }
         if (!sizeMixed && fontSize) {
             const n = parseInt(fontSize, 10)
-            if (!isNaN(n)) this.setFontSize(n)
+            if (!isNaN(n)) {
+                this.setFontSize(n)
+                this.editorInstance!.chain().selectAll().unsetFontSize().run()
+            }
         }
         if (!alignMixed && textAlign) this.setTextAlign(textAlign)
     }
