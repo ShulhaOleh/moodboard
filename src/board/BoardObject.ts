@@ -62,6 +62,9 @@ export interface BoardObject {
     onBeforePropertyChange: (() => void) | null
     // Fired when visibility or lock state changes — used by LayersPanel to update the row without a full refresh.
     onLayerChange: (() => void) | null
+    // Fired when the block's appearance fields change values without a full re-render — e.g.
+    // cursor moves inside a text editor so the panel should reflect the new active marks.
+    onAppearanceChange: (() => void) | null
     // Human-readable label shown in the Layers panel.
     readonly layerLabel: string
     // User-editable name shown in the layers panel and properties panel.

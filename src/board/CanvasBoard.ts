@@ -26,6 +26,7 @@ export class CanvasBoard implements BoardObject {
     getViewport = null
     onResize = null
     onLayerChange = null
+    onAppearanceChange = null
     readonly layerLabel = 'Canvas'
     readonly hideName = true as const
     name = 'Canvas'

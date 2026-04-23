@@ -93,6 +93,7 @@ export class PropertiesPanel {
     private nameInputEl: HTMLInputElement
     private docked = true
     private prevOnChange: (() => void) | null = null
+    private fieldUpdaters: Map<string, (value: string | number) => void> = new Map()
     private snapPreviewEl: HTMLElement
     private expandBtnEl: HTMLElement
 
@@ -310,6 +311,7 @@ export class PropertiesPanel {
         fields: PropertyField[],
         onApply: (key: string, value: string | number) => void
     ) {
+        this.fieldUpdaters.clear()
         this.appearanceEl.innerHTML = ''
         if (fields.length === 0) return
 
@@ -375,6 +377,9 @@ export class PropertiesPanel {
                 input.addEventListener('input', () => onApply(field.key, Number(input.value)))
                 row.appendChild(input)
                 this.wrapNumberInput(input)
+                this.fieldUpdaters.set(field.key, (v) => {
+                    if (document.activeElement !== input) input.value = String(v)
+                })
             }
 
             if (field.type === 'text') {
@@ -426,6 +431,9 @@ export class PropertiesPanel {
                 }
                 select.addEventListener('change', () => onApply(field.key, select.value))
                 row.appendChild(select)
+                this.fieldUpdaters.set(field.key, (v) => {
+                    select.value = String(v)
+                })
             }
 
             if (field.type === 'font') {
@@ -435,11 +443,13 @@ export class PropertiesPanel {
                 })
                 picker.el.classList.add('prop-font-picker')
                 row.appendChild(picker.el)
+                this.fieldUpdaters.set(field.key, (v) => picker.setValue(String(v)))
             }
 
             if (field.type === 'color') {
                 const picker = new ColorPicker(field.value, (color) => onApply(field.key, color))
                 row.appendChild(picker.el)
+                this.fieldUpdaters.set(field.key, (v) => picker.setValue(String(v)))
 
                 if (field.themeDefault) {
                     const themeBtn = document.createElement('button')
@@ -860,14 +870,25 @@ export class PropertiesPanel {
         this.expandBtnEl.classList.toggle('hidden', !collapsed)
     }
 
+    // Updates each appearance field's displayed value in-place without rebuilding the DOM.
+    // Called when onAppearanceChange fires (e.g. cursor moves inside a text editor).
+    private refreshAppearanceValues() {
+        if (!this.object) return
+        for (const field of this.object.getAppearanceFields()) {
+            if (field.type === 'section' || field.type === 'button') continue
+            this.fieldUpdaters.get(field.key)?.(field.value)
+        }
+    }
+
     // Binds to a single board object. Appearance fields are rebuilt for the new type,
     // then onChange keeps inputs in sync as the user drags or resizes.
     show(object: BoardObject) {
         this.cleanupMulti()
-        // Restore the previous object's onChange before rebinding. Without this,
-        // repeated show() calls for the same object build up a chain of wrappers
-        // that all read this.prevOnChange at call time — causing infinite recursion.
-        if (this.object) this.object.onChange = this.prevOnChange
+        // Restore the previous object's callbacks before rebinding.
+        if (this.object) {
+            this.object.onChange = this.prevOnChange
+            this.object.onAppearanceChange = null
+        }
         this.object = object
         this.commonPropsEl.style.display = object.omitCommonProps ? 'none' : ''
         this.deleteBtnEl.style.display = object.hideDelete ? 'none' : ''
@@ -891,6 +912,7 @@ export class PropertiesPanel {
             this.sync()
             prevOnChange?.()
         }
+        object.onAppearanceChange = () => this.refreshAppearanceValues()
         this.el.classList.remove('hidden')
     }
 
@@ -1133,7 +1155,10 @@ export class PropertiesPanel {
 
     hide() {
         this.cleanupMulti()
-        if (this.object) this.object.onChange = this.prevOnChange
+        if (this.object) {
+            this.object.onChange = this.prevOnChange
+            this.object.onAppearanceChange = null
+        }
         this.prevOnChange = null
         this.object = null
         this.el.classList.add('hidden')

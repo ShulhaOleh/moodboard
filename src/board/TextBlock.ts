@@ -137,10 +137,15 @@ export class TextBlock extends BoxBlock<TextBlockData> {
 
         const toolbar = new TextFormatToolbar(this.editorInstance)
 
+        const notifyAppearance = () => this.onAppearanceChange?.()
+        this.editorInstance.on('selectionUpdate', notifyAppearance)
+        this.editorInstance.on('update', notifyAppearance)
+
         let finished = false
         const finish = () => {
             if (finished) return
             finished = true
+            this.syncMarksToData()
             this.data.content = this.editorInstance!.getHTML()
             this.editorInstance!.destroy()
             this.editorInstance = null
@@ -150,6 +155,7 @@ export class TextBlock extends BoxBlock<TextBlockData> {
             this.applyTransform()
             this.contentEl.innerHTML = ''
             this.renderContent()
+            this.onAppearanceChange?.()
         }
 
         // Defer finish so focus has time to settle — the toolbar's inputs and native color
@@ -166,6 +172,55 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         this.editorInstance.view.dom.addEventListener('keydown', (e: KeyboardEvent) => {
             if (e.key === 'Escape') this.editorInstance?.commands.blur()
         })
+    }
+
+    // When the user has applied uniform marks (e.g. selected all → set color), promote
+    // those values to the block-level data so the Properties Panel reflects them after editing.
+    private syncMarksToData(): void {
+        const { doc } = this.editorInstance!.state
+        let color: string | null | undefined
+        let fontFamily: string | null | undefined
+        let fontSize: string | null | undefined
+        let textAlign: string | null | undefined
+        let colorMixed = false
+        let familyMixed = false
+        let sizeMixed = false
+        let alignMixed = false
+
+        doc.descendants((node) => {
+            if (node.isText) {
+                const ts = node.marks.find((m) => m.type.name === 'textStyle')
+                const c = (ts?.attrs.color as string | undefined) ?? null
+                const f = (ts?.attrs.fontFamily as string | undefined) ?? null
+                const s = (ts?.attrs.fontSize as string | undefined) ?? null
+                if (!colorMixed) {
+                    if (color === undefined) color = c
+                    else if (color !== c) colorMixed = true
+                }
+                if (!familyMixed) {
+                    if (fontFamily === undefined) fontFamily = f
+                    else if (fontFamily !== f) familyMixed = true
+                }
+                if (!sizeMixed) {
+                    if (fontSize === undefined) fontSize = s
+                    else if (fontSize !== s) sizeMixed = true
+                }
+            } else if (node.type.name === 'paragraph') {
+                const a = (node.attrs.textAlign as string | undefined) ?? null
+                if (!alignMixed) {
+                    if (textAlign === undefined) textAlign = a
+                    else if (textAlign !== a) alignMixed = true
+                }
+            }
+        })
+
+        if (!colorMixed && color) this.setColor(color)
+        if (!familyMixed && fontFamily) this.setFontFamilyBlock(fontFamily)
+        if (!sizeMixed && fontSize) {
+            const n = parseInt(fontSize, 10)
+            if (!isNaN(n)) this.setFontSize(n)
+        }
+        if (!alignMixed && textAlign) this.setTextAlign(textAlign)
     }
 
     override setSize(width: number, height: number) {
@@ -200,13 +255,30 @@ export class TextBlock extends BoxBlock<TextBlockData> {
     }
 
     getAppearanceFields(): PropertyField[] {
+        let fontFamily = this.data.fontFamily
+        let fontSize = this.data.fontSize
+        let color = this.data.color
+        let textAlign = this.data.textAlign
+
+        if (this.editorInstance) {
+            const ts = this.editorInstance.getAttributes('textStyle')
+            if (ts.fontFamily) fontFamily = ts.fontFamily as string
+            if (ts.fontSize) {
+                const n = parseInt(ts.fontSize as string, 10)
+                if (!isNaN(n)) fontSize = n
+            }
+            if (ts.color) color = ts.color as string
+            const pa = this.editorInstance.getAttributes('paragraph')
+            if (pa.textAlign) textAlign = pa.textAlign as string
+        }
+
         return [
-            { type: 'font', key: 'fontFamily', label: 'Font', value: this.data.fontFamily },
+            { type: 'font', key: 'fontFamily', label: 'Font', value: fontFamily },
             {
                 type: 'number',
                 key: 'fontSize',
                 label: 'Font size',
-                value: this.data.fontSize,
+                value: fontSize,
                 min: 8,
                 max: 120,
                 step: 1,
@@ -215,7 +287,7 @@ export class TextBlock extends BoxBlock<TextBlockData> {
                 type: 'select',
                 key: 'textAlign',
                 label: 'Align',
-                value: this.data.textAlign,
+                value: textAlign,
                 options: [
                     { value: 'left', label: 'Left' },
                     { value: 'center', label: 'Center' },
@@ -223,7 +295,7 @@ export class TextBlock extends BoxBlock<TextBlockData> {
                     { value: 'justify', label: 'Justify' },
                 ],
             },
-            { type: 'color', key: 'color', label: 'Color', value: this.data.color },
+            { type: 'color', key: 'color', label: 'Color', value: color },
             {
                 type: 'select',
                 key: 'autoHeight',
