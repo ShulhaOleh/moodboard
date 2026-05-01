@@ -96,6 +96,12 @@ const clipboard: BlockSnapshot[] = []
 let pasteCount = 0
 // Tracks whether a property-change burst is in progress to avoid duplicate history entries.
 let propertyChangeActive = false
+// Prevents treating TipTap or internal HTML5 DnD drags as external text drops.
+let internalDragActive = false
+
+// Written to the OS clipboard when the user copies board objects so the paste handler can
+// distinguish "paste my blocks" from "paste external text".
+const BOARD_CLIPBOARD_SENTINEL = '\x00moodboard-blocks\x00'
 
 let mode: BoardMode = 'edit'
 let panX = 0
@@ -553,9 +559,20 @@ layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
     scheduleSave()
 }
 
-// Drag-and-drop images from the OS onto the board.
+// Drag-and-drop from the OS onto the board (images and plain text).
+// Internal drags (TipTap selections, LayersPanel rows) are excluded via internalDragActive.
+app.addEventListener('dragstart', () => {
+    internalDragActive = true
+})
+document.addEventListener('dragend', () => {
+    internalDragActive = false
+})
+
 app.addEventListener('dragover', (e) => {
-    if (!e.dataTransfer?.types.includes('Files')) return
+    if (internalDragActive) return
+    const dt = e.dataTransfer
+    if (!dt) return
+    if (!dt.types.includes('Files') && !dt.types.includes('text/plain')) return
     e.preventDefault()
     app.classList.add('drag-over')
 })
@@ -568,33 +585,164 @@ app.addEventListener('dragleave', (e) => {
 app.addEventListener('drop', (e) => {
     e.preventDefault()
     app.classList.remove('drag-over')
+    if (internalDragActive) return
+
     const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'))
-    if (files.length > 0) pushHistory()
-    files.forEach((file, i) => {
-        const x = Math.round((e.clientX - panX) / zoom - 160 + i * 20)
-        const y = Math.round((e.clientY - panY) / zoom - 120 + i * 20)
+    if (files.length > 0) {
+        pushHistory()
+        files.forEach((file, i) => {
+            const x = Math.round((e.clientX - panX) / zoom - 160 + i * 20)
+            const y = Math.round((e.clientY - panY) / zoom - 120 + i * 20)
+            addBlock(
+                new ImageBlock(overlay, {
+                    id: crypto.randomUUID(),
+                    name: nextName('Image'),
+                    x,
+                    y,
+                    width: 320,
+                    height: 240,
+                    rotation: 0,
+                    src: URL.createObjectURL(file),
+                    imageBlob: file,
+                    objectFit: 'contain',
+                    opacity: 100,
+                    borderRadius: 6,
+                    background: 'transparent',
+                    shadowColor: '',
+                    shadowBlur: 0,
+                    shadowX: 0,
+                    shadowY: 0,
+                })
+            )
+        })
+        return
+    }
+
+    const text = e.dataTransfer?.getData('text/plain') ?? ''
+    if (text.trim()) {
+        pushHistory()
+        const x = Math.round((e.clientX - panX) / zoom)
+        const y = Math.round((e.clientY - panY) / zoom)
+        const textColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-text')
+            .trim()
         addBlock(
-            new ImageBlock(overlay, {
+            new TextBlock(overlay, {
                 id: crypto.randomUUID(),
-                name: nextName('Image'),
+                name: nextName('Text'),
                 x,
                 y,
-                width: 320,
-                height: 240,
+                width: 360,
                 rotation: 0,
-                src: URL.createObjectURL(file),
-                imageBlob: file,
-                objectFit: 'contain',
-                opacity: 100,
-                borderRadius: 6,
-                background: 'transparent',
-                shadowColor: '',
-                shadowBlur: 0,
-                shadowX: 0,
-                shadowY: 0,
+                autoHeight: true,
+                content: plainTextToHtml(text),
+                fontSize: 16,
+                color: textColor,
+                fontFamily: 'Inter',
+                textAlign: 'left',
             })
         )
-    })
+    }
+})
+
+function isEditableTarget(el: HTMLElement): boolean {
+    return (
+        el.isContentEditable ||
+        el.tagName === 'INPUT' ||
+        el.tagName === 'TEXTAREA' ||
+        el.tagName === 'SELECT'
+    )
+}
+
+// Write the sentinel to the OS clipboard when the user copies board objects so the paste
+// handler can tell "paste my blocks" from "paste external text". Fires for Ctrl+C.
+document.addEventListener('copy', (e) => {
+    if (isEditableTarget(document.activeElement as HTMLElement)) return
+    if (clipboard.length === 0) return
+    e.preventDefault()
+    e.clipboardData?.setData('text/plain', BOARD_CLIPBOARD_SENTINEL)
+})
+
+document.addEventListener('cut', (e) => {
+    if (isEditableTarget(document.activeElement as HTMLElement)) return
+    if (clipboard.length === 0) return
+    e.preventDefault()
+    e.clipboardData?.setData('text/plain', BOARD_CLIPBOARD_SENTINEL)
+})
+
+// Paste from OS clipboard: board objects (sentinel), images, or plain text.
+// Fires for Ctrl+V because the keydown handler for copy/cut/paste no longer calls
+// e.preventDefault() for these keys, allowing the browser's clipboard events to fire.
+document.addEventListener('paste', (e) => {
+    if (isEditableTarget(document.activeElement as HTMLElement)) return
+
+    e.preventDefault()
+    const text = e.clipboardData?.getData('text/plain') ?? ''
+
+    if (text === BOARD_CLIPBOARD_SENTINEL) {
+        paste()
+        return
+    }
+
+    const items = Array.from(e.clipboardData?.items ?? [])
+    const imageItem = items.find((item) => item.type.startsWith('image/'))
+    if (imageItem) {
+        const file = imageItem.getAsFile()
+        if (file) {
+            pushHistory()
+            const { x, y } = centerPosition()
+            addBlock(
+                new ImageBlock(overlay, {
+                    id: crypto.randomUUID(),
+                    name: nextName('Image'),
+                    x,
+                    y,
+                    width: 320,
+                    height: 240,
+                    rotation: 0,
+                    src: URL.createObjectURL(file),
+                    imageBlob: file,
+                    objectFit: 'contain',
+                    opacity: 100,
+                    borderRadius: 6,
+                    background: 'transparent',
+                    shadowColor: '',
+                    shadowBlur: 0,
+                    shadowX: 0,
+                    shadowY: 0,
+                })
+            )
+            return
+        }
+    }
+
+    if (text.trim()) {
+        pushHistory()
+        const { x, y } = centerPosition()
+        const textColor = getComputedStyle(document.documentElement)
+            .getPropertyValue('--color-text')
+            .trim()
+        addBlock(
+            new TextBlock(overlay, {
+                id: crypto.randomUUID(),
+                name: nextName('Text'),
+                x,
+                y,
+                width: 360,
+                rotation: 0,
+                autoHeight: true,
+                content: plainTextToHtml(text),
+                fontSize: 16,
+                color: textColor,
+                fontFamily: 'Inter',
+                textAlign: 'left',
+            })
+        )
+        return
+    }
+
+    // Fallback: async sentinel write (for custom keybindings) may not have completed yet.
+    paste()
 })
 
 // Reset the property-change burst flag, clear snap guides, and persist state at the end of
@@ -711,15 +859,6 @@ document.addEventListener('keydown', (e) => {
     const shortcuts: [ActionBindings, () => void][] = [
         [keybindings.delete, () => deleteSelected()],
         [keybindings.undo, () => undo()],
-        [keybindings.copy, () => copySelected()],
-        [
-            keybindings.cut,
-            () => {
-                copySelected()
-                deleteSelected()
-            },
-        ],
-        [keybindings.paste, () => paste()],
         [keybindings.pencilToggle, () => setPencilActive(!pencilActive)],
         [keybindings.switchToEdit, () => addBar.setMode('edit')],
         [keybindings.switchToExplore, () => addBar.setMode('explore')],
@@ -730,6 +869,24 @@ document.addEventListener('keydown', (e) => {
             handler()
             return
         }
+    }
+
+    // Copy and cut: do NOT call e.preventDefault() so the browser fires the copy/cut DOM
+    // events, where we can write the board sentinel to the OS clipboard synchronously.
+    // The async navigator.clipboard.writeText call is a backup for custom keybindings
+    // (non-Ctrl+C/X) where the DOM event won't fire.
+    if (matchesAction(e, keybindings.copy)) {
+        copySelected()
+        if (clipboard.length > 0)
+            navigator.clipboard.writeText(BOARD_CLIPBOARD_SENTINEL).catch(() => {})
+        return
+    }
+    if (matchesAction(e, keybindings.cut)) {
+        copySelected()
+        if (clipboard.length > 0)
+            navigator.clipboard.writeText(BOARD_CLIPBOARD_SENTINEL).catch(() => {})
+        deleteSelected()
+        return
     }
 
     // Escape — cancel in-progress stroke, or deactivate pencil tool
@@ -1037,6 +1194,16 @@ document.addEventListener('mousedown', (e) => {
 
 // Returns a position near the center of the viewport with a slight random offset
 // so multiple objects added in sequence don't stack exactly on top of each other.
+function plainTextToHtml(text: string): string {
+    const escapeHtml = (s: string) =>
+        s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return text
+        .trim()
+        .split(/\n\n+/)
+        .map((para) => `<p>${escapeHtml(para.trim()).replace(/\n/g, '<br>')}</p>`)
+        .join('')
+}
+
 function centerPosition() {
     return {
         x: Math.round((window.innerWidth / 2 - panX) / zoom - 150 + (Math.random() - 0.5) * 40),
