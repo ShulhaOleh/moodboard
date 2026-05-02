@@ -18,6 +18,22 @@ const DEFAULT_SETTINGS: PencilSettings = {
     smoothing: 50,
 }
 
+const STORAGE_KEY = 'moodboard-pencil'
+
+function loadSettings(): PencilSettings {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (!raw) return { ...DEFAULT_SETTINGS }
+        return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    } catch {
+        return { ...DEFAULT_SETTINGS }
+    }
+}
+
+function saveSettings(s: PencilSettings) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s))
+}
+
 export class PencilTool implements BoardObject {
     readonly el = document.createElement('div')
     readonly omitCommonProps = true as const
@@ -40,7 +56,7 @@ export class PencilTool implements BoardObject {
 
     onSettingsChange: ((settings: PencilSettings) => void) | null = null
 
-    private settings: PencilSettings = { ...DEFAULT_SETTINGS }
+    private settings: PencilSettings = loadSettings()
 
     getSettings(): PencilSettings {
         return { ...this.settings }
@@ -116,6 +132,7 @@ export class PencilTool implements BoardObject {
         else if (key === 'smoothing') s.smoothing = value as number
         else return
         this.settings = s
+        saveSettings(s)
         this.onSettingsChange?.(this.getSettings())
     }
 }
