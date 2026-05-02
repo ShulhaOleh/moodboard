@@ -298,6 +298,7 @@ export class SettingsPanel {
         const actions: ShortcutAction[] = [
             'delete',
             'undo',
+            'redo',
             'copy',
             'cut',
             'paste',

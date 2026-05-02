@@ -92,6 +92,7 @@ app.appendChild(zoomWidget.el)
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
 const history: BlockSnapshot[][] = []
+const future: BlockSnapshot[][] = []
 const clipboard: BlockSnapshot[] = []
 let pasteCount = 0
 // Tracks whether a property-change burst is in progress to avoid duplicate history entries.
@@ -241,6 +242,7 @@ function snapshotBlock(block: BoardObject): BlockSnapshot {
 
 function pushHistory() {
     history.push(blocks.map(snapshotBlock))
+    future.length = 0
 }
 
 function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
@@ -267,6 +269,17 @@ function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
 function undo() {
     const state = history.pop()
     if (!state) return
+    future.push(blocks.map(snapshotBlock))
+    for (const b of [...blocks]) removeBlock(b)
+    for (const snap of state) addBlock(blockFromSnapshot(snap))
+    selectionBox.setBlocks([])
+    scheduleSave()
+}
+
+function redo() {
+    const state = future.pop()
+    if (!state) return
+    history.push(blocks.map(snapshotBlock))
     for (const b of [...blocks]) removeBlock(b)
     for (const snap of state) addBlock(blockFromSnapshot(snap))
     selectionBox.setBlocks([])
@@ -927,6 +940,7 @@ document.addEventListener('keydown', (e) => {
     const shortcuts: [ActionBindings, () => void][] = [
         [keybindings.delete, () => deleteSelected()],
         [keybindings.undo, () => undo()],
+        [keybindings.redo, () => redo()],
         [keybindings.pencilToggle, () => setPencilActive(!pencilActive)],
         [keybindings.eraserToggle, () => setEraserActive(!eraserActive)],
         [keybindings.switchToEdit, () => addBar.setMode('edit')],
@@ -1451,6 +1465,7 @@ async function newBoard() {
     selectionBox.setBlocks([])
     panel.show(canvasBoard)
     history.length = 0
+    future.length = 0
     panX = 0
     panY = 0
     zoom = 1
@@ -1533,6 +1548,7 @@ function importBoard() {
             selectionBox.setBlocks([])
             panel.show(canvasBoard)
             history.length = 0
+            future.length = 0
             panX = data.panX ?? 0
             panY = data.panY ?? 0
             zoom = data.zoom ?? 1
@@ -1603,6 +1619,7 @@ async function loadDemo() {
     selectionBox.setBlocks([])
     panel.show(canvasBoard)
     history.length = 0
+    future.length = 0
     boardName = 'Untitled board'
     layersPanel.setName(boardName)
     addBlock(

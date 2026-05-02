@@ -5,6 +5,7 @@ const STORAGE_KEY = 'moodboard-keybindings'
 export type ShortcutAction =
     | 'delete'
     | 'undo'
+    | 'redo'
     | 'copy'
     | 'cut'
     | 'paste'
@@ -32,6 +33,7 @@ export type KeybindingMap = Record<ShortcutAction, ActionBindings>
 export const ACTION_LABELS: Record<ShortcutAction, string> = {
     delete: 'Delete selection',
     undo: 'Undo',
+    redo: 'Redo',
     copy: 'Copy',
     cut: 'Cut',
     paste: 'Paste',
@@ -48,6 +50,7 @@ export const DEFAULT_KEYBINDINGS: KeybindingMap = {
         secondary: { key: 'Backspace', ctrl: false, shift: false, alt: false },
     },
     undo: { primary: { key: 'z', ctrl: true, shift: false, alt: false }, secondary: null },
+    redo: { primary: { key: 'y', ctrl: true, shift: false, alt: false }, secondary: null },
     copy: { primary: { key: 'c', ctrl: true, shift: false, alt: false }, secondary: null },
     cut: { primary: { key: 'x', ctrl: true, shift: false, alt: false }, secondary: null },
     paste: { primary: { key: 'v', ctrl: true, shift: false, alt: false }, secondary: null },
