@@ -56,9 +56,13 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **History and clipboard** (`main.ts`): `BlockSnapshot` is a tagged union (`{ type: 'text'; data: TextBlockData } | ...`) covering all five block types. `pushHistory()` snapshots the current `blocks[]` before any mutating operation. `undo()` restores the previous snapshot. `copySelected()` writes snapshots to `clipboard[]`. `paste()` reconstructs blocks from snapshots with a small offset; `pasteCount` tracks repeated pastes to cascade the offset. The keys for all these operations are user-configurable — see **Settings and keybindings** below.
 
+Copy, cut, and paste are handled via the native DOM `copy`/`cut`/`paste` events rather than the `keydown` shortcuts array — this is required because `clipboardData` is only accessible in those events. When the user copies board objects, `BOARD_CLIPBOARD_SENTINEL` (`'\x00moodboard-blocks\x00'`) is written to the OS clipboard via `e.clipboardData.setData()` (synchronous, in the `copy`/`cut` event) and also via `navigator.clipboard.writeText()` as a backup for custom keybindings. The `paste` event handler checks for the sentinel first (→ paste blocks), then clipboard images (→ new `ImageBlock`), then plain text (→ new `TextBlock` via `plainTextToHtml()`). Calling `e.preventDefault()` in the keydown handler for these keys would suppress the DOM events entirely, which is why they are not in the `shortcuts` array.
+
 **Board modes** (`AddBar`): Two modes — `edit` (default) and `explore`. Mode is tracked in `main.ts`. In explore mode, `#app.explore-mode` CSS class disables pointer events on all blocks and the board mousedown handler pans the overlay instead of drawing a marquee. In both modes, right-click drag (`button === 2`) and middle-click drag (`button === 1`) also pan — the `contextmenu` event is suppressed only when a right-drag actually moved past the 4 px threshold (`rightDragPanned` flag).
 
-**Pencil tool** (`main.ts`, `AddBar`): Toggled by `setPencilActive()` — sets `pencilActive`, toggles `#app.pencil-mode` (crosshair cursor), and shows/hides the pencil options panel in `AddBar`. `AddBar` exposes a `PencilSettings` interface (`stroke`, `strokeEnd`, `strokeWidth`, `taper`, `smoothing`) via `onPencilSettingsChange`; `main.ts` stores the current settings in `pencilSettings` and passes them to `PathBlock` on commit. Drawing uses a `requestAnimationFrame` loop: a "nib" position chases the real cursor with exponential decay (`PENCIL_ELASTIC = 0.25`), accumulates smoothed points, and updates a live SVG preview path. On mouseup, `commitDrawing()` runs RDP simplification (epsilon = `1.5 / zoom` board units), computes the bounding box, converts to local space, and creates a `PathBlock`.
+**Pencil tool** (`main.ts`, `AddBar`): Toggled by `setPencilActive()` — sets `pencilActive`, toggles `#app.pencil-mode` (crosshair cursor), shows/hides the pencil options panel in `AddBar`, and deactivates the eraser if it is active. `AddBar` exposes a `PencilSettings` interface (`stroke`, `strokeEnd`, `strokeWidth`, `taper`, `smoothing`) via `onPencilSettingsChange`; `main.ts` stores the current settings in `pencilSettings` and passes them to `PathBlock` on commit. Drawing uses a `requestAnimationFrame` loop: a "nib" position chases the real cursor with exponential decay (`PENCIL_ELASTIC = 0.25`), accumulates smoothed points, and updates a live SVG preview path. On mouseup, `commitDrawing()` runs RDP simplification (epsilon = `1.5 / zoom` board units), computes the bounding box, converts to local space, and creates a `PathBlock`.
+
+**Eraser tool** (`main.ts`, `AddBar`): Toggled by `setEraserActive()` (Shift+E) — sets `eraserActive`, toggles `#app.eraser-mode` (hides cursor; shows `#eraser-cursor`, a 24 px circle following the mouse), and deactivates the pencil if it is active. Only `PathBlock`s are erasable. On mousedown the `eraserHeld` flag is set; on every mousemove while held, `eraseAt(cx, cy)` is called. Hit detection is geometric: bounding rect pre-check with a `ERASER_RADIUS = 16` px margin, then point proximity — each stored local-space point is transformed to screen coordinates via `(data.x + pt.x) * zoom + panX` and tested against the 16 px radius. `pointer-events: none` on all blocks in eraser mode means `elementsFromPoint` cannot be used. History is pushed lazily — `pushHistory()` is called only on the first deletion per drag session (`eraserHistoryPushed` flag, reset on mousedown).
 
 **Marquee selection:** Dragging on empty board space in edit mode draws a `.marquee` div (`position: fixed`) and on mouseup selects all blocks whose `getBoundingClientRect()` intersects it. Capture the rect before calling `.remove()` — after removal it returns zeros.
 
@@ -102,7 +106,7 @@ src/
     PathBlock.ts      # freehand path block with smoothing, taper, gradient (extends BoxBlock)
     pathUtils.ts      # pure geometry: RDP, Catmull-Rom SVG/canvas, outline path builder
   ui/
-    AddBar.ts             # top-center toolbar: mode/shape pickers, add buttons, pencil options panel
+    AddBar.ts             # top-center toolbar: mode/shape pickers, add buttons, pencil options panel, eraser button
     LayersPanel.ts        # left-docked layers list with reorder, visibility, lock, rename
     SelectionBox.ts       # AABB outline + corner/side resize handles + rotate handle (single and multi)
     TextFormatToolbar.ts  # floating toolbar shown on text selection
@@ -128,7 +132,7 @@ src/
   styles/
     tokens.css        # :root color variables
     base.css          # * reset + html/body
-    board.css         # marquee, drag-over, explore-mode
+    board.css         # marquee, drag-over, explore-mode, eraser-mode + #eraser-cursor
     panel.css         # shared panel shell (header, drag handle, resize handles, buttons)
     board/
       line-block.css
