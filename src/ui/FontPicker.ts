@@ -1,16 +1,21 @@
-// Custom font picker dropdown that previews each font in its own typeface.
-// Uses a div-based dropdown since native <option> elements can't be font-styled cross-browser.
+// Custom font picker dropdown with live search across the full Google Fonts catalogue.
+// Shows the curated list by default; fetches all ~1500 families on first open for search.
 
-import { FONTS, loadFont } from '../lib/fonts'
+import { FONTS, loadFont, fetchAllFonts } from '../lib/fonts'
+
+const MAX_RESULTS = 30
 
 export class FontPicker {
     readonly el: HTMLElement
     private trigger: HTMLElement
     private dropdown: HTMLElement
+    private searchInput: HTMLInputElement
+    private listEl: HTMLElement
     private currentFamily: string
     private onChange: (family: string) => void
     private open = false
-    private fontsLoaded = false
+    private allFonts: string[] | null = null
+    private allFontsLoading = false
 
     constructor(initialFamily: string, onChange: (family: string) => void) {
         this.currentFamily = initialFamily
@@ -30,30 +35,29 @@ export class FontPicker {
         this.dropdown = document.createElement('div')
         this.dropdown.className = 'font-picker-dropdown hidden'
 
-        for (const font of FONTS) {
-            const item = document.createElement('div')
-            item.className = 'font-picker-item'
-            item.textContent = font.name
-            item.style.fontFamily = font.family
-            item.dataset.family = font.family
-            item.addEventListener('mousedown', (e) => {
-                e.preventDefault()
-                this.select(font.family)
-            })
-            this.dropdown.appendChild(item)
-        }
+        this.searchInput = document.createElement('input')
+        this.searchInput.type = 'text'
+        this.searchInput.className = 'font-picker-search'
+        this.searchInput.placeholder = 'Search fonts…'
+        this.searchInput.addEventListener('input', () => this.renderList())
+        this.searchInput.addEventListener('mousedown', (e) => e.stopPropagation())
+        this.searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.close()
+            e.stopPropagation()
+        })
 
-        // Append dropdown to body so it escapes any transformed ancestor's containing block
-        this.el.appendChild(this.trigger)
+        this.listEl = document.createElement('div')
+        this.listEl.className = 'font-picker-list'
+
+        this.dropdown.append(this.searchInput, this.listEl)
         document.body.appendChild(this.dropdown)
 
-        // Prevent clicks and scrolls inside the dropdown from reaching board handlers.
         this.dropdown.addEventListener('mousedown', (e) => e.stopPropagation())
         this.dropdown.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true })
 
+        this.el.appendChild(this.trigger)
         this.updateTrigger()
 
-        // Close on outside click
         document.addEventListener('mousedown', (e) => {
             if (
                 this.open &&
@@ -78,15 +82,63 @@ export class FontPicker {
     }
 
     private openDropdown() {
-        if (!this.fontsLoaded) {
-            for (const font of FONTS) {
-                loadFont(font.family)
-            }
-            this.fontsLoaded = true
-        }
         this.dropdown.classList.remove('hidden')
         this.open = true
+        this.searchInput.value = ''
+        this.renderList()
         this.positionDropdown()
+        this.searchInput.focus()
+        this.startFetchAllFonts()
+    }
+
+    private startFetchAllFonts() {
+        if (this.allFonts !== null || this.allFontsLoading) return
+        this.allFontsLoading = true
+        fetchAllFonts().then((families) => {
+            this.allFonts = families
+            this.allFontsLoading = false
+            if (this.open && this.searchInput.value.trim()) this.renderList()
+        })
+    }
+
+    private renderList() {
+        this.listEl.innerHTML = ''
+        const query = this.searchInput.value.trim().toLowerCase()
+
+        if (!query) {
+            this.renderItems(FONTS.map((f) => f.family))
+            return
+        }
+
+        const source = this.allFonts ?? FONTS.map((f) => f.family)
+        const matches = source.filter((f) => f.toLowerCase().includes(query)).slice(0, MAX_RESULTS)
+
+        if (matches.length === 0) {
+            const msg = document.createElement('div')
+            msg.className = 'font-picker-empty'
+            msg.textContent = 'No fonts found'
+            this.listEl.appendChild(msg)
+            return
+        }
+
+        this.renderItems(matches)
+    }
+
+    private renderItems(families: string[]) {
+        for (const family of families) {
+            const item = document.createElement('div')
+            item.className = 'font-picker-item'
+            if (family === this.currentFamily) item.classList.add('is-active')
+            item.textContent = family
+            item.style.fontFamily = family
+            item.dataset.family = family
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault()
+                this.select(family)
+            })
+            this.listEl.appendChild(item)
+            loadFont(family)
+        }
         this.scrollToSelected()
     }
 
@@ -113,15 +165,10 @@ export class FontPicker {
     private updateTrigger() {
         this.trigger.textContent = this.currentFamily
         this.trigger.style.fontFamily = this.currentFamily
-
-        // Highlight the active item in the dropdown
-        for (const item of this.dropdown.querySelectorAll<HTMLElement>('.font-picker-item')) {
-            item.classList.toggle('is-active', item.dataset.family === this.currentFamily)
-        }
     }
 
     private scrollToSelected() {
-        const active = this.dropdown.querySelector('.font-picker-item.is-active')
+        const active = this.listEl.querySelector('.font-picker-item.is-active')
         active?.scrollIntoView({ block: 'nearest' })
     }
 

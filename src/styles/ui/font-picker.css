@@ -35,13 +35,36 @@
     border: 1px solid var(--color-border);
     border-radius: 6px;
     box-shadow: var(--shadow-lg);
-    max-height: 240px;
-    overflow-y: auto;
     min-width: 160px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .font-picker-dropdown.hidden {
     display: none;
+}
+
+.font-picker-search {
+    flex-shrink: 0;
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    padding: 7px 12px;
+    font-size: 13px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.font-picker-search::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.font-picker-list {
+    overflow-y: auto;
+    max-height: 220px;
 }
 
 .font-picker-item {
@@ -59,4 +82,11 @@
 .font-picker-item.is-active {
     background: var(--color-accent-subtle);
     color: var(--color-accent-hover);
+}
+
+.font-picker-empty {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    text-align: center;
 }
