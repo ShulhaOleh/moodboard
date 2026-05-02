@@ -241,7 +241,8 @@ export class PathBlock extends BoxBlock<PathBlockData> {
             this.data.stroke = String(value)
             this.applyAppearance()
         } else if (key === 'strokeEnd') {
-            this.data.strokeEnd = value === '' ? undefined : String(value)
+            this.data.strokeEnd =
+                value === '' || value === 'transparent' ? undefined : String(value)
             this.applyAppearance()
         } else if (key === 'strokeWidth') {
             this.data.strokeWidth = Number(value)

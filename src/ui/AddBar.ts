@@ -1,27 +1,10 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
-import { ColorPicker } from './ColorPicker'
 import { type NoteShape } from '../board/NoteBlock'
 
 export type BoardMode = 'edit' | 'explore'
 
 export type DrawableShape = 'rectangle' | 'line' | 'arrow' | 'ellipse' | 'polygon' | 'star'
-
-export interface PencilSettings {
-    stroke: string
-    strokeEnd: string
-    strokeWidth: number
-    taper: number
-    smoothing: number
-}
-
-const DEFAULT_PENCIL_SETTINGS: PencilSettings = {
-    stroke: '#333333',
-    strokeEnd: '',
-    strokeWidth: 2,
-    taper: 0,
-    smoothing: 50,
-}
 
 const MODES: { mode: BoardMode; label: string; icon: string }[] = [
     {
@@ -104,7 +87,6 @@ export class AddBar {
     onRedo: (() => void) | null = null
     onTogglePencil: (() => void) | null = null
     onToggleEraser: (() => void) | null = null
-    onPencilSettingsChange: ((settings: PencilSettings) => void) | null = null
     onSettingsOpen: (() => void) | null = null
 
     private modeTriggerBtn: HTMLButtonElement
@@ -128,10 +110,6 @@ export class AddBar {
     private redoBtn: HTMLButtonElement
     private pencilBtn: HTMLButtonElement
     private eraserBtn: HTMLButtonElement
-    private pencilOptionsEl: HTMLElement
-    private pencilSettings: PencilSettings = { ...DEFAULT_PENCIL_SETTINGS }
-    private strokePicker!: ColorPicker
-    private strokeEndPicker!: ColorPicker
     private addButtons: HTMLButtonElement[]
 
     constructor(container: HTMLElement) {
@@ -311,12 +289,9 @@ export class AddBar {
         shapeSplitBtn.append(this.shapeIconBtn, this.shapeChevronBtn)
         shapePicker.append(shapeSplitBtn, this.shapeDropdownEl)
 
-        // ── Pencil tool + options ──────────────────────────────────────────────
+        // ── Pencil / Eraser tools ──────────────────────────────────────────────
         const pencilDivider = document.createElement('div')
         pencilDivider.className = 'add-bar-divider'
-
-        const pencilPicker = document.createElement('div')
-        pencilPicker.className = 'mode-picker'
 
         this.pencilBtn = this.makeButton(
             'Pencil (P)',
@@ -334,10 +309,6 @@ export class AddBar {
             </svg>`
         )
         this.eraserBtn.addEventListener('click', () => this.onToggleEraser?.())
-
-        this.pencilOptionsEl = this.buildPencilOptions()
-        this.pencilOptionsEl.classList.add('hidden')
-        pencilPicker.append(this.pencilBtn, this.pencilOptionsEl)
 
         this.addButtons = [
             textBtn,
@@ -371,7 +342,7 @@ export class AddBar {
             notePicker,
             shapePicker,
             pencilDivider,
-            pencilPicker,
+            this.pencilBtn,
             this.eraserBtn,
             settingsDivider,
             settingsBtn
@@ -405,15 +376,10 @@ export class AddBar {
 
     setPencilActive(active: boolean) {
         this.pencilBtn.classList.toggle('is-active', active)
-        this.pencilOptionsEl.classList.toggle('hidden', !active)
     }
 
     setEraserActive(active: boolean) {
         this.eraserBtn.classList.toggle('is-active', active)
-    }
-
-    getPencilSettings(): PencilSettings {
-        return { ...this.pencilSettings }
     }
 
     setMode(mode: BoardMode) {
@@ -429,111 +395,6 @@ export class AddBar {
 
         this.addButtons.forEach((btn) => (btn.disabled = mode !== 'edit'))
         this.onModeChange?.(mode)
-    }
-
-    private buildPencilOptions(): HTMLElement {
-        const panel = document.createElement('div')
-        panel.className = 'pencil-options'
-
-        // ── Stroke color ───────────────────────────────────────────────────────
-        this.strokePicker = new ColorPicker(this.pencilSettings.stroke, (color) => {
-            this.pencilSettings.stroke = color
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
-        })
-
-        const strokeRow = this.makeOptionRow('Stroke', this.strokePicker.el)
-
-        // ── Gradient end color ─────────────────────────────────────────────────
-        this.strokeEndPicker = new ColorPicker(
-            this.pencilSettings.strokeEnd || '#333333',
-            (color) => {
-                this.pencilSettings.strokeEnd = color
-                this.onPencilSettingsChange?.({ ...this.pencilSettings })
-            }
-        )
-
-        const clearGradBtn = document.createElement('button')
-        clearGradBtn.className = 'pencil-clear-btn'
-        clearGradBtn.title = 'Remove gradient'
-        clearGradBtn.textContent = '✕'
-        clearGradBtn.style.visibility = this.pencilSettings.strokeEnd ? '' : 'hidden'
-        clearGradBtn.addEventListener('click', () => {
-            this.pencilSettings.strokeEnd = ''
-            clearGradBtn.style.visibility = 'hidden'
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
-        })
-
-        // Show the clear button as soon as a gradient color is chosen.
-        this.strokeEndPicker.el.addEventListener('mousedown', () => {
-            if (!this.pencilSettings.strokeEnd) {
-                this.pencilSettings.strokeEnd = this.pencilSettings.stroke
-                this.strokeEndPicker.setValue(this.pencilSettings.stroke)
-            }
-            clearGradBtn.style.visibility = ''
-        })
-
-        const gradCell = document.createElement('div')
-        gradCell.className = 'pencil-grad-cell'
-        gradCell.append(this.strokeEndPicker.el, clearGradBtn)
-
-        const gradRow = this.makeOptionRow('Gradient', gradCell)
-
-        // ── Width ──────────────────────────────────────────────────────────────
-        const widthInput = document.createElement('input')
-        widthInput.type = 'number'
-        widthInput.className = 'pencil-number-input'
-        widthInput.min = '1'
-        widthInput.max = '80'
-        widthInput.value = String(this.pencilSettings.strokeWidth)
-        widthInput.addEventListener('input', () => {
-            const v = Math.max(1, Math.min(80, parseInt(widthInput.value) || 1))
-            this.pencilSettings.strokeWidth = v
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
-        })
-        widthInput.addEventListener('mousedown', (e) => e.stopPropagation())
-
-        const widthRow = this.makeOptionRow('Width', widthInput)
-
-        // ── Taper ──────────────────────────────────────────────────────────────
-        const taperRow = this.makeSliderRow('Taper', this.pencilSettings.taper, (v) => {
-            this.pencilSettings.taper = v
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
-        })
-
-        // ── Smoothing ──────────────────────────────────────────────────────────
-        const smoothingRow = this.makeSliderRow('Smooth', this.pencilSettings.smoothing, (v) => {
-            this.pencilSettings.smoothing = v
-            this.onPencilSettingsChange?.({ ...this.pencilSettings })
-        })
-
-        panel.append(strokeRow, gradRow, widthRow, taperRow, smoothingRow)
-        return panel
-    }
-
-    private makeOptionRow(label: string, control: HTMLElement): HTMLElement {
-        const row = document.createElement('div')
-        row.className = 'pencil-option-row'
-        const lbl = document.createElement('span')
-        lbl.className = 'pencil-option-label'
-        lbl.textContent = label
-        row.append(lbl, control)
-        return row
-    }
-
-    private makeSliderRow(
-        label: string,
-        initial: number,
-        onChange: (v: number) => void
-    ): HTMLElement {
-        const slider = document.createElement('input')
-        slider.type = 'range'
-        slider.className = 'pencil-slider'
-        slider.min = '0'
-        slider.max = '100'
-        slider.value = String(initial)
-        slider.addEventListener('input', () => onChange(parseInt(slider.value)))
-        slider.addEventListener('mousedown', (e) => e.stopPropagation())
-        return this.makeOptionRow(label, slider)
     }
 
     private updateNoteTrigger() {

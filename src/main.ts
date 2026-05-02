@@ -10,7 +10,8 @@ import { NoteBlock } from './board/NoteBlock'
 import { rdp, buildSvgPath } from './board/pathUtils'
 import { PropertiesPanel } from './ui/PropertiesPanel'
 import { LayersPanel } from './ui/LayersPanel'
-import { AddBar, BoardMode, type PencilSettings } from './ui/AddBar'
+import { AddBar, BoardMode } from './ui/AddBar'
+import { PencilTool } from './board/PencilTool'
 import { BoardObject } from './board/BoardObject'
 import { CanvasBoard } from './board/CanvasBoard'
 import { SelectionBox } from './ui/SelectionBox'
@@ -119,7 +120,11 @@ let cancelCurrentStroke: (() => void) | null = null
 
 // Fraction of the gap to close per animation frame — higher = snappier, lower = more elastic lag.
 const PENCIL_ELASTIC = 0.25
-let pencilSettings: PencilSettings = addBar.getPencilSettings()
+const pencilTool = new PencilTool()
+let pencilSettings = pencilTool.getSettings()
+pencilTool.onSettingsChange = (s) => {
+    pencilSettings = s
+}
 
 // Eraser tool state
 let eraserActive = false
@@ -409,9 +414,6 @@ addBar.onModeChange = (newMode) => {
 
 addBar.onTogglePencil = () => setPencilActive(!pencilActive)
 addBar.onToggleEraser = () => setEraserActive(!eraserActive)
-addBar.onPencilSettingsChange = (s) => {
-    pencilSettings = s
-}
 
 function setPencilActive(active: boolean) {
     pencilActive = active
@@ -421,9 +423,11 @@ function setPencilActive(active: boolean) {
         if (eraserActive) setEraserActive(false)
         selectedBlocks.forEach((b) => b.markDeselected())
         selectedBlocks.clear()
-        panel.show(canvasBoard)
+        panel.show(pencilTool)
         selectionBox.setBlocks([])
         layersPanel.notifySelectionChanged(selectedBlocks)
+    } else if (selectedBlocks.size === 0) {
+        panel.show(canvasBoard)
     }
 }
 
