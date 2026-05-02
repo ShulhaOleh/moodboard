@@ -170,8 +170,20 @@ export class FontPicker {
 
     private positionDropdown() {
         const rect = this.trigger.getBoundingClientRect()
-        this.dropdown.style.top = `${rect.bottom + 4}px`
-        this.dropdown.style.left = `${rect.left}px`
+        const dropH = this.dropdown.offsetHeight
+        const dropW = this.dropdown.offsetWidth
+
+        // Prefer below; flip above if it clips the bottom edge
+        let top = rect.bottom + 4
+        if (top + dropH > window.innerHeight) top = rect.top - 4 - dropH
+
+        // Align to trigger left; clamp so right edge stays on screen
+        let left = rect.left
+        if (left + dropW > window.innerWidth) left = window.innerWidth - dropW - 8
+        left = Math.max(8, left)
+
+        this.dropdown.style.top = `${top}px`
+        this.dropdown.style.left = `${left}px`
         this.dropdown.style.minWidth = `${rect.width}px`
     }
 
