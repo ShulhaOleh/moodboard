@@ -446,9 +446,25 @@ function setEraserActive(active: boolean) {
 }
 
 // Scroll pans the canvas; Shift+scroll pans horizontally; Ctrl+scroll zooms.
+// Skip if the event originates inside a panel element that handles its own scrolling.
+function isInsideScrollable(target: EventTarget | null): boolean {
+    let el = target as HTMLElement | null
+    while (el && el !== app) {
+        const style = getComputedStyle(el)
+        if (
+            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+            el.scrollHeight > el.clientHeight
+        )
+            return true
+        el = el.parentElement
+    }
+    return false
+}
+
 document.addEventListener(
     'wheel',
     (e) => {
+        if (isInsideScrollable(e.target)) return
         e.preventDefault()
         if (e.ctrlKey) {
             const newZoom = Math.min(4, Math.max(0.1, zoom * Math.pow(0.999, e.deltaY)))
