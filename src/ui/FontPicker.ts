@@ -10,6 +10,7 @@ export class FontPicker {
     private trigger: HTMLElement
     private dropdown: HTMLElement
     private searchInput: HTMLInputElement
+    private searchClear: HTMLButtonElement
     private listEl: HTMLElement
     private currentFamily: string
     private onChange: (family: string) => void
@@ -35,21 +36,41 @@ export class FontPicker {
         this.dropdown = document.createElement('div')
         this.dropdown.className = 'font-picker-dropdown hidden'
 
+        const searchWrap = document.createElement('div')
+        searchWrap.className = 'font-picker-search-wrap'
+
         this.searchInput = document.createElement('input')
         this.searchInput.type = 'text'
         this.searchInput.className = 'font-picker-search'
         this.searchInput.placeholder = 'Search fonts…'
-        this.searchInput.addEventListener('input', () => this.renderList())
+        this.searchInput.addEventListener('input', () => {
+            this.renderList()
+            this.updateSearchClear()
+        })
         this.searchInput.addEventListener('mousedown', (e) => e.stopPropagation())
         this.searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.close()
             e.stopPropagation()
         })
 
+        this.searchClear = document.createElement('button')
+        this.searchClear.className = 'font-picker-search-clear hidden'
+        this.searchClear.textContent = '✕'
+        this.searchClear.addEventListener('mousedown', (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            this.searchInput.value = ''
+            this.renderList()
+            this.updateSearchClear()
+            this.searchInput.focus()
+        })
+
+        searchWrap.append(this.searchInput, this.searchClear)
+
         this.listEl = document.createElement('div')
         this.listEl.className = 'font-picker-list'
 
-        this.dropdown.append(this.searchInput, this.listEl)
+        this.dropdown.append(searchWrap, this.listEl)
         document.body.appendChild(this.dropdown)
 
         this.dropdown.addEventListener('mousedown', (e) => e.stopPropagation())
@@ -85,6 +106,7 @@ export class FontPicker {
         this.dropdown.classList.remove('hidden')
         this.open = true
         this.searchInput.value = ''
+        this.updateSearchClear()
         this.renderList()
         this.positionDropdown()
         this.searchInput.focus()
@@ -99,6 +121,10 @@ export class FontPicker {
             this.allFontsLoading = false
             if (this.open && this.searchInput.value.trim()) this.renderList()
         })
+    }
+
+    private updateSearchClear() {
+        this.searchClear.classList.toggle('hidden', !this.searchInput.value)
     }
 
     private renderList() {
