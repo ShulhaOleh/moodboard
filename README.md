@@ -16,6 +16,7 @@ A moodboard editor that runs entirely in the browser with local persistence.
 |---|---|
 | Double-click | Edit text / shape inline |
 | Ctrl+Z | Undo |
+| Ctrl+Y | Redo |
 | Ctrl+C / X / V | Copy / Cut / Paste |
 | Delete / Backspace | Delete selection |
 | E | Switch to Edit mode |
