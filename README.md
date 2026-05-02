@@ -21,6 +21,7 @@ A moodboard editor that runs entirely in the browser with local persistence.
 | E | Switch to Edit mode |
 | R | Switch to Explore mode |
 | P | Toggle pencil tool |
+| Shift+E | Toggle eraser tool |
 | F2 | Rename selected layer |
 | Arrow keys | Move selection 1 px (hold to accelerate) |
 | Scroll | Pan vertically |
