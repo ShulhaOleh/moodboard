@@ -101,6 +101,7 @@ export class AddBar {
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
     onTogglePencil: (() => void) | null = null
+    onToggleEraser: (() => void) | null = null
     onPencilSettingsChange: ((settings: PencilSettings) => void) | null = null
     onSettingsOpen: (() => void) | null = null
 
@@ -122,6 +123,7 @@ export class AddBar {
     private selectedShape: DrawableShape = 'rectangle'
 
     private pencilBtn: HTMLButtonElement
+    private eraserBtn: HTMLButtonElement
     private pencilOptionsEl: HTMLElement
     private pencilSettings: PencilSettings = { ...DEFAULT_PENCIL_SETTINGS }
     private strokePicker!: ColorPicker
@@ -296,6 +298,15 @@ export class AddBar {
         )
         this.pencilBtn.addEventListener('click', () => this.onTogglePencil?.())
 
+        this.eraserBtn = this.makeButton(
+            'Eraser (Shift+E)',
+            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2.5 10.5L7 5.5H17.5V15.5H7L2.5 10.5z"/>
+                <path d="M9.5 5.5V15.5"/>
+            </svg>`
+        )
+        this.eraserBtn.addEventListener('click', () => this.onToggleEraser?.())
+
         this.pencilOptionsEl = this.buildPencilOptions()
         this.pencilOptionsEl.classList.add('hidden')
         pencilPicker.append(this.pencilBtn, this.pencilOptionsEl)
@@ -308,6 +319,7 @@ export class AddBar {
             this.shapeIconBtn,
             this.shapeChevronBtn,
             this.pencilBtn,
+            this.eraserBtn,
         ]
         const settingsDivider = document.createElement('div')
         settingsDivider.className = 'add-bar-divider'
@@ -329,6 +341,7 @@ export class AddBar {
             shapePicker,
             pencilDivider,
             pencilPicker,
+            this.eraserBtn,
             settingsDivider,
             settingsBtn
         )
@@ -357,6 +370,10 @@ export class AddBar {
     setPencilActive(active: boolean) {
         this.pencilBtn.classList.toggle('is-active', active)
         this.pencilOptionsEl.classList.toggle('hidden', !active)
+    }
+
+    setEraserActive(active: boolean) {
+        this.eraserBtn.classList.toggle('is-active', active)
     }
 
     getPencilSettings(): PencilSettings {

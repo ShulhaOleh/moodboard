@@ -302,6 +302,7 @@ export class SettingsPanel {
             'cut',
             'paste',
             'pencilToggle',
+            'eraserToggle',
             'renameLayer',
             'switchToEdit',
             'switchToExplore',

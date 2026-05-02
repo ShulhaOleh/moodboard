@@ -70,3 +70,39 @@
 #app.pencil-mode .line-block svg * {
     pointer-events: none !important;
 }
+
+/* Eraser tool — custom circle cursor; all block interactions suppressed */
+#app.eraser-mode {
+    cursor: none;
+}
+
+#app.eraser-mode .text-block,
+#app.eraser-mode .image-block,
+#app.eraser-mode .shape-block,
+#app.eraser-mode .line-block,
+#app.eraser-mode .path-block,
+#app.eraser-mode .note-block {
+    pointer-events: none;
+}
+
+#app.eraser-mode .path-block svg *,
+#app.eraser-mode .line-block svg * {
+    pointer-events: none !important;
+}
+
+#eraser-cursor {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid var(--color-text);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 0 0 1px var(--color-surface);
+}
+
+#app.eraser-mode #eraser-cursor {
+    display: block;
+}

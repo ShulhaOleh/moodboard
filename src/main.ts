@@ -118,6 +118,14 @@ let cancelCurrentStroke: (() => void) | null = null
 const PENCIL_ELASTIC = 0.25
 let pencilSettings: PencilSettings = addBar.getPencilSettings()
 
+// Eraser tool state
+let eraserActive = false
+let eraserHeld = false
+let eraserHistoryPushed = false
+const eraserCursorEl = document.createElement('div')
+eraserCursorEl.id = 'eraser-cursor'
+app.appendChild(eraserCursorEl)
+
 const guideOverlay = new GuideOverlay()
 app.appendChild(guideOverlay.el)
 
@@ -367,8 +375,9 @@ addBar.onModeChange = (newMode) => {
     mode = newMode
     app.classList.toggle('explore-mode', mode === 'explore')
     if (mode === 'edit') return
-    // Deselect everything and cancel pencil when switching to explore
+    // Deselect everything and cancel pencil/eraser when switching to explore
     if (pencilActive) setPencilActive(false)
+    if (eraserActive) setEraserActive(false)
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
     panel.show(canvasBoard)
@@ -377,6 +386,7 @@ addBar.onModeChange = (newMode) => {
 }
 
 addBar.onTogglePencil = () => setPencilActive(!pencilActive)
+addBar.onToggleEraser = () => setEraserActive(!eraserActive)
 addBar.onPencilSettingsChange = (s) => {
     pencilSettings = s
 }
@@ -386,6 +396,21 @@ function setPencilActive(active: boolean) {
     addBar.setPencilActive(active)
     app.classList.toggle('pencil-mode', active)
     if (active) {
+        if (eraserActive) setEraserActive(false)
+        selectedBlocks.forEach((b) => b.markDeselected())
+        selectedBlocks.clear()
+        panel.show(canvasBoard)
+        selectionBox.setBlocks([])
+        layersPanel.notifySelectionChanged(selectedBlocks)
+    }
+}
+
+function setEraserActive(active: boolean) {
+    eraserActive = active
+    addBar.setEraserActive(active)
+    app.classList.toggle('eraser-mode', active)
+    if (active) {
+        if (pencilActive) setPencilActive(false)
         selectedBlocks.forEach((b) => b.markDeselected())
         selectedBlocks.clear()
         panel.show(canvasBoard)
@@ -558,6 +583,47 @@ layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
     layersPanel.refresh(blocks, selectedBlocks)
     scheduleSave()
 }
+
+// ── Eraser tool ───────────────────────────────────────────────────────────────
+
+// Radius (in screen pixels) within which an eraser hit is registered.
+const ERASER_RADIUS = 16
+
+// Checks whether the eraser cursor is close enough to any point of a PathBlock to delete it.
+// Uses a quick bounding-rect pre-check before testing individual stroke points.
+function pathBlockUnderEraser(block: PathBlock, cx: number, cy: number): boolean {
+    const rect = block.el.getBoundingClientRect()
+    const margin = ERASER_RADIUS
+    if (cx < rect.left - margin || cx > rect.right + margin) return false
+    if (cy < rect.top - margin || cy > rect.bottom + margin) return false
+    const data = block.getData()
+    for (const pt of data.points) {
+        const sx = (data.x + pt.x) * zoom + panX
+        const sy = (data.y + pt.y) * zoom + panY
+        if (Math.hypot(sx - cx, sy - cy) <= ERASER_RADIUS) return true
+    }
+    return false
+}
+
+function eraseAt(cx: number, cy: number) {
+    for (const block of [...blocks]) {
+        if (!(block instanceof PathBlock)) continue
+        if (!pathBlockUnderEraser(block, cx, cy)) continue
+        if (!eraserHistoryPushed) {
+            pushHistory()
+            eraserHistoryPushed = true
+        }
+        removeBlock(block)
+        scheduleSave()
+    }
+}
+
+app.addEventListener('mousemove', (e) => {
+    if (!eraserActive) return
+    eraserCursorEl.style.left = `${e.clientX}px`
+    eraserCursorEl.style.top = `${e.clientY}px`
+    if (eraserHeld) eraseAt(e.clientX, e.clientY)
+})
 
 // Drag-and-drop from the OS onto the board (images and plain text).
 // Internal drags (TipTap selections, LayersPanel rows) are excluded via internalDragActive.
@@ -748,6 +814,8 @@ document.addEventListener('paste', (e) => {
 // Reset the property-change burst flag, clear snap guides, and persist state at the end of
 // any mouse interaction.
 document.addEventListener('mouseup', () => {
+    eraserHeld = false
+    eraserHistoryPushed = false
     guideOverlay.clear()
     propertyChangeActive = false
     scheduleSave()
@@ -860,6 +928,7 @@ document.addEventListener('keydown', (e) => {
         [keybindings.delete, () => deleteSelected()],
         [keybindings.undo, () => undo()],
         [keybindings.pencilToggle, () => setPencilActive(!pencilActive)],
+        [keybindings.eraserToggle, () => setEraserActive(!eraserActive)],
         [keybindings.switchToEdit, () => addBar.setMode('edit')],
         [keybindings.switchToExplore, () => addBar.setMode('explore')],
     ]
@@ -889,7 +958,7 @@ document.addEventListener('keydown', (e) => {
         return
     }
 
-    // Escape — cancel in-progress stroke, or deactivate pencil tool
+    // Escape — cancel in-progress stroke, or deactivate pencil/eraser tool
     if (e.key === 'Escape') {
         if (cancelCurrentStroke) {
             cancelCurrentStroke()
@@ -897,6 +966,10 @@ document.addEventListener('keydown', (e) => {
         }
         if (pencilActive) {
             setPencilActive(false)
+            return
+        }
+        if (eraserActive) {
+            setEraserActive(false)
             return
         }
     }
@@ -1122,6 +1195,15 @@ document.addEventListener('mousedown', (e) => {
         }
         window.addEventListener('mousemove', onMove)
         window.addEventListener('mouseup', onUp)
+        return
+    }
+
+    // Eraser tool: begin an erase session.
+    if (eraserActive && e.button === 0) {
+        e.preventDefault()
+        eraserHeld = true
+        eraserHistoryPushed = false
+        eraseAt(e.clientX, e.clientY)
         return
     }
 

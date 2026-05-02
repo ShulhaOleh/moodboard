@@ -9,6 +9,7 @@ export type ShortcutAction =
     | 'cut'
     | 'paste'
     | 'pencilToggle'
+    | 'eraserToggle'
     | 'renameLayer'
     | 'switchToEdit'
     | 'switchToExplore'
@@ -35,6 +36,7 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
     cut: 'Cut',
     paste: 'Paste',
     pencilToggle: 'Toggle pencil tool',
+    eraserToggle: 'Toggle eraser tool',
     renameLayer: 'Rename selected layer',
     switchToEdit: 'Switch to Edit mode',
     switchToExplore: 'Switch to Explore mode',
@@ -50,6 +52,7 @@ export const DEFAULT_KEYBINDINGS: KeybindingMap = {
     cut: { primary: { key: 'x', ctrl: true, shift: false, alt: false }, secondary: null },
     paste: { primary: { key: 'v', ctrl: true, shift: false, alt: false }, secondary: null },
     pencilToggle: { primary: { key: 'p', ctrl: false, shift: false, alt: false }, secondary: null },
+    eraserToggle: { primary: { key: 'e', ctrl: false, shift: true, alt: false }, secondary: null },
     renameLayer: { primary: { key: 'F2', ctrl: false, shift: false, alt: false }, secondary: null },
     switchToEdit: { primary: { key: 'e', ctrl: false, shift: false, alt: false }, secondary: null },
     switchToExplore: {
