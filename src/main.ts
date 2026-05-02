@@ -66,6 +66,8 @@ panel.show(canvasBoard)
 const addBar = new AddBar(app)
 const settingsPanel = new SettingsPanel(app, userSettings, keybindings)
 addBar.onSettingsOpen = () => settingsPanel.open()
+addBar.onUndo = () => undo()
+addBar.onRedo = () => redo()
 
 function syncModeHints() {
     addBar.updateModeHints({
@@ -243,6 +245,11 @@ function snapshotBlock(block: BoardObject): BlockSnapshot {
 function pushHistory() {
     history.push(blocks.map(snapshotBlock))
     future.length = 0
+    syncHistoryState()
+}
+
+function syncHistoryState() {
+    addBar.setHistoryState(history.length > 0, future.length > 0)
 }
 
 function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
@@ -273,6 +280,7 @@ function undo() {
     for (const b of [...blocks]) removeBlock(b)
     for (const snap of state) addBlock(blockFromSnapshot(snap))
     selectionBox.setBlocks([])
+    syncHistoryState()
     scheduleSave()
 }
 
@@ -283,6 +291,7 @@ function redo() {
     for (const b of [...blocks]) removeBlock(b)
     for (const snap of state) addBlock(blockFromSnapshot(snap))
     selectionBox.setBlocks([])
+    syncHistoryState()
     scheduleSave()
 }
 
@@ -1466,6 +1475,7 @@ async function newBoard() {
     panel.show(canvasBoard)
     history.length = 0
     future.length = 0
+    syncHistoryState()
     panX = 0
     panY = 0
     zoom = 1
@@ -1549,6 +1559,7 @@ function importBoard() {
             panel.show(canvasBoard)
             history.length = 0
             future.length = 0
+            syncHistoryState()
             panX = data.panX ?? 0
             panY = data.panY ?? 0
             zoom = data.zoom ?? 1
@@ -1620,6 +1631,7 @@ async function loadDemo() {
     panel.show(canvasBoard)
     history.length = 0
     future.length = 0
+    syncHistoryState()
     boardName = 'Untitled board'
     layersPanel.setName(boardName)
     addBlock(

@@ -100,6 +100,8 @@ export class AddBar {
     onAddNote: ((shape: NoteShape) => void) | null = null
     onAddShape: ((shape: DrawableShape) => void) | null = null
     onModeChange: ((mode: BoardMode) => void) | null = null
+    onUndo: (() => void) | null = null
+    onRedo: (() => void) | null = null
     onTogglePencil: (() => void) | null = null
     onToggleEraser: (() => void) | null = null
     onPencilSettingsChange: ((settings: PencilSettings) => void) | null = null
@@ -122,6 +124,8 @@ export class AddBar {
     private shapeDropdownOpen = false
     private selectedShape: DrawableShape = 'rectangle'
 
+    private undoBtn: HTMLButtonElement
+    private redoBtn: HTMLButtonElement
     private pencilBtn: HTMLButtonElement
     private eraserBtn: HTMLButtonElement
     private pencilOptionsEl: HTMLElement
@@ -171,6 +175,30 @@ export class AddBar {
         const divider = document.createElement('div')
         divider.className = 'add-bar-divider'
         this.el.appendChild(divider)
+
+        // ── Undo / Redo ────────────────────────────────────────────────────────
+        this.undoBtn = this.makeButton(
+            'Undo (Ctrl+Z)',
+            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 8H13a4 4 0 0 1 0 8H8"/>
+                <path d="M7 5L4 8l3 3"/>
+            </svg>`
+        )
+        this.undoBtn.disabled = true
+        this.undoBtn.addEventListener('click', () => this.onUndo?.())
+
+        this.redoBtn = this.makeButton(
+            'Redo (Ctrl+Y)',
+            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8H7a4 4 0 0 0 0 8h5"/>
+                <path d="M13 5l3 3-3 3"/>
+            </svg>`
+        )
+        this.redoBtn.disabled = true
+        this.redoBtn.addEventListener('click', () => this.onRedo?.())
+
+        const undoRedoDivider = document.createElement('div')
+        undoRedoDivider.className = 'add-bar-divider'
 
         // ── Add buttons ────────────────────────────────────────────────────────
         const textBtn = this.makeButton(
@@ -335,6 +363,9 @@ export class AddBar {
         settingsBtn.addEventListener('click', () => this.onSettingsOpen?.())
 
         this.el.append(
+            this.undoBtn,
+            this.redoBtn,
+            undoRedoDivider,
             textBtn,
             imageBtn,
             notePicker,
@@ -358,6 +389,11 @@ export class AddBar {
         this.setMode('edit')
         this.updateNoteTrigger()
         this.updateShapeTrigger()
+    }
+
+    setHistoryState(canUndo: boolean, canRedo: boolean) {
+        this.undoBtn.disabled = !canUndo
+        this.redoBtn.disabled = !canRedo
     }
 
     updateModeHints(hints: Partial<Record<BoardMode, string>>) {
