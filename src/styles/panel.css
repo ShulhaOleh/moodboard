@@ -95,19 +95,71 @@
     z-index: 10;
 }
 
-.panel-resize-left   { left: 0;    top: 12px;    bottom: 12px; width: 5px;  cursor: ew-resize; }
-.panel-resize-right  { right: 0;   top: 12px;    bottom: 12px; width: 5px;  cursor: ew-resize; }
-.panel-resize-top    { top: 0;     left: 12px;   right: 12px;  height: 5px; cursor: ns-resize; }
-.panel-resize-bottom { bottom: 0;  left: 12px;   right: 12px;  height: 5px; cursor: ns-resize; }
+.panel-resize-left {
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 5px;
+    cursor: ew-resize;
+}
+.panel-resize-right {
+    right: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 5px;
+    cursor: ew-resize;
+}
+.panel-resize-top {
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 5px;
+    cursor: ns-resize;
+}
+.panel-resize-bottom {
+    bottom: 0;
+    left: 12px;
+    right: 12px;
+    height: 5px;
+    cursor: ns-resize;
+}
 
-.panel-resize-tl { top: 0;    left: 0;   width: 12px; height: 12px; cursor: nwse-resize; }
-.panel-resize-tr { top: 0;    right: 0;  width: 12px; height: 12px; cursor: nesw-resize; }
-.panel-resize-br { bottom: 0; right: 0;  width: 12px; height: 12px; cursor: nwse-resize; }
-.panel-resize-bl { bottom: 0; left: 0;   width: 12px; height: 12px; cursor: nesw-resize; }
+.panel-resize-tl {
+    top: 0;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+}
+.panel-resize-tr {
+    top: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    cursor: nesw-resize;
+}
+.panel-resize-br {
+    bottom: 0;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+}
+.panel-resize-bl {
+    bottom: 0;
+    left: 0;
+    width: 12px;
+    height: 12px;
+    cursor: nesw-resize;
+}
 
-.panel-resize-left:hover,  .panel-resize-right:hover,
-.panel-resize-top:hover,   .panel-resize-bottom:hover,
-.panel-resize-tl:hover,    .panel-resize-tr:hover,
-.panel-resize-br:hover,    .panel-resize-bl:hover {
+.panel-resize-left:hover,
+.panel-resize-right:hover,
+.panel-resize-top:hover,
+.panel-resize-bottom:hover,
+.panel-resize-tl:hover,
+.panel-resize-tr:hover,
+.panel-resize-br:hover,
+.panel-resize-bl:hover {
     background: var(--color-accent-a12);
 }

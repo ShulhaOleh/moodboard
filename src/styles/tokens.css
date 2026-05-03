@@ -16,8 +16,8 @@ html.theme-transition * {
     color-scheme: light;
 
     /* Accent — Dracula purple, darkened for readability on light backgrounds */
-    --color-accent:        #7c3aed;
-    --color-accent-hover:  #6d28d9;
+    --color-accent: #7c3aed;
+    --color-accent-hover: #6d28d9;
     --color-accent-subtle: #ede9fe;
     --color-accent-border: #c4b5fd;
     --color-accent-a06: rgba(124, 58, 237, 0.06);
@@ -26,23 +26,23 @@ html.theme-transition * {
     --color-accent-a25: rgba(124, 58, 237, 0.25);
 
     /* Surface — Dracula foreground as background */
-    --color-surface:        #f8f8f2;
+    --color-surface: #f8f8f2;
     --color-surface-raised: #efefea;
     --color-surface-sunken: #e8e8e2;
 
     /* Border */
-    --color-border:        #d0d0c8;
+    --color-border: #d0d0c8;
     --color-border-strong: #a8a8a0;
 
     /* Text — Dracula background as text */
-    --color-text:             #282a36;
-    --color-text-secondary:   #44475a;
-    --color-text-muted:       #6272a4;
-    --color-text-faint:       #8a93b8;
+    --color-text: #282a36;
+    --color-text-secondary: #44475a;
+    --color-text-muted: #6272a4;
+    --color-text-faint: #8a93b8;
     --color-text-placeholder: #b0b8cc;
 
     /* Danger — Dracula red */
-    --color-danger:        #ff5555;
+    --color-danger: #ff5555;
     --color-danger-border: #ffb3b3;
     --color-danger-subtle: #fff0f0;
 
@@ -55,18 +55,18 @@ html.theme-transition * {
     --color-scrollbar-track: transparent;
 
     /* Elevation shadows */
-    --shadow-sm:     0 1px 4px rgba(40, 42, 54, 0.08);
-    --shadow-md:     0 2px 8px rgba(40, 42, 54, 0.10);
-    --shadow-lg:     0 4px 12px rgba(40, 42, 54, 0.12);
+    --shadow-sm: 0 1px 4px rgba(40, 42, 54, 0.08);
+    --shadow-md: 0 2px 8px rgba(40, 42, 54, 0.1);
+    --shadow-lg: 0 4px 12px rgba(40, 42, 54, 0.12);
     --shadow-dialog: 0 8px 24px rgba(40, 42, 54, 0.14), 0 2px 6px rgba(40, 42, 54, 0.08);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
     color-scheme: dark;
 
     /* Accent — Dracula purple */
-    --color-accent:        #bd93f9;
-    --color-accent-hover:  #a57ef7;
+    --color-accent: #bd93f9;
+    --color-accent-hover: #a57ef7;
     --color-accent-subtle: #3a2f52;
     --color-accent-border: #6d4f9f;
     --color-accent-a06: rgba(189, 147, 249, 0.06);
@@ -75,23 +75,23 @@ html.theme-transition * {
     --color-accent-a25: rgba(189, 147, 249, 0.28);
 
     /* Surface — Dracula background scale */
-    --color-surface:        #282a36;
+    --color-surface: #282a36;
     --color-surface-raised: #44475a;
     --color-surface-sunken: #21222c;
 
     /* Border */
-    --color-border:        #44475a;
+    --color-border: #44475a;
     --color-border-strong: #6272a4;
 
     /* Text — Dracula foreground scale */
-    --color-text:             #f8f8f2;
-    --color-text-secondary:   #e8e8dc;
-    --color-text-muted:       #c8c8be;
-    --color-text-faint:       #6272a4;
+    --color-text: #f8f8f2;
+    --color-text-secondary: #e8e8dc;
+    --color-text-muted: #c8c8be;
+    --color-text-faint: #6272a4;
     --color-text-placeholder: #44475a;
 
     /* Danger — Dracula red */
-    --color-danger:        #ff5555;
+    --color-danger: #ff5555;
     --color-danger-border: #6b1e1e;
     --color-danger-subtle: #2a1010;
 
@@ -104,9 +104,9 @@ html.theme-transition * {
     --color-scrollbar-track: transparent;
 
     /* No elevation — borders separate elements instead */
-    --shadow-sm:     none;
-    --shadow-md:     none;
-    --shadow-lg:     none;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
     --shadow-dialog: none;
 }
 
@@ -114,9 +114,9 @@ html.theme-transition * {
    Each block overrides only the accent tokens; all other tokens fall through
    from :root / [data-theme="dark"]. Purple is the default (no data-accent).  */
 
-:root[data-accent="blue"] {
-    --color-accent:        #2563eb;
-    --color-accent-hover:  #1d4ed8;
+:root[data-accent='blue'] {
+    --color-accent: #2563eb;
+    --color-accent-hover: #1d4ed8;
     --color-accent-subtle: #eff6ff;
     --color-accent-border: #93c5fd;
     --color-accent-a06: rgba(37, 99, 235, 0.06);
@@ -124,9 +124,9 @@ html.theme-transition * {
     --color-accent-a12: rgba(37, 99, 235, 0.12);
     --color-accent-a25: rgba(37, 99, 235, 0.25);
 }
-[data-theme="dark"][data-accent="blue"] {
-    --color-accent:        #60a5fa;
-    --color-accent-hover:  #3b82f6;
+[data-theme='dark'][data-accent='blue'] {
+    --color-accent: #60a5fa;
+    --color-accent-hover: #3b82f6;
     --color-accent-subtle: #1e3a5f;
     --color-accent-border: #2563eb;
     --color-accent-a06: rgba(96, 165, 250, 0.06);
@@ -135,9 +135,9 @@ html.theme-transition * {
     --color-accent-a25: rgba(96, 165, 250, 0.28);
 }
 
-:root[data-accent="teal"] {
-    --color-accent:        #0d9488;
-    --color-accent-hover:  #0f766e;
+:root[data-accent='teal'] {
+    --color-accent: #0d9488;
+    --color-accent-hover: #0f766e;
     --color-accent-subtle: #f0fdfa;
     --color-accent-border: #5eead4;
     --color-accent-a06: rgba(13, 148, 136, 0.06);
@@ -145,9 +145,9 @@ html.theme-transition * {
     --color-accent-a12: rgba(13, 148, 136, 0.12);
     --color-accent-a25: rgba(13, 148, 136, 0.25);
 }
-[data-theme="dark"][data-accent="teal"] {
-    --color-accent:        #2dd4bf;
-    --color-accent-hover:  #14b8a6;
+[data-theme='dark'][data-accent='teal'] {
+    --color-accent: #2dd4bf;
+    --color-accent-hover: #14b8a6;
     --color-accent-subtle: #0d2f2b;
     --color-accent-border: #0f766e;
     --color-accent-a06: rgba(45, 212, 191, 0.06);
@@ -156,9 +156,9 @@ html.theme-transition * {
     --color-accent-a25: rgba(45, 212, 191, 0.28);
 }
 
-:root[data-accent="green"] {
-    --color-accent:        #16a34a;
-    --color-accent-hover:  #15803d;
+:root[data-accent='green'] {
+    --color-accent: #16a34a;
+    --color-accent-hover: #15803d;
     --color-accent-subtle: #f0fdf4;
     --color-accent-border: #86efac;
     --color-accent-a06: rgba(22, 163, 74, 0.06);
@@ -166,9 +166,9 @@ html.theme-transition * {
     --color-accent-a12: rgba(22, 163, 74, 0.12);
     --color-accent-a25: rgba(22, 163, 74, 0.25);
 }
-[data-theme="dark"][data-accent="green"] {
-    --color-accent:        #4ade80;
-    --color-accent-hover:  #22c55e;
+[data-theme='dark'][data-accent='green'] {
+    --color-accent: #4ade80;
+    --color-accent-hover: #22c55e;
     --color-accent-subtle: #052e16;
     --color-accent-border: #16a34a;
     --color-accent-a06: rgba(74, 222, 128, 0.06);
@@ -177,9 +177,9 @@ html.theme-transition * {
     --color-accent-a25: rgba(74, 222, 128, 0.28);
 }
 
-:root[data-accent="orange"] {
-    --color-accent:        #ea580c;
-    --color-accent-hover:  #c2410c;
+:root[data-accent='orange'] {
+    --color-accent: #ea580c;
+    --color-accent-hover: #c2410c;
     --color-accent-subtle: #fff7ed;
     --color-accent-border: #fdba74;
     --color-accent-a06: rgba(234, 88, 12, 0.06);
@@ -187,9 +187,9 @@ html.theme-transition * {
     --color-accent-a12: rgba(234, 88, 12, 0.12);
     --color-accent-a25: rgba(234, 88, 12, 0.25);
 }
-[data-theme="dark"][data-accent="orange"] {
-    --color-accent:        #fb923c;
-    --color-accent-hover:  #f97316;
+[data-theme='dark'][data-accent='orange'] {
+    --color-accent: #fb923c;
+    --color-accent-hover: #f97316;
     --color-accent-subtle: #431407;
     --color-accent-border: #c2410c;
     --color-accent-a06: rgba(251, 146, 60, 0.06);
@@ -198,9 +198,9 @@ html.theme-transition * {
     --color-accent-a25: rgba(251, 146, 60, 0.28);
 }
 
-:root[data-accent="pink"] {
-    --color-accent:        #db2777;
-    --color-accent-hover:  #be185d;
+:root[data-accent='pink'] {
+    --color-accent: #db2777;
+    --color-accent-hover: #be185d;
     --color-accent-subtle: #fdf2f8;
     --color-accent-border: #f9a8d4;
     --color-accent-a06: rgba(219, 39, 119, 0.06);
@@ -208,9 +208,9 @@ html.theme-transition * {
     --color-accent-a12: rgba(219, 39, 119, 0.12);
     --color-accent-a25: rgba(219, 39, 119, 0.25);
 }
-[data-theme="dark"][data-accent="pink"] {
-    --color-accent:        #f472b6;
-    --color-accent-hover:  #ec4899;
+[data-theme='dark'][data-accent='pink'] {
+    --color-accent: #f472b6;
+    --color-accent-hover: #ec4899;
     --color-accent-subtle: #4a044e;
     --color-accent-border: #be185d;
     --color-accent-a06: rgba(244, 114, 182, 0.06);

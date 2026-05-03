@@ -57,7 +57,10 @@
     font-weight: 500;
     cursor: pointer;
     line-height: 1.4;
-    transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+    transition:
+        background 100ms ease,
+        color 100ms ease,
+        border-color 100ms ease;
 }
 
 .dialog-btn-secondary {

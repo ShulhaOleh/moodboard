@@ -26,9 +26,15 @@
     margin-bottom: 0.4em;
 }
 
-.text-block h1 { font-size: 1.5em; }
-.text-block h2 { font-size: 1.25em; }
-.text-block h3 { font-size: 1.1em; }
+.text-block h1 {
+    font-size: 1.5em;
+}
+.text-block h2 {
+    font-size: 1.25em;
+}
+.text-block h3 {
+    font-size: 1.1em;
+}
 
 .text-block p {
     margin-bottom: 0.5em;
@@ -44,11 +50,19 @@
     margin-bottom: 0.5em;
 }
 
-.text-block ul { list-style-type: disc; }
-.text-block ol { list-style-type: decimal; }
+.text-block ul {
+    list-style-type: disc;
+}
+.text-block ol {
+    list-style-type: decimal;
+}
 
-.text-block strong { font-weight: 600; }
-.text-block em     { font-style: italic; }
+.text-block strong {
+    font-weight: 600;
+}
+.text-block em {
+    font-style: italic;
+}
 
 .text-block code {
     background: var(--color-surface-sunken);

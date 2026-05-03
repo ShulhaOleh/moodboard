@@ -189,23 +189,49 @@
 }
 
 .accent-swatch.is-active {
-    box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-accent);
+    box-shadow:
+        0 0 0 2px var(--color-surface),
+        0 0 0 4px var(--color-accent);
 }
 
 /* Swatch background colors — theme-aware */
-.accent-swatch[data-accent-color="purple"] { background: #7c3aed; }
-.accent-swatch[data-accent-color="blue"]   { background: #2563eb; }
-.accent-swatch[data-accent-color="teal"]   { background: #0d9488; }
-.accent-swatch[data-accent-color="green"]  { background: #16a34a; }
-.accent-swatch[data-accent-color="orange"] { background: #ea580c; }
-.accent-swatch[data-accent-color="pink"]   { background: #db2777; }
+.accent-swatch[data-accent-color='purple'] {
+    background: #7c3aed;
+}
+.accent-swatch[data-accent-color='blue'] {
+    background: #2563eb;
+}
+.accent-swatch[data-accent-color='teal'] {
+    background: #0d9488;
+}
+.accent-swatch[data-accent-color='green'] {
+    background: #16a34a;
+}
+.accent-swatch[data-accent-color='orange'] {
+    background: #ea580c;
+}
+.accent-swatch[data-accent-color='pink'] {
+    background: #db2777;
+}
 
-[data-theme="dark"] .accent-swatch[data-accent-color="purple"] { background: #bd93f9; }
-[data-theme="dark"] .accent-swatch[data-accent-color="blue"]   { background: #60a5fa; }
-[data-theme="dark"] .accent-swatch[data-accent-color="teal"]   { background: #2dd4bf; }
-[data-theme="dark"] .accent-swatch[data-accent-color="green"]  { background: #4ade80; }
-[data-theme="dark"] .accent-swatch[data-accent-color="orange"] { background: #fb923c; }
-[data-theme="dark"] .accent-swatch[data-accent-color="pink"]   { background: #f472b6; }
+[data-theme='dark'] .accent-swatch[data-accent-color='purple'] {
+    background: #bd93f9;
+}
+[data-theme='dark'] .accent-swatch[data-accent-color='blue'] {
+    background: #60a5fa;
+}
+[data-theme='dark'] .accent-swatch[data-accent-color='teal'] {
+    background: #2dd4bf;
+}
+[data-theme='dark'] .accent-swatch[data-accent-color='green'] {
+    background: #4ade80;
+}
+[data-theme='dark'] .accent-swatch[data-accent-color='orange'] {
+    background: #fb923c;
+}
+[data-theme='dark'] .accent-swatch[data-accent-color='pink'] {
+    background: #f472b6;
+}
 
 /* ── Interface font picker ───────────────────────────────────────────────────── */
 
@@ -246,7 +272,10 @@
     font-weight: 500;
     cursor: pointer;
     min-width: 88px;
-    transition: border-color 0.12s, background 0.12s, color 0.12s;
+    transition:
+        border-color 0.12s,
+        background 0.12s,
+        color 0.12s;
     white-space: nowrap;
     box-sizing: border-box;
 }
@@ -265,8 +294,13 @@
 }
 
 @keyframes kb-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 var(--color-accent-a25); }
-    50%       { box-shadow: 0 0 0 3px var(--color-accent-a25); }
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 var(--color-accent-a25);
+    }
+    50% {
+        box-shadow: 0 0 0 3px var(--color-accent-a25);
+    }
 }
 
 .keybinding-badge.is-conflict {
@@ -299,7 +333,9 @@
     color: var(--color-text-faint);
     border-radius: 3px;
     flex-shrink: 0;
-    transition: color 0.1s, background 0.12s;
+    transition:
+        color 0.1s,
+        background 0.12s;
 }
 
 .keybinding-aux-btn:hover {

@@ -2,7 +2,9 @@
 
 /* Floating state (default) */
 #properties-panel {
-    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease;
+    transition:
+        transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 260ms ease;
     position: absolute;
     top: 16px;
     right: 16px;
@@ -65,7 +67,7 @@
 /* Mirror button — visible only when the docked panel is collapsed */
 .panel-expand-btn {
     position: absolute;
-    top: 14px;   /* panel top (8) + header padding (6) */
+    top: 14px; /* panel top (8) + header padding (6) */
     right: 16px; /* panel right (8) + header padding (8) */
     z-index: 101;
     width: 24px;
@@ -107,7 +109,9 @@
     opacity: 0;
     transform: scaleX(0.92);
     transform-origin: right center;
-    transition: opacity 180ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+        opacity 180ms ease,
+        transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .panel-snap-preview.is-visible {
@@ -145,7 +149,9 @@
     color: var(--color-text);
     outline: none;
     cursor: text;
-    transition: background 120ms ease, box-shadow 120ms ease;
+    transition:
+        background 120ms ease,
+        box-shadow 120ms ease;
 }
 
 .prop-name-row input:hover {
