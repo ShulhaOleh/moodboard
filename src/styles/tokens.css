@@ -2,6 +2,16 @@
    Light values on :root; dark overrides on [data-theme="dark"].
    applyTheme() in settings.ts sets the attribute; index.html sets it synchronously to avoid flash. */
 
+/* Smooth color transition when the user switches theme or accent — class is added/removed by beginThemeTransition(). */
+html.theme-transition,
+html.theme-transition * {
+    transition:
+        background-color 0.25s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
 :root {
     color-scheme: light;
 

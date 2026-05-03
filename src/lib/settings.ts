@@ -45,6 +45,13 @@ export function applyUiFont(font: string): void {
     document.documentElement.style.fontFamily = font || ''
 }
 
+// Temporarily adds 'theme-transition' to <html> so CSS can animate color changes.
+// Call immediately before applyTheme / applyAccent; the class is removed after 300 ms.
+export function beginThemeTransition(): void {
+    document.documentElement.classList.add('theme-transition')
+    setTimeout(() => document.documentElement.classList.remove('theme-transition'), 300)
+}
+
 // Sets data-accent on <html> to activate the chosen accent palette.
 // Purple is the default (defined in :root), so its attribute is removed to keep the DOM clean.
 export function applyAccent(accent: AccentColor): void {

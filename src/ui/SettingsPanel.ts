@@ -7,6 +7,7 @@ import {
     saveSettings,
     applyTheme,
     applyAccent,
+    beginThemeTransition,
     applyUiFont,
 } from '../lib/settings'
 import { FontPicker } from './FontPicker'
@@ -210,6 +211,7 @@ export class SettingsPanel {
                 btn.classList.add('is-active')
                 this.settings.theme = opt.value
                 saveSettings(this.settings)
+                beginThemeTransition()
                 applyTheme(opt.value)
             })
             btns.push(btn)
@@ -254,6 +256,7 @@ export class SettingsPanel {
                 swatch.classList.add('is-active')
                 this.settings.accent = opt.value
                 saveSettings(this.settings)
+                beginThemeTransition()
                 applyAccent(opt.value)
             })
             swatches.appendChild(swatch)
