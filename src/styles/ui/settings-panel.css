@@ -278,7 +278,9 @@
     font-size: 13px;
     font-weight: 500;
     text-decoration: none;
-    transition: border-color 0.12s, background 0.12s;
+    transition:
+        border-color 0.12s,
+        background 0.12s;
     margin-bottom: 36px;
 }
 
