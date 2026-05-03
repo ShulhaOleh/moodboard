@@ -154,6 +154,14 @@ src/
       settings-panel.css
 ```
 
+## CI/CD
+
+Two GitHub Actions workflows:
+- **`ci.yml`** — runs on every PR targeting `main`: `typecheck` → `lint` → `prettier --check src`. Blocks merge if any step fails.
+- **`deploy.yml`** — runs on every push to `main` (i.e. merged PR): `check` → `build` → deploy to GitHub Pages. The `check` job mirrors `ci.yml` so a bad push cannot deploy.
+
+Node version is pinned in `.nvmrc` (22); both workflows use `node-version-file: .nvmrc`. There is no `format:check` npm script — CI calls `npx prettier --check src` directly.
+
 ## Code Style
 
 - 4-space indentation
