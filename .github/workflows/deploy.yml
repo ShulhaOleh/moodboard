@@ -9,6 +9,8 @@ on:
             - '.husky/**'
             - '.vscode/**'
             - '.claude/**'
+            - '.prettierrc'
+            - '.prettierignore'
 
 permissions:
     contents: read
