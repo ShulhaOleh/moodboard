@@ -3,6 +3,12 @@ name: Deploy to GitHub Pages
 on:
     push:
         branches: [main]
+        paths-ignore:
+            - '**.md'
+            - 'LICENSE'
+            - '.husky/**'
+            - '.vscode/**'
+            - '.claude/**'
 
 permissions:
     contents: read
