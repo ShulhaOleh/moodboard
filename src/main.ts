@@ -1616,27 +1616,6 @@ function importBoard() {
     fileInput.click()
 }
 
-async function exportBoardPng() {
-    let blob: Blob
-    // When no explicit canvas background is set, fall back to the app element's computed
-    // CSS background so the PNG matches what the user sees (dark/light theme checkerboard
-    // base color). Without this, a transparent PNG at low opacity looks white in viewers.
-    const exportBg = canvasBoard.getBackground() || window.getComputedStyle(app).backgroundColor
-    try {
-        blob = await exporter.exportToPng(blocks, exportBg, 2)
-    } catch (err) {
-        void Dialog.alert(err instanceof Error ? err.message : 'Export failed.')
-        return
-    }
-
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${boardName}.png`
-    a.click()
-    URL.revokeObjectURL(url)
-}
-
 async function loadDemo() {
     if (
         blocks.length > 0 &&
@@ -1694,9 +1673,22 @@ canvasBoard.onNewBoard = newBoard
 canvasBoard.onLoadDemo = loadDemo
 canvasBoard.onExport = exportBoard
 canvasBoard.onImport = importBoard
-canvasBoard.onExportPng = exportBoardPng
+canvasBoard.onExportPng = (url) => {
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${boardName}.png`
+    a.click()
+}
 
 const exporter = new Exporter()
+
+canvasBoard.setRenderFn((scale) => {
+    // When no explicit canvas background is set, fall back to the app element's computed
+    // CSS background so the PNG matches what the user sees (dark/light theme checkerboard
+    // base color). Without this, a transparent PNG at low opacity looks white in viewers.
+    const exportBg = canvasBoard.getBackground() || window.getComputedStyle(app).backgroundColor
+    return exporter.exportToPng(blocks, exportBg, scale)
+})
 
 // Load persisted board, or show demo objects on first visit.
 void loadBoard().then((loaded) => {

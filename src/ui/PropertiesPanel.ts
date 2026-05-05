@@ -340,6 +340,12 @@ export class PropertiesPanel {
                 continue
             }
 
+            if (field.type === 'node') {
+                this.appearanceEl.appendChild(field.node)
+                field.onMount?.()
+                continue
+            }
+
             const row = document.createElement('div')
             row.className = 'prop-row'
 
@@ -506,8 +512,8 @@ export class PropertiesPanel {
                 continue
             }
 
-            // Button and text fields are not meaningful for multi-select.
-            if (field.type === 'button' || field.type === 'text') continue
+            // Button, text, and node fields are not meaningful for multi-select.
+            if (field.type === 'button' || field.type === 'text' || field.type === 'node') continue
 
             const isMixed = 'key' in field && mixed.has(field.key)
 
@@ -875,7 +881,8 @@ export class PropertiesPanel {
     private refreshAppearanceValues() {
         if (!this.object) return
         for (const field of this.object.getAppearanceFields()) {
-            if (field.type === 'section' || field.type === 'button') continue
+            if (field.type === 'section' || field.type === 'button' || field.type === 'node')
+                continue
             this.fieldUpdaters.get(field.key)?.(field.value)
         }
     }

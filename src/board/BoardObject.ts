@@ -45,6 +45,13 @@ export type PropertyField =
           value: string
           options: { value: string; label: string }[]
       }
+    | {
+          type: 'node'
+          key: string
+          node: HTMLElement
+          // Called each time the node is mounted into the panel (i.e. on every panel.show()).
+          onMount?: () => void
+      }
 
 export interface BoardObject {
     el: HTMLElement
