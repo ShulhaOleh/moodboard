@@ -407,14 +407,27 @@
 }
 
 .export-section-body {
-    display: none;
-    flex-direction: column;
-    gap: 8px;
-    padding-top: 10px;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 220ms ease;
 }
 
 .export-section-body.is-open {
+    grid-template-rows: 1fr;
+}
+
+.export-section-body-inner {
+    overflow: hidden;
+    min-height: 0;
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 0;
+    transition: padding-top 220ms ease;
+}
+
+.export-section-body.is-open .export-section-body-inner {
+    padding-top: 10px;
 }
 
 .export-preview-frame {

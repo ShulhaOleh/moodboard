@@ -60,9 +60,13 @@ export class CanvasBoard implements BoardObject {
         toggle.className = 'export-section-toggle'
         toggle.innerHTML = `<span>Export PNG</span><span class="export-section-chevron">▾</span>`
 
-        // Collapsible body, hidden by default
+        // Collapsible body — outer div is the grid container that animates row height;
+        // inner div holds the actual content so overflow: hidden doesn't clip the flex gap.
         const body = document.createElement('div')
         body.className = 'export-section-body'
+
+        const inner = document.createElement('div')
+        inner.className = 'export-section-body-inner'
 
         let isOpen = false
         toggle.addEventListener('click', () => {
@@ -80,11 +84,11 @@ export class CanvasBoard implements BoardObject {
         this.exportPreviewImg.className = 'export-preview-img'
         this.exportPreviewImg.alt = ''
         frame.appendChild(this.exportPreviewImg)
-        body.appendChild(frame)
+        inner.appendChild(frame)
 
         this.exportMetaEl = document.createElement('p')
         this.exportMetaEl.className = 'export-preview-meta'
-        body.appendChild(this.exportMetaEl)
+        inner.appendChild(this.exportMetaEl)
 
         // Scale row
         const controlsRow = document.createElement('div')
@@ -140,7 +144,7 @@ export class CanvasBoard implements BoardObject {
         dropdown.appendChild(menu)
         controlsRow.appendChild(scaleLabel)
         controlsRow.appendChild(dropdown)
-        body.appendChild(controlsRow)
+        inner.appendChild(controlsRow)
 
         // Export button
         this.exportBtn = document.createElement('button')
@@ -150,8 +154,9 @@ export class CanvasBoard implements BoardObject {
         this.exportBtn.addEventListener('click', () => {
             if (this.previewUrl) this.onExportPng?.(this.previewUrl)
         })
-        body.appendChild(this.exportBtn)
+        inner.appendChild(this.exportBtn)
 
+        body.appendChild(inner)
         section.appendChild(toggle)
         section.appendChild(body)
         return section
