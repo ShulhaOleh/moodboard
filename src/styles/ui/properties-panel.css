@@ -540,6 +540,16 @@
 
 .export-png-btn {
     margin-top: 0;
+    background: var(--color-accent-subtle);
+    color: var(--color-accent);
+    border-color: var(--color-accent-border);
+    text-align: center;
+    font-weight: 500;
+}
+
+.export-png-btn:hover {
+    background: var(--color-accent-a12);
+    color: var(--color-accent);
 }
 
 .export-png-btn:disabled {
