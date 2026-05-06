@@ -8,6 +8,7 @@ A moodboard editor that runs entirely in the browser with local persistence.
 - **TipTap** — rich text editing with per-character formatting
 - **Dexie** — IndexedDB wrapper for local storage
 - **Tailwind CSS** — utility-first styling
+- **Lucide** — icon set
 - **Vite** — dev server and bundler
 
 ## Shortcuts
