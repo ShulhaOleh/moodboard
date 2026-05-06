@@ -1,0 +1,23 @@
+{
+    "extends": ["@commitlint/config-conventional"],
+    "rules": {
+        "scope-enum": [
+            1,
+            "always",
+            [
+                "board",
+                "ui",
+                "snap",
+                "export",
+                "db",
+                "settings",
+                "fonts",
+                "style",
+                "ci",
+                "deps",
+                "claude",
+                "main"
+            ]
+        ]
+    }
+}
