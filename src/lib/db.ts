@@ -33,6 +33,7 @@ export interface BoardRecord {
     schemaVersion: number
     blocks: PersistedBlock[]
     groups?: GroupRecord[]
+    groupCounter?: number
     panX: number
     panY: number
     zoom: number

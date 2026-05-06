@@ -209,6 +209,7 @@ async function saveBoard() {
         schemaVersion: SCHEMA_VERSION,
         blocks: persistedBlocks,
         groups: [...groups.values()],
+        groupCounter,
         panX,
         panY,
         zoom,
@@ -233,6 +234,7 @@ async function loadBoard(): Promise<boolean> {
     layersPanel.setName(boardName)
     groups.clear()
     for (const g of record.groups ?? []) groups.set(g.id, g)
+    groupCounter = record.groupCounter ?? 0
     for (const snap of migrateBlocks(record.blocks, record.schemaVersion)) {
         if (snap.type === 'image' && snap.data.imageBlob) {
             addBlock(
