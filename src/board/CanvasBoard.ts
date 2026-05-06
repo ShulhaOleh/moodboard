@@ -136,8 +136,15 @@ export class CanvasBoard implements BoardObject {
 
         this.exportScaleTrigger.addEventListener('click', () => {
             const open = menu.classList.toggle('is-open')
-            if (open) document.addEventListener('mousedown', onOutside)
-            else document.removeEventListener('mousedown', onOutside)
+            if (open) {
+                const rect = this.exportScaleTrigger.getBoundingClientRect()
+                menu.style.top = `${rect.bottom + 3}px`
+                menu.style.left = `${rect.left}px`
+                menu.style.width = `${rect.width}px`
+                document.addEventListener('mousedown', onOutside)
+            } else {
+                document.removeEventListener('mousedown', onOutside)
+            }
         })
 
         dropdown.appendChild(this.exportScaleTrigger)
