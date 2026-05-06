@@ -20,12 +20,30 @@ type GroupItem = {
 }
 type DisplayItem = BlockItem | GroupItem
 
+// Flattened visual row used for shift-range computation.
+type FlatItem =
+    | { type: 'block'; block: BoardObject }
+    | { type: 'group'; groupId: string; members: BoardObject[] }
+    | { type: 'member'; block: BoardObject }
+
+// Identifies which row set the range anchor.
+type AnchorKey =
+    | { type: 'block'; block: BoardObject }
+    | { type: 'member'; block: BoardObject }
+    | { type: 'group'; groupId: string }
+
 export class LayersPanel {
     readonly el: HTMLElement
-    // Called when a layer row is clicked — main.ts performs the actual selection.
+    // Called when a layer row is plain-clicked — main.ts replaces the selection.
     onSelectBlock: ((block: BoardObject) => void) | null = null
-    // Called when a group header row is clicked — main.ts selects all members.
+    // Called when a layer row is Ctrl/Cmd-clicked — main.ts toggles the block.
+    onCtrlSelectBlock: ((block: BoardObject) => void) | null = null
+    // Called when a group header is plain-clicked — main.ts selects all members.
     onGroupSelect: ((groupId: string) => void) | null = null
+    // Called when a group header is Ctrl/Cmd-clicked — main.ts toggles all members.
+    onCtrlGroupSelect: ((groupId: string) => void) | null = null
+    // Called on Shift+click with the contiguous range of blocks to select.
+    onRangeSelect: ((blocks: BoardObject[]) => void) | null = null
     // Called when the user reorders rows via drag-and-drop.
     onReorder: ((fromIdx: number, targetIdx: number, edge: 'top' | 'bottom') => void) | null = null
     // Called when the user renames the board via the name input.
@@ -46,6 +64,7 @@ export class LayersPanel {
     private cachedGroups: Map<string, GroupRecord> = new Map()
     private collapsedGroups = new Set<string>()
     private dragSrcIdx: number | null = null
+    private anchorKey: AnchorKey | null = null
     private container: HTMLElement
 
     constructor(container: HTMLElement) {
@@ -253,6 +272,58 @@ export class LayersPanel {
         return items
     }
 
+    // Returns all visible rows in top-to-bottom display order for range computation.
+    // Collapsed group members are omitted (they aren't visible rows).
+    private getFlatVisibleItems(): FlatItem[] {
+        const flat: FlatItem[] = []
+        for (const item of this.buildDisplayItems()) {
+            if (item.kind === 'block') {
+                flat.push({ type: 'block', block: item.block })
+            } else {
+                flat.push({
+                    type: 'group',
+                    groupId: item.groupId,
+                    members: item.members.map((m) => m.block),
+                })
+                if (!this.collapsedGroups.has(item.groupId)) {
+                    for (const m of item.members) flat.push({ type: 'member', block: m.block })
+                }
+            }
+        }
+        return flat
+    }
+
+    // Returns blocks covered by the range [anchor..target] in visual order.
+    private computeRange(anchor: AnchorKey, target: AnchorKey): BoardObject[] {
+        const flat = this.getFlatVisibleItems()
+
+        const findIndex = (key: AnchorKey): number => {
+            if (key.type === 'group') {
+                return flat.findIndex((f) => f.type === 'group' && f.groupId === key.groupId)
+            }
+            return flat.findIndex(
+                (f) => (f.type === 'block' || f.type === 'member') && f.block === key.block
+            )
+        }
+
+        const a = findIndex(anchor)
+        const b = findIndex(target)
+        if (a === -1 || b === -1) return []
+
+        const start = Math.min(a, b)
+        const end = Math.max(a, b)
+        const result: BoardObject[] = []
+        for (let i = start; i <= end; i++) {
+            const f = flat[i]
+            if (f.type === 'group') {
+                for (const m of f.members) if (m.visible && !m.locked) result.push(m)
+            } else {
+                if (f.block.visible && !f.block.locked) result.push(f.block)
+            }
+        }
+        return result
+    }
+
     private buildGroupItem(item: GroupItem, selectedBlocks: Set<BoardObject>): HTMLLIElement {
         const li = document.createElement('li')
         li.className = 'layer-group-item'
@@ -308,7 +379,17 @@ export class LayersPanel {
                 )
             )
                 return
-            this.onGroupSelect?.(item.groupId)
+            const target: AnchorKey = { type: 'group', groupId: item.groupId }
+            if (e.shiftKey && this.anchorKey) {
+                e.preventDefault()
+                this.onRangeSelect?.(this.computeRange(this.anchorKey, target))
+            } else if (e.ctrlKey || e.metaKey) {
+                this.anchorKey = target
+                this.onCtrlGroupSelect?.(item.groupId)
+            } else {
+                this.anchorKey = target
+                this.onGroupSelect?.(item.groupId)
+            }
         })
 
         // ── Children container ────────────────────────────────────────────────
@@ -404,7 +485,17 @@ export class LayersPanel {
 
         row.addEventListener('mousedown', (e) => {
             if ((e.target as HTMLElement).closest('.layer-vis-btn, .layer-lock-btn')) return
-            this.onSelectBlock?.(block)
+            const target: AnchorKey = { type: 'member', block }
+            if (e.shiftKey && this.anchorKey) {
+                e.preventDefault()
+                this.onRangeSelect?.(this.computeRange(this.anchorKey, target))
+            } else if (e.ctrlKey || e.metaKey) {
+                this.anchorKey = target
+                this.onCtrlSelectBlock?.(block)
+            } else {
+                this.anchorKey = target
+                this.onSelectBlock?.(block)
+            }
         })
 
         return row
@@ -467,7 +558,17 @@ export class LayersPanel {
 
         row.addEventListener('mousedown', (e) => {
             if ((e.target as HTMLElement).closest('.layer-vis-btn, .layer-lock-btn')) return
-            this.onSelectBlock?.(block)
+            const target: AnchorKey = { type: 'block', block }
+            if (e.shiftKey && this.anchorKey) {
+                e.preventDefault()
+                this.onRangeSelect?.(this.computeRange(this.anchorKey, target))
+            } else if (e.ctrlKey || e.metaKey) {
+                this.anchorKey = target
+                this.onCtrlSelectBlock?.(block)
+            } else {
+                this.anchorKey = target
+                this.onSelectBlock?.(block)
+            }
         })
 
         // Drag-to-reorder using HTML5 DnD.

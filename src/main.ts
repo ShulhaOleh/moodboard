@@ -722,6 +722,56 @@ layersPanel.onGroupSelect = (groupId) => {
     layersPanel.notifySelectionChanged(selectedBlocks)
 }
 
+layersPanel.onCtrlSelectBlock = (block) => {
+    if (selectedBlocks.has(block)) {
+        block.markDeselected()
+        selectedBlocks.delete(block)
+    } else {
+        selectedBlocks.add(block)
+        block.markSelected()
+    }
+    if (selectedBlocks.size === 0) panel.show(canvasBoard)
+    else if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+    else panel.showMultiple([...selectedBlocks])
+    selectionBox.setBlocks([...selectedBlocks])
+    layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+layersPanel.onCtrlGroupSelect = (groupId) => {
+    const members = blocks.filter((b) => b.groupId === groupId && b.visible && !b.locked)
+    const allSelected = members.length > 0 && members.every((b) => selectedBlocks.has(b))
+    if (allSelected) {
+        for (const b of members) {
+            b.markDeselected()
+            selectedBlocks.delete(b)
+        }
+    } else {
+        for (const b of members) {
+            selectedBlocks.add(b)
+            b.markSelected()
+        }
+    }
+    if (selectedBlocks.size === 0) panel.show(canvasBoard)
+    else if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+    else panel.showMultiple([...selectedBlocks])
+    selectionBox.setBlocks([...selectedBlocks])
+    layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+layersPanel.onRangeSelect = (rangeBlocks) => {
+    selectedBlocks.forEach((b) => b.markDeselected())
+    selectedBlocks.clear()
+    for (const b of rangeBlocks) {
+        selectedBlocks.add(b)
+        b.markSelected()
+    }
+    if (selectedBlocks.size === 0) panel.show(canvasBoard)
+    else if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+    else panel.showMultiple([...selectedBlocks])
+    selectionBox.setBlocks([...selectedBlocks])
+    layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
 layersPanel.onRenameGroup = (groupId, name) => {
     const g = groups.get(groupId)
     if (!g) return
