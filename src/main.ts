@@ -101,6 +101,7 @@ app.appendChild(zoomWidget.el)
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
 const groups = new Map<string, GroupRecord>()
+let groupCounter = 0
 const history: HistoryEntry[] = []
 const future: HistoryEntry[] = []
 const clipboard: BlockSnapshot[] = []
@@ -348,7 +349,7 @@ function paste() {
             const source = groups.get(gid)
             groups.set(newId, {
                 id: newId,
-                name: source ? source.name : `Group ${groups.size + 1}`,
+                name: source ? source.name : `Group ${++groupCounter}`,
             })
             groupRemap.set(gid, newId)
         }
@@ -659,7 +660,7 @@ function groupSelected() {
     if (selectedBlocks.size < 2) return
     pushHistory()
     const id = crypto.randomUUID()
-    const name = `Group ${groups.size + 1}`
+    const name = `Group ${++groupCounter}`
     groups.set(id, { id, name })
     for (const b of selectedBlocks) b.groupId = id
     layersPanel.refresh(blocks, selectedBlocks, groups)

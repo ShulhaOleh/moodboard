@@ -305,34 +305,39 @@
 .layer-group-children {
     list-style: none;
     padding: 0;
-    margin: 0 0 2px 12px;
+    margin: 0 0 2px 16px;
     display: flex;
     flex-direction: column;
+}
+
+/* Member rows — indented, with tree connector lines */
+.layer-member-row {
+    padding-left: 16px !important;
     position: relative;
 }
 
-/* Vertical connector line */
-.layer-group-children::before {
+/* Vertical segment: full height for ├, stops at midpoint for └.
+   Extends ±2px into the transparent border areas so consecutive segments connect. */
+.layer-member-row::before {
     content: '';
     position: absolute;
-    left: 9px;
-    top: 0;
-    bottom: 4px;
+    left: 8px;
+    top: -2px;
+    height: calc(100% + 4px);
     width: 1px;
     background: var(--color-border);
     pointer-events: none;
 }
 
-/* Member rows — indented, with a horizontal connector tick */
-.layer-member-row {
-    padding-left: 20px !important;
-    position: relative;
+.layer-member-row:last-child::before {
+    height: calc(50% + 2px);
 }
 
-.layer-member-row::before {
+/* Horizontal tick connecting vertical line to the row */
+.layer-member-row::after {
     content: '';
     position: absolute;
-    left: 10px;
+    left: 8px;
     top: 50%;
     width: 8px;
     height: 1px;
