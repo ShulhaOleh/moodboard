@@ -263,6 +263,10 @@ export class PathBlock extends BoxBlock<PathBlockData> {
     }
 
     getData(): Readonly<PathBlockData> {
-        return { ...this.data, points: this.data.points.map((p) => ({ ...p })) }
+        return {
+            ...this.data,
+            points: this.data.points.map((p) => ({ ...p })),
+            groupId: this.groupId,
+        }
     }
 }

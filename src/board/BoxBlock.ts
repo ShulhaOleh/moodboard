@@ -11,6 +11,7 @@ export interface BoxBaseData {
     height?: number
     rotation: number
     name?: string
+    groupId?: string
 }
 
 export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
@@ -30,6 +31,7 @@ export abstract class BoxBlock<D extends BoxBaseData> extends BaseBlock {
     constructor(el: HTMLElement, defaultName: string, data: D) {
         super(el, data.name ?? defaultName)
         this.data = { ...data } as D
+        this.groupId = data.groupId
     }
 
     protected applyPosition() {

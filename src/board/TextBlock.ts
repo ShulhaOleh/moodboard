@@ -28,6 +28,7 @@ export interface TextBlockData {
     textAlign: string
     autoHeight?: boolean
     name?: string
+    groupId?: string
 }
 
 export class TextBlock extends BoxBlock<TextBlockData> {
@@ -354,6 +355,6 @@ export class TextBlock extends BoxBlock<TextBlockData> {
     }
 
     getData(): Readonly<TextBlockData> {
-        return { ...this.data }
+        return { ...this.data, groupId: this.groupId }
     }
 }

@@ -14,6 +14,8 @@ export type ShortcutAction =
     | 'renameLayer'
     | 'switchToEdit'
     | 'switchToExplore'
+    | 'group'
+    | 'ungroup'
 
 export interface Keybinding {
     key: string // e.g. 'z', 'Delete', 'p'
@@ -42,6 +44,8 @@ export const ACTION_LABELS: Record<ShortcutAction, string> = {
     renameLayer: 'Rename selected layer',
     switchToEdit: 'Switch to Edit mode',
     switchToExplore: 'Switch to Explore mode',
+    group: 'Group selection',
+    ungroup: 'Ungroup selection',
 }
 
 export const DEFAULT_KEYBINDINGS: KeybindingMap = {
@@ -62,6 +66,8 @@ export const DEFAULT_KEYBINDINGS: KeybindingMap = {
         primary: { key: 'r', ctrl: false, shift: false, alt: false },
         secondary: null,
     },
+    group: { primary: { key: 'g', ctrl: true, shift: false, alt: false }, secondary: null },
+    ungroup: { primary: { key: 'g', ctrl: true, shift: true, alt: false }, secondary: null },
 }
 
 export function loadKeybindings(): KeybindingMap {

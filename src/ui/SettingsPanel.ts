@@ -321,6 +321,8 @@ export class SettingsPanel {
             'copy',
             'cut',
             'paste',
+            'group',
+            'ungroup',
             'pencilToggle',
             'eraserToggle',
             'renameLayer',

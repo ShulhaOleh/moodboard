@@ -27,6 +27,7 @@ export interface LineBlockData {
     startPoint: PointStyle
     endPoint: PointStyle
     name?: string
+    groupId?: string
 }
 
 // Extra space around the bounding box so thick strokes and endpoint handles are never clipped.
@@ -58,6 +59,7 @@ export class LineBlock extends BaseBlock {
         el.className = 'line-block'
         super(el, data.name ?? 'Line')
         this.data = { ...data }
+        this.groupId = data.groupId
 
         this.svgEl = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         this.svgEl.setAttribute('width', '100%')
@@ -550,6 +552,6 @@ export class LineBlock extends BaseBlock {
     }
 
     getData(): Readonly<LineBlockData> {
-        return { ...this.data }
+        return { ...this.data, groupId: this.groupId }
     }
 }

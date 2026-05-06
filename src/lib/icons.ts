@@ -14,6 +14,7 @@ import {
     FileText,
     Files,
     ChevronDown,
+    ChevronRight,
     Undo2,
     Redo2,
     Type,
@@ -76,6 +77,7 @@ export const ICON_EYE = toSvg(Eye)
 export const ICON_EYE_OFF = toSvg(EyeOff)
 export const ICON_LOCK_CLOSED = toSvg(Lock)
 export const ICON_LOCK_OPEN = toSvg(LockOpen)
+export const ICON_CHEVRON_RIGHT = toSvg(ChevronRight)
 
 // Settings panel
 export const ICON_CLOSE = toSvg(X)

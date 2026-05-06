@@ -24,6 +24,7 @@ export interface ImageBlockData {
     // Kept for future Dexie persistence — recreate src via URL.createObjectURL on load.
     imageBlob?: Blob
     name?: string
+    groupId?: string
 }
 
 export class ImageBlock extends BoxBlock<ImageBlockData> {
@@ -211,7 +212,7 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
     }
 
     getData(): Readonly<ImageBlockData> {
-        return { ...this.data }
+        return { ...this.data, groupId: this.groupId }
     }
 
     // Must be called when removing the block if src is an object URL, to free memory.

@@ -13,6 +13,7 @@ export class CanvasBoard implements BoardObject {
     readonly el = document.createElement('div')
     readonly omitCommonProps = true as const
     readonly hideDelete = true as const
+    readonly groupId = undefined
     onSelect = null
     onDeselect = null
     onChange: (() => void) | null = null

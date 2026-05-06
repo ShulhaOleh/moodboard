@@ -47,6 +47,7 @@ export interface ShapeBlockData {
     textVerticalAlign: 'top' | 'middle' | 'bottom'
     textPadding: number
     name?: string
+    groupId?: string
 }
 
 export class ShapeBlock extends BoxBlock<ShapeBlockData> {
@@ -532,6 +533,6 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
     }
 
     getData(): Readonly<ShapeBlockData> {
-        return { ...this.data }
+        return { ...this.data, groupId: this.groupId }
     }
 }
