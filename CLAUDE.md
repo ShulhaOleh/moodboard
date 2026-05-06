@@ -171,6 +171,18 @@ Node version is pinned in `.nvmrc` (22); both workflows use `node-version-file: 
 - Pre-commit hook (husky + lint-staged) runs Prettier then ESLint on staged `src/**/*.ts` files
 - `no-console` is enforced — do not use `console.log/warn/error`
 
+## Commit messages
+
+Conventional Commits format is enforced by commitlint (`commit-msg` hook):
+
+```
+type(scope): subject
+```
+
+Allowed types (hard error if violated): `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+
+Curated scopes (warning if unrecognised, not a hard block): `board`, `ui`, `snap`, `export`, `db`, `settings`, `fonts`, `style`, `ci`, `deps`, `claude`, `main`. Scope is optional.
+
 ## Comments
 
 - Every file must start with a header comment describing the purpose of the file (not its contents).
