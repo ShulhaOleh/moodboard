@@ -2,29 +2,7 @@
 // Docks to the left edge of the viewport. Behavior mirrors PropertiesPanel (same dock/undock/collapse/resize).
 
 import { BoardObject } from '../board/BoardObject'
-
-const SVG_ATTRS = `viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"`
-
-const ICON_EYE = `<svg ${SVG_ATTRS}>
-    <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
-    <circle cx="8" cy="8" r="2"/>
-</svg>`
-
-const ICON_EYE_OFF = `<svg ${SVG_ATTRS}>
-    <path d="M2 2l12 12M6.7 6.7A3 3 0 0 0 8 11a3 3 0 0 0 2.3-1.3"/>
-    <path d="M9.9 3.3C9.3 3.1 8.7 3 8 3 3.5 3 1 8 1 8s.7 1.4 2 2.7"/>
-    <path d="M14.5 10A13 13 0 0 0 15 8s-2.5-5-7-5"/>
-</svg>`
-
-const ICON_LOCK_CLOSED = `<svg ${SVG_ATTRS}>
-    <rect x="3" y="7" width="10" height="7" rx="1.5"/>
-    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/>
-</svg>`
-
-const ICON_LOCK_OPEN = `<svg ${SVG_ATTRS}>
-    <rect x="3" y="7" width="10" height="7" rx="1.5"/>
-    <path d="M5.5 7V5a2.5 2.5 0 0 1 4.95-.5"/>
-</svg>`
+import { ICON_EYE, ICON_EYE_OFF, ICON_LOCK_CLOSED, ICON_LOCK_OPEN } from '../lib/icons'
 
 export class LayersPanel {
     readonly el: HTMLElement

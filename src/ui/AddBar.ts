@@ -1,80 +1,51 @@
 // Toolbar fixed at the top center of the screen for adding new board objects and switching modes.
 
 import { type NoteShape } from '../board/NoteBlock'
+import {
+    ICON_EDIT_MODE,
+    ICON_EXPLORE_MODE,
+    ICON_SHAPE_RECT,
+    ICON_SHAPE_LINE,
+    ICON_SHAPE_ARROW,
+    ICON_SHAPE_ELLIPSE,
+    ICON_SHAPE_POLYGON,
+    ICON_SHAPE_STAR,
+    ICON_NOTE_PLAIN,
+    ICON_NOTE_DOGEAR,
+    ICON_NOTE_STACKED,
+    ICON_CHEVRON_DOWN,
+    ICON_UNDO,
+    ICON_REDO,
+    ICON_TEXT,
+    ICON_IMAGE,
+    ICON_PENCIL,
+    ICON_ERASER,
+    ICON_SETTINGS,
+} from '../lib/icons'
 
 export type BoardMode = 'edit' | 'explore'
 
 export type DrawableShape = 'rectangle' | 'line' | 'arrow' | 'ellipse' | 'polygon' | 'star'
 
 const MODES: { mode: BoardMode; label: string; icon: string }[] = [
-    {
-        mode: 'edit',
-        label: 'Edit',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 3.5L15.5 10 10 11.8 7.5 17 5 3.5z"/>
-        </svg>`,
-    },
-    {
-        mode: 'explore',
-        label: 'Explore',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 13V7m0 0V4a1 1 0 0 1 2 0v3m-2 0a1 1 0 0 0-2 0v2m4-2a1 1 0 0 1 2 0v2m0 0v1m0-1a1 1 0 0 1 2 0v4a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4v-2a1 1 0 0 1 2 0"/>
-        </svg>`,
-    },
+    { mode: 'edit', label: 'Edit', icon: ICON_EDIT_MODE },
+    { mode: 'explore', label: 'Explore', icon: ICON_EXPLORE_MODE },
 ]
 
 const SHAPES: { shape: DrawableShape; label: string; icon: string }[] = [
-    {
-        shape: 'rectangle',
-        label: 'Rectangle',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="5" width="14" height="10" rx="2"/></svg>`,
-    },
-    {
-        shape: 'line',
-        label: 'Line',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2" y1="10" x2="18" y2="10"/></svg>`,
-    },
-    {
-        shape: 'arrow',
-        label: 'Arrow',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2,10 L15,10 M11,6 L15,10 L11,14"/></svg>`,
-    },
-    {
-        shape: 'ellipse',
-        label: 'Ellipse',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="10" cy="10" rx="7" ry="5"/></svg>`,
-    },
-    {
-        shape: 'polygon',
-        label: 'Polygon',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="10,2 18,7.5 15.5,17 4.5,17 2,7.5"/></svg>`,
-    },
-    {
-        shape: 'star',
-        label: 'Star',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><polygon points="10,2 12.2,7.8 18.5,8.2 13.8,12.3 15.4,18.5 10,15.1 4.6,18.5 6.2,12.3 1.5,8.2 7.8,7.8"/></svg>`,
-    },
+    { shape: 'rectangle', label: 'Rectangle', icon: ICON_SHAPE_RECT },
+    { shape: 'line', label: 'Line', icon: ICON_SHAPE_LINE },
+    { shape: 'arrow', label: 'Arrow', icon: ICON_SHAPE_ARROW },
+    { shape: 'ellipse', label: 'Ellipse', icon: ICON_SHAPE_ELLIPSE },
+    { shape: 'polygon', label: 'Polygon', icon: ICON_SHAPE_POLYGON },
+    { shape: 'star', label: 'Star', icon: ICON_SHAPE_STAR },
 ]
 
 const NOTE_SHAPES: { shape: NoteShape; label: string; icon: string }[] = [
-    {
-        shape: 'rectangle',
-        label: 'Plain',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="6" y1="9" x2="14" y2="9" stroke-linecap="round"/><line x1="6" y1="12" x2="11" y2="12" stroke-linecap="round"/></svg>`,
-    },
-    {
-        shape: 'dog-ear',
-        label: 'Dog-ear',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 4h10l4 4v9H3z"/><path d="M13 4v4h4" opacity="0.4"/><line x1="6" y1="10" x2="14" y2="10" stroke-linecap="round"/><line x1="6" y1="13" x2="11" y2="13" stroke-linecap="round"/></svg>`,
-    },
-    {
-        shape: 'stacked',
-        label: 'Stacked',
-        icon: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="5" y="2" width="12" height="10" rx="2" opacity="0.4"/><rect x="3" y="6" width="12" height="10" rx="2"/></svg>`,
-    },
+    { shape: 'rectangle', label: 'Plain', icon: ICON_NOTE_PLAIN },
+    { shape: 'dog-ear', label: 'Dog-ear', icon: ICON_NOTE_DOGEAR },
+    { shape: 'stacked', label: 'Stacked', icon: ICON_NOTE_STACKED },
 ]
-
-const CHEVRON = `<svg class="mode-chevron" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l4 4 4-4"/></svg>`
 
 export class AddBar {
     readonly el: HTMLElement
@@ -155,23 +126,11 @@ export class AddBar {
         this.el.appendChild(divider)
 
         // ── Undo / Redo ────────────────────────────────────────────────────────
-        this.undoBtn = this.makeButton(
-            'Undo (Ctrl+Z)',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 8H13a4 4 0 0 1 0 8H8"/>
-                <path d="M7 5L4 8l3 3"/>
-            </svg>`
-        )
+        this.undoBtn = this.makeButton('Undo (Ctrl+Z)', ICON_UNDO)
         this.undoBtn.disabled = true
         this.undoBtn.addEventListener('click', () => this.onUndo?.())
 
-        this.redoBtn = this.makeButton(
-            'Redo (Ctrl+Y)',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 8H7a4 4 0 0 0 0 8h5"/>
-                <path d="M13 5l3 3-3 3"/>
-            </svg>`
-        )
+        this.redoBtn = this.makeButton('Redo (Ctrl+Y)', ICON_REDO)
         this.redoBtn.disabled = true
         this.redoBtn.addEventListener('click', () => this.onRedo?.())
 
@@ -179,22 +138,10 @@ export class AddBar {
         undoRedoDivider.className = 'add-bar-divider'
 
         // ── Add buttons ────────────────────────────────────────────────────────
-        const textBtn = this.makeButton(
-            'Text',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
-                <path d="M4 5h12M10 5v10M7 15h6"/>
-            </svg>`
-        )
+        const textBtn = this.makeButton('Text', ICON_TEXT)
         textBtn.addEventListener('click', () => this.onAddText?.())
 
-        const imageBtn = this.makeButton(
-            'Image',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="14" height="12" rx="2"/>
-                <circle cx="7.5" cy="8.5" r="1.5"/>
-                <path d="M3 14l4-4 3 3 2-2 5 5"/>
-            </svg>`
-        )
+        const imageBtn = this.makeButton('Image', ICON_IMAGE)
         imageBtn.addEventListener('click', () => this.onAddImage?.())
 
         // ── Note split-button ──────────────────────────────────────────────────
@@ -213,7 +160,7 @@ export class AddBar {
 
         this.noteChevronBtn = document.createElement('button')
         this.noteChevronBtn.className = 'shape-chevron-btn'
-        this.noteChevronBtn.innerHTML = CHEVRON
+        this.noteChevronBtn.innerHTML = ICON_CHEVRON_DOWN
         this.noteChevronBtn.title = 'Choose note style'
         this.noteChevronBtn.addEventListener('click', () => {
             this.noteDropdownOpen = !this.noteDropdownOpen
@@ -259,7 +206,7 @@ export class AddBar {
 
         this.shapeChevronBtn = document.createElement('button')
         this.shapeChevronBtn.className = 'shape-chevron-btn'
-        this.shapeChevronBtn.innerHTML = CHEVRON
+        this.shapeChevronBtn.innerHTML = ICON_CHEVRON_DOWN
         this.shapeChevronBtn.title = 'Choose shape'
         this.shapeChevronBtn.addEventListener('click', () => {
             this.shapeDropdownOpen = !this.shapeDropdownOpen
@@ -293,21 +240,10 @@ export class AddBar {
         const pencilDivider = document.createElement('div')
         pencilDivider.className = 'add-bar-divider'
 
-        this.pencilBtn = this.makeButton(
-            'Pencil (P)',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14.5 3.5a2.12 2.12 0 0 1 3 3L6 18l-4 1 1-4L14.5 3.5z"/>
-            </svg>`
-        )
+        this.pencilBtn = this.makeButton('Pencil (P)', ICON_PENCIL)
         this.pencilBtn.addEventListener('click', () => this.onTogglePencil?.())
 
-        this.eraserBtn = this.makeButton(
-            'Eraser (Shift+E)',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M2.5 10.5L7 5.5H17.5V15.5H7L2.5 10.5z"/>
-                <path d="M9.5 5.5V15.5"/>
-            </svg>`
-        )
+        this.eraserBtn = this.makeButton('Eraser (Shift+E)', ICON_ERASER)
         this.eraserBtn.addEventListener('click', () => this.onToggleEraser?.())
 
         this.addButtons = [
@@ -323,13 +259,7 @@ export class AddBar {
         const settingsDivider = document.createElement('div')
         settingsDivider.className = 'add-bar-divider'
 
-        const settingsBtn = this.makeButton(
-            'Settings',
-            `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M8.34 1.804A1 1 0 0 1 9.32 1h1.36a1 1 0 0 1 .98.804l.295 1.473c.497.144.971.342 1.419.588l1.213-.821a1 1 0 0 1 1.273.146l.961.96a1 1 0 0 1 .146 1.274l-.82 1.214c.247.448.445.921.588 1.419l1.473.294a1 1 0 0 1 .804.98v1.361a1 1 0 0 1-.804.98l-1.473.295a6.95 6.95 0 0 1-.588 1.419l.82 1.213a1 1 0 0 1-.146 1.274l-.96.96a1 1 0 0 1-1.274.146l-1.213-.82a6.95 6.95 0 0 1-1.419.588l-.294 1.473a1 1 0 0 1-.98.804H8.68a1 1 0 0 1-.98-.804l-.295-1.473a6.957 6.957 0 0 1-1.419-.588l-1.213.821a1 1 0 0 1-1.273-.146l-.961-.96a1 1 0 0 1-.146-1.274l.82-1.214a6.957 6.957 0 0 1-.588-1.419L1.804 11.3A1 1 0 0 1 1 10.32V8.96a1 1 0 0 1 .804-.98l1.473-.295c.144-.497.342-.971.588-1.419l-.82-1.213a1 1 0 0 1 .146-1.273l.96-.961a1 1 0 0 1 1.274-.146l1.213.82c.448-.247.921-.445 1.419-.588L8.34 1.804Z"/>
-                <circle cx="10" cy="10" r="3"/>
-            </svg>`
-        )
+        const settingsBtn = this.makeButton('Settings', ICON_SETTINGS)
         settingsBtn.classList.add('settings-btn')
         settingsBtn.addEventListener('click', () => this.onSettingsOpen?.())
 
@@ -385,7 +315,7 @@ export class AddBar {
     setMode(mode: BoardMode) {
         const def = MODES.find((m) => m.mode === mode)!
 
-        this.modeTriggerBtn.innerHTML = `${def.icon}${CHEVRON}`
+        this.modeTriggerBtn.innerHTML = `${def.icon}${ICON_CHEVRON_DOWN}`
         this.modeTriggerBtn.title = def.label
         this.modeTriggerBtn.classList.toggle('is-active', mode !== 'edit')
 

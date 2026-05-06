@@ -23,6 +23,7 @@ import {
     formatBinding,
     bindingsEqual,
 } from '../lib/keybindings'
+import { ICON_CLOSE, ICON_RESET } from '../lib/icons'
 
 type PageName = 'appearance' | 'keybindings' | 'about'
 type Slot = 'primary' | 'secondary'
@@ -158,7 +159,7 @@ export class SettingsPanel {
         const closeBtn = document.createElement('button')
         closeBtn.className = 'settings-close-btn'
         closeBtn.title = 'Close settings (Escape)'
-        closeBtn.innerHTML = `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>`
+        closeBtn.innerHTML = ICON_CLOSE
         closeBtn.addEventListener('click', () => this.close())
 
         const appearancePage = this.buildAppearancePage()
@@ -369,7 +370,7 @@ export class SettingsPanel {
         const secondaryClear = document.createElement('button')
         secondaryClear.className = 'keybinding-clear-sec'
         secondaryClear.title = 'Remove second shortcut'
-        secondaryClear.innerHTML = `<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 2l6 6M8 2L2 8"/></svg>`
+        secondaryClear.innerHTML = ICON_CLOSE
         secondaryClear.addEventListener('click', () => {
             if (this.captureState?.action === action && this.captureState.slot === 'secondary') {
                 this.cancelCapture()
@@ -380,7 +381,7 @@ export class SettingsPanel {
         const resetBtn = document.createElement('button')
         resetBtn.className = 'keybinding-aux-btn'
         resetBtn.title = 'Reset to default'
-        resetBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8A5 5 0 1 0 5.5 3.5"/><polyline points="3 3.5 3 8 7.5 8"/></svg>`
+        resetBtn.innerHTML = ICON_RESET
         resetBtn.addEventListener('click', () => {
             if (this.captureState?.action === action && this.captureState.slot === 'primary')
                 this.cancelCapture()

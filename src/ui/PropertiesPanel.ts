@@ -8,6 +8,7 @@ import { BoardObject, PropertyField } from '../board/BoardObject'
 import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
 import { ColorPicker } from './ColorPicker'
+import { ICON_CONTRAST } from '../lib/icons'
 
 // Evaluates an expression like "+5", "-10", "*2", "/3", or a plain number against
 // a current value. Returns NaN when the input cannot be parsed.
@@ -461,7 +462,7 @@ export class PropertiesPanel {
                     const themeBtn = document.createElement('button')
                     themeBtn.className = 'prop-color-theme-btn'
                     themeBtn.title = 'Set to theme background'
-                    themeBtn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2Zm0 1.5A4.5 4.5 0 0 1 8 12V3.5Z"/></svg>`
+                    themeBtn.innerHTML = ICON_CONTRAST
                     themeBtn.addEventListener('click', () => {
                         const color = getComputedStyle(document.documentElement)
                             .getPropertyValue('--color-surface')

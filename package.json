@@ -35,7 +35,8 @@
     "@tiptap/extension-underline": "^3.20.5",
     "@tiptap/pm": "^3.20.5",
     "@tiptap/starter-kit": "^3.20.5",
-    "dexie": "^4.3.0"
+    "dexie": "^4.3.0",
+    "lucide": "^1.14.0"
   },
   "engines": {
     "node": ">=22"
