@@ -19,6 +19,7 @@ import { ZoomWidget } from './ui/ZoomWidget'
 import {
     db,
     type PersistedBlock,
+    type GroupRecord,
     SCHEMA_VERSION,
     MIN_SUPPORTED_VERSION,
     migrateBlocks,
@@ -40,6 +41,11 @@ import {
 } from './lib/keybindings'
 
 type BlockSnapshot = PersistedBlock
+
+interface HistoryEntry {
+    blocks: BlockSnapshot[]
+    groups: GroupRecord[]
+}
 
 const app = document.getElementById('app')!
 
@@ -94,8 +100,9 @@ app.appendChild(zoomWidget.el)
 
 const blocks: BoardObject[] = []
 const selectedBlocks = new Set<BoardObject>()
-const history: BlockSnapshot[][] = []
-const future: BlockSnapshot[][] = []
+const groups = new Map<string, GroupRecord>()
+const history: HistoryEntry[] = []
+const future: HistoryEntry[] = []
 const clipboard: BlockSnapshot[] = []
 let pasteCount = 0
 // Tracks whether a property-change burst is in progress to avoid duplicate history entries.
@@ -200,6 +207,7 @@ async function saveBoard() {
         id: 'default',
         schemaVersion: SCHEMA_VERSION,
         blocks: persistedBlocks,
+        groups: [...groups.values()],
         panX,
         panY,
         zoom,
@@ -222,6 +230,8 @@ async function loadBoard(): Promise<boolean> {
     canvasBoard.setBackground(record.canvasBackground ?? '')
     boardName = record.boardName ?? 'Untitled board'
     layersPanel.setName(boardName)
+    groups.clear()
+    for (const g of record.groups ?? []) groups.set(g.id, g)
     for (const snap of migrateBlocks(record.blocks, record.schemaVersion)) {
         if (snap.type === 'image' && snap.data.imageBlob) {
             addBlock(
@@ -247,8 +257,12 @@ function snapshotBlock(block: BoardObject): BlockSnapshot {
     throw new Error('Unknown block type')
 }
 
+function snapshotGroups(): GroupRecord[] {
+    return [...groups.values()].map((g) => ({ ...g }))
+}
+
 function pushHistory() {
-    history.push(blocks.map(snapshotBlock))
+    history.push({ blocks: blocks.map(snapshotBlock), groups: snapshotGroups() })
     future.length = 0
     syncHistoryState()
 }
@@ -278,23 +292,32 @@ function blockFromSnapshot(snap: BlockSnapshot): BoardObject {
     }
 }
 
+function restoreGroups(snapshotted: GroupRecord[]) {
+    groups.clear()
+    for (const g of snapshotted) groups.set(g.id, g)
+}
+
 function undo() {
-    const state = history.pop()
-    if (!state) return
-    future.push(blocks.map(snapshotBlock))
+    const entry = history.pop()
+    if (!entry) return
+    future.push({ blocks: blocks.map(snapshotBlock), groups: snapshotGroups() })
     for (const b of [...blocks]) removeBlock(b)
-    for (const snap of state) addBlock(blockFromSnapshot(snap))
+    restoreGroups(entry.groups)
+    for (const snap of entry.blocks) addBlock(blockFromSnapshot(snap))
+    layersPanel.refresh(blocks, selectedBlocks, groups)
     selectionBox.setBlocks([])
     syncHistoryState()
     scheduleSave()
 }
 
 function redo() {
-    const state = future.pop()
-    if (!state) return
-    history.push(blocks.map(snapshotBlock))
+    const entry = future.pop()
+    if (!entry) return
+    history.push({ blocks: blocks.map(snapshotBlock), groups: snapshotGroups() })
     for (const b of [...blocks]) removeBlock(b)
-    for (const snap of state) addBlock(blockFromSnapshot(snap))
+    restoreGroups(entry.groups)
+    for (const snap of entry.blocks) addBlock(blockFromSnapshot(snap))
+    layersPanel.refresh(blocks, selectedBlocks, groups)
     selectionBox.setBlocks([])
     syncHistoryState()
     scheduleSave()
@@ -316,7 +339,23 @@ function paste() {
     selectedBlocks.forEach((b) => b.markDeselected())
     selectedBlocks.clear()
 
+    // Remap group IDs so pasted blocks form new groups mirroring the originals.
+    const groupRemap = new Map<string, string>()
     for (const snap of clipboard) {
+        const gid = snap.data.groupId
+        if (gid && !groupRemap.has(gid)) {
+            const newId = crypto.randomUUID()
+            const source = groups.get(gid)
+            groups.set(newId, {
+                id: newId,
+                name: source ? source.name : `Group ${groups.size + 1}`,
+            })
+            groupRemap.set(gid, newId)
+        }
+    }
+
+    for (const snap of clipboard) {
+        const newGroupId = snap.data.groupId ? groupRemap.get(snap.data.groupId) : undefined
         let newSnap: BlockSnapshot
         if (snap.type === 'line') {
             newSnap = {
@@ -328,6 +367,7 @@ function paste() {
                     y1: snap.data.y1 + offset,
                     x2: snap.data.x2 + offset,
                     y2: snap.data.y2 + offset,
+                    groupId: newGroupId,
                 },
             }
         } else if (snap.type === 'image') {
@@ -342,6 +382,7 @@ function paste() {
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
                     src,
+                    groupId: newGroupId,
                 },
             }
         } else if (snap.type === 'text') {
@@ -352,6 +393,7 @@ function paste() {
                     id: crypto.randomUUID(),
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
+                    groupId: newGroupId,
                 },
             }
         } else if (snap.type === 'path') {
@@ -362,6 +404,7 @@ function paste() {
                     id: crypto.randomUUID(),
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
+                    groupId: newGroupId,
                 },
             }
         } else if (snap.type === 'note') {
@@ -372,6 +415,7 @@ function paste() {
                     id: crypto.randomUUID(),
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
+                    groupId: newGroupId,
                 },
             }
         } else {
@@ -382,6 +426,7 @@ function paste() {
                     id: crypto.randomUUID(),
                     x: snap.data.x + offset,
                     y: snap.data.y + offset,
+                    groupId: newGroupId,
                 },
             }
         }
@@ -517,6 +562,29 @@ function addBlock(block: BoardObject) {
         selectionBox.update()
     }
     block.onSelect = (obj, e) => {
+        // Group-aware selection: first click on a grouped block selects all members.
+        // Second click (when the whole group is already selected) drills into the individual block.
+        if (!e.ctrlKey && obj.groupId) {
+            const groupMembers = blocks.filter(
+                (b) => b.groupId === obj.groupId && b.visible && !b.locked
+            )
+            const groupFullySelected =
+                groupMembers.length > 0 && groupMembers.every((b) => selectedBlocks.has(b))
+            if (!groupFullySelected) {
+                selectedBlocks.forEach((b) => b.markDeselected())
+                selectedBlocks.clear()
+                for (const b of groupMembers) {
+                    selectedBlocks.add(b)
+                    b.markSelected()
+                }
+                if (selectedBlocks.size === 1) panel.show([...selectedBlocks][0])
+                else panel.showMultiple([...selectedBlocks])
+                selectionBox.setBlocks([...selectedBlocks])
+                layersPanel.notifySelectionChanged(selectedBlocks)
+                return
+            }
+            // Group already fully selected — fall through to drill-in to this block.
+        }
         if (e.ctrlKey) {
             selectedBlocks.add(obj)
             // Remove handles from all — no handles in multi-selection
@@ -567,7 +635,7 @@ function addBlock(block: BoardObject) {
         }
     }
 
-    layersPanel.refresh(blocks, selectedBlocks)
+    layersPanel.refresh(blocks, selectedBlocks, groups)
 }
 
 function removeBlock(block: BoardObject) {
@@ -577,7 +645,40 @@ function removeBlock(block: BoardObject) {
     selectedBlocks.delete(block)
     block.destroy()
     if (selectedBlocks.size === 0) panel.show(canvasBoard)
-    layersPanel.refresh(blocks, selectedBlocks)
+    layersPanel.refresh(blocks, selectedBlocks, groups)
+}
+
+function cleanupEmptyGroups() {
+    const usedIds = new Set(blocks.filter((b) => b.groupId).map((b) => b.groupId!))
+    for (const id of groups.keys()) {
+        if (!usedIds.has(id)) groups.delete(id)
+    }
+}
+
+function groupSelected() {
+    if (selectedBlocks.size < 2) return
+    pushHistory()
+    const id = crypto.randomUUID()
+    const name = `Group ${groups.size + 1}`
+    groups.set(id, { id, name })
+    for (const b of selectedBlocks) b.groupId = id
+    layersPanel.refresh(blocks, selectedBlocks, groups)
+    scheduleSave()
+}
+
+function ungroupSelected() {
+    const groupIds = new Set<string>()
+    for (const b of selectedBlocks) {
+        if (b.groupId) groupIds.add(b.groupId)
+    }
+    if (groupIds.size === 0) return
+    pushHistory()
+    for (const b of blocks) {
+        if (b.groupId && groupIds.has(b.groupId)) b.groupId = undefined
+    }
+    for (const id of groupIds) groups.delete(id)
+    layersPanel.refresh(blocks, selectedBlocks, groups)
+    scheduleSave()
 }
 
 function deleteSelected() {
@@ -586,6 +687,8 @@ function deleteSelected() {
     const toDelete = [...selectedBlocks]
     toDelete.forEach((b) => removeBlock(b))
     selectionBox.setBlocks([])
+    cleanupEmptyGroups()
+    layersPanel.refresh(blocks, selectedBlocks, groups)
     scheduleSave()
 }
 
@@ -601,6 +704,28 @@ layersPanel.onSelectBlock = (block) => {
     panel.show(block)
     selectionBox.setBlocks([block])
     layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+layersPanel.onGroupSelect = (groupId) => {
+    const members = blocks.filter((b) => b.groupId === groupId && b.visible && !b.locked)
+    selectedBlocks.forEach((b) => b.markDeselected())
+    selectedBlocks.clear()
+    for (const b of members) {
+        selectedBlocks.add(b)
+        b.markSelected()
+    }
+    if (members.length === 1) panel.show(members[0])
+    else if (members.length > 1) panel.showMultiple(members)
+    else panel.show(canvasBoard)
+    selectionBox.setBlocks([...selectedBlocks])
+    layersPanel.notifySelectionChanged(selectedBlocks)
+}
+
+layersPanel.onRenameGroup = (groupId, name) => {
+    const g = groups.get(groupId)
+    if (!g) return
+    g.name = name
+    scheduleSave()
 }
 
 layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
@@ -622,7 +747,7 @@ layersPanel.onReorder = (fromIdx, targetIdx, edge) => {
     blocks.forEach((b) => {
         if (b instanceof NoteBlock) b.syncLayerOrder()
     })
-    layersPanel.refresh(blocks, selectedBlocks)
+    layersPanel.refresh(blocks, selectedBlocks, groups)
     scheduleSave()
 }
 
@@ -970,6 +1095,8 @@ document.addEventListener('keydown', (e) => {
         [keybindings.delete, () => deleteSelected()],
         [keybindings.undo, () => undo()],
         [keybindings.redo, () => redo()],
+        [keybindings.group, () => groupSelected()],
+        [keybindings.ungroup, () => ungroupSelected()],
         [keybindings.pencilToggle, () => setPencilActive(!pencilActive)],
         [keybindings.eraserToggle, () => setEraserActive(!eraserActive)],
         [keybindings.switchToEdit, () => addBar.setMode('edit')],
@@ -1495,6 +1622,7 @@ async function newBoard() {
     panel.show(canvasBoard)
     history.length = 0
     future.length = 0
+    groups.clear()
     syncHistoryState()
     panX = 0
     panY = 0
@@ -1533,6 +1661,7 @@ async function exportBoard() {
         panX,
         panY,
         zoom,
+        groups: [...groups.values()],
         blocks: blockData,
     }
     const json = JSON.stringify(data, null, 2)
@@ -1579,6 +1708,8 @@ function importBoard() {
             panel.show(canvasBoard)
             history.length = 0
             future.length = 0
+            groups.clear()
+            for (const g of data.groups ?? []) groups.set(g.id, g)
             syncHistoryState()
             panX = data.panX ?? 0
             panY = data.panY ?? 0
@@ -1630,6 +1761,7 @@ async function loadDemo() {
     panel.show(canvasBoard)
     history.length = 0
     future.length = 0
+    groups.clear()
     syncHistoryState()
     boardName = 'Untitled board'
     layersPanel.setName(boardName)

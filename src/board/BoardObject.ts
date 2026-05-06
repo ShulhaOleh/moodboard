@@ -72,6 +72,8 @@ export interface BoardObject {
     // Fired when the block's appearance fields change values without a full re-render — e.g.
     // cursor moves inside a text editor so the panel should reflect the new active marks.
     onAppearanceChange: (() => void) | null
+    // ID of the group this block belongs to, or undefined if ungrouped.
+    groupId: string | undefined
     // Human-readable label shown in the Layers panel.
     readonly layerLabel: string
     // User-editable name shown in the layers panel and properties panel.

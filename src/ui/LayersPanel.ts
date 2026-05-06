@@ -2,16 +2,36 @@
 // Docks to the left edge of the viewport. Behavior mirrors PropertiesPanel (same dock/undock/collapse/resize).
 
 import { BoardObject } from '../board/BoardObject'
-import { ICON_EYE, ICON_EYE_OFF, ICON_LOCK_CLOSED, ICON_LOCK_OPEN } from '../lib/icons'
+import {
+    ICON_EYE,
+    ICON_EYE_OFF,
+    ICON_LOCK_CLOSED,
+    ICON_LOCK_OPEN,
+    ICON_CHEVRON_RIGHT,
+} from '../lib/icons'
+import type { GroupRecord } from '../lib/db'
+
+type BlockItem = { kind: 'block'; block: BoardObject; arrayIndex: number }
+type GroupItem = {
+    kind: 'group'
+    groupId: string
+    group: GroupRecord
+    members: BlockItem[]
+}
+type DisplayItem = BlockItem | GroupItem
 
 export class LayersPanel {
     readonly el: HTMLElement
     // Called when a layer row is clicked — main.ts performs the actual selection.
     onSelectBlock: ((block: BoardObject) => void) | null = null
+    // Called when a group header row is clicked — main.ts selects all members.
+    onGroupSelect: ((groupId: string) => void) | null = null
     // Called when the user reorders rows via drag-and-drop.
     onReorder: ((fromIdx: number, targetIdx: number, edge: 'top' | 'bottom') => void) | null = null
     // Called when the user renames the board via the name input.
     onNameChange: ((name: string) => void) | null = null
+    // Called when the user renames a group via inline edit.
+    onRenameGroup: ((groupId: string, name: string) => void) | null = null
 
     // Called whenever the panel docks or undocks — main.ts uses it to reposition overlapping widgets.
     onDockChange: ((docked: boolean) => void) | null = null
@@ -23,6 +43,8 @@ export class LayersPanel {
     private expandBtnEl: HTMLButtonElement
     private snapPreviewEl: HTMLElement
     private cachedBlocks: BoardObject[] = []
+    private cachedGroups: Map<string, GroupRecord> = new Map()
+    private collapsedGroups = new Set<string>()
     private dragSrcIdx: number | null = null
     private container: HTMLElement
 
@@ -76,6 +98,17 @@ export class LayersPanel {
 
         document.addEventListener('keydown', (e) => {
             if (!this.isRenameKey(e)) return
+            // Check for a selected group header first.
+            const groupHeader = this.listEl.querySelector<HTMLElement>(
+                '.layer-group-header.is-selected'
+            )
+            if (groupHeader) {
+                e.preventDefault()
+                const gid = groupHeader.dataset.groupId!
+                const g = this.cachedGroups.get(gid)
+                if (g) this.startGroupInlineEdit(groupHeader, gid, g)
+                return
+            }
             const selected = this.listEl.querySelector<HTMLLIElement>('.layer-row.is-selected')
             if (!selected) return
             e.preventDefault()
@@ -162,25 +195,219 @@ export class LayersPanel {
     }
 
     // Rebuilds the full layer list. Call after any structural change (add, remove, reorder, undo).
-    refresh(blocks: BoardObject[], selectedBlocks: Set<BoardObject>) {
-        // Disconnect old onLayerChange callbacks before discarding the rows.
+    refresh(
+        blocks: BoardObject[],
+        selectedBlocks: Set<BoardObject>,
+        groups?: Map<string, GroupRecord>
+    ) {
         for (const b of this.cachedBlocks) b.onLayerChange = null
         this.cachedBlocks = [...blocks]
+        this.cachedGroups = groups ?? new Map()
         this.listEl.innerHTML = ''
-        // Render top-to-bottom as front-to-back (last array element = frontmost).
-        for (let i = blocks.length - 1; i >= 0; i--) {
-            this.listEl.appendChild(this.buildRow(blocks[i], i, selectedBlocks))
+        for (const item of this.buildDisplayItems()) {
+            if (item.kind === 'group') {
+                this.listEl.appendChild(this.buildGroupItem(item, selectedBlocks))
+            } else {
+                this.listEl.appendChild(this.buildRow(item.block, item.arrayIndex, selectedBlocks))
+            }
         }
     }
 
-    // Lightweight selection sync — toggles the is-selected class without rebuilding rows.
+    // Lightweight selection sync — updates is-selected without rebuilding rows.
     notifySelectionChanged(selectedBlocks: Set<BoardObject>) {
-        const rows = this.listEl.querySelectorAll<HTMLElement>('.layer-row')
-        rows.forEach((row) => {
+        this.listEl.querySelectorAll<HTMLElement>('.layer-row').forEach((row) => {
             const idx = Number(row.dataset.arrayIndex)
             const block = this.cachedBlocks[idx]
             if (block) row.classList.toggle('is-selected', selectedBlocks.has(block))
         })
+        this.listEl.querySelectorAll<HTMLElement>('.layer-group-header').forEach((header) => {
+            const gid = header.dataset.groupId
+            if (!gid) return
+            const members = this.cachedBlocks.filter((b) => b.groupId === gid)
+            const allSelected = members.length > 0 && members.every((b) => selectedBlocks.has(b))
+            header.classList.toggle('is-selected', allSelected)
+        })
+    }
+
+    // Builds a flat-to-tree display list from the current blocks array.
+    // Groups appear at the z-position of their frontmost member; members retain z-order within the group.
+    private buildDisplayItems(): DisplayItem[] {
+        const items: DisplayItem[] = []
+        const seen = new Map<string, GroupItem>()
+        for (let i = this.cachedBlocks.length - 1; i >= 0; i--) {
+            const block = this.cachedBlocks[i]
+            const gid = block.groupId
+            const group = gid ? this.cachedGroups.get(gid) : undefined
+            if (gid && group) {
+                let groupItem = seen.get(gid)
+                if (!groupItem) {
+                    groupItem = { kind: 'group', groupId: gid, group, members: [] }
+                    seen.set(gid, groupItem)
+                    items.push(groupItem)
+                }
+                groupItem.members.push({ kind: 'block', block, arrayIndex: i })
+            } else {
+                items.push({ kind: 'block', block, arrayIndex: i })
+            }
+        }
+        return items
+    }
+
+    private buildGroupItem(item: GroupItem, selectedBlocks: Set<BoardObject>): HTMLLIElement {
+        const li = document.createElement('li')
+        li.className = 'layer-group-item'
+
+        const allSelected =
+            item.members.length > 0 && item.members.every((m) => selectedBlocks.has(m.block))
+        const isCollapsed = this.collapsedGroups.has(item.groupId)
+
+        // ── Group header row ──────────────────────────────────────────────────
+        const header = document.createElement('div')
+        header.className = 'layer-group-header'
+        if (allSelected) header.classList.add('is-selected')
+        header.dataset.groupId = item.groupId
+
+        const chevron = document.createElement('button')
+        chevron.className = 'layer-group-chevron'
+        chevron.title = isCollapsed ? 'Expand group' : 'Collapse group'
+        chevron.innerHTML = ICON_CHEVRON_RIGHT
+        if (!isCollapsed) chevron.classList.add('is-open')
+        chevron.addEventListener('click', (e) => {
+            e.stopPropagation()
+            if (this.collapsedGroups.has(item.groupId)) {
+                this.collapsedGroups.delete(item.groupId)
+                chevron.classList.add('is-open')
+                chevron.title = 'Collapse group'
+                children.style.display = ''
+            } else {
+                this.collapsedGroups.add(item.groupId)
+                chevron.classList.remove('is-open')
+                chevron.title = 'Expand group'
+                children.style.display = 'none'
+            }
+        })
+
+        const label = document.createElement('span')
+        label.className = 'layer-label'
+        label.textContent = item.group.name
+
+        const visBtn = this.makeGroupVisBtn(item)
+        const lockBtn = this.makeGroupLockBtn(item)
+
+        header.append(chevron, label, visBtn, lockBtn)
+
+        label.addEventListener('dblclick', (e) => {
+            e.stopPropagation()
+            this.startGroupInlineEdit(header, item.groupId, item.group)
+        })
+
+        header.addEventListener('mousedown', (e) => {
+            if (
+                (e.target as HTMLElement).closest(
+                    '.layer-vis-btn, .layer-lock-btn, .layer-group-chevron'
+                )
+            )
+                return
+            this.onGroupSelect?.(item.groupId)
+        })
+
+        // ── Children container ────────────────────────────────────────────────
+        const children = document.createElement('ul')
+        children.className = 'layer-group-children'
+        if (isCollapsed) children.style.display = 'none'
+        for (const m of item.members) {
+            children.appendChild(this.buildMemberRow(m.block, m.arrayIndex, selectedBlocks))
+        }
+
+        li.append(header, children)
+        return li
+    }
+
+    private makeGroupVisBtn(item: GroupItem): HTMLButtonElement {
+        const allVisible = item.members.every((m) => m.block.visible)
+        const btn = document.createElement('button')
+        btn.className = 'layer-vis-btn'
+        btn.title = 'Toggle group visibility'
+        btn.innerHTML = allVisible ? ICON_EYE : ICON_EYE_OFF
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const next = !item.members.every((m) => m.block.visible)
+            for (const m of item.members) m.block.setVisible(next)
+            btn.innerHTML = next ? ICON_EYE : ICON_EYE_OFF
+        })
+        return btn
+    }
+
+    private makeGroupLockBtn(item: GroupItem): HTMLButtonElement {
+        const allLocked = item.members.every((m) => m.block.locked)
+        const btn = document.createElement('button')
+        btn.className = 'layer-lock-btn'
+        btn.title = 'Toggle group lock'
+        btn.innerHTML = allLocked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            const next = !item.members.every((m) => m.block.locked)
+            for (const m of item.members) m.block.setLocked(next)
+            btn.innerHTML = next ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
+        })
+        return btn
+    }
+
+    private buildMemberRow(
+        block: BoardObject,
+        arrayIndex: number,
+        selectedBlocks: Set<BoardObject>
+    ): HTMLLIElement {
+        const row = document.createElement('li')
+        row.className = 'layer-row layer-member-row'
+        row.dataset.arrayIndex = String(arrayIndex)
+        if (selectedBlocks.has(block)) row.classList.add('is-selected')
+        if (!block.visible) row.classList.add('is-hidden')
+        if (block.locked) row.classList.add('is-locked')
+
+        const label = document.createElement('span')
+        label.className = 'layer-label'
+        label.textContent = block.name
+
+        const visBtn = document.createElement('button')
+        visBtn.className = 'layer-vis-btn'
+        visBtn.title = 'Toggle visibility'
+        visBtn.innerHTML = block.visible ? ICON_EYE : ICON_EYE_OFF
+        visBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            block.setVisible(!block.visible)
+        })
+
+        const lockBtn = document.createElement('button')
+        lockBtn.className = 'layer-lock-btn'
+        lockBtn.title = 'Toggle lock'
+        lockBtn.innerHTML = block.locked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
+        lockBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            block.setLocked(!block.locked)
+        })
+
+        row.append(label, visBtn, lockBtn)
+
+        block.onLayerChange = () => {
+            row.classList.toggle('is-hidden', !block.visible)
+            row.classList.toggle('is-locked', block.locked)
+            visBtn.innerHTML = block.visible ? ICON_EYE : ICON_EYE_OFF
+            lockBtn.innerHTML = block.locked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
+            label.textContent = block.name
+        }
+
+        label.addEventListener('dblclick', (e) => {
+            e.stopPropagation()
+            this.startInlineEdit(row, block)
+        })
+
+        row.addEventListener('mousedown', (e) => {
+            if ((e.target as HTMLElement).closest('.layer-vis-btn, .layer-lock-btn')) return
+            this.onSelectBlock?.(block)
+        })
+
+        return row
     }
 
     private buildRow(
@@ -225,7 +452,6 @@ export class LayersPanel {
 
         row.append(grip, label, visBtn, lockBtn)
 
-        // Keep row in sync when visibility/lock/name changes without a full refresh.
         block.onLayerChange = () => {
             row.classList.toggle('is-hidden', !block.visible)
             row.classList.toggle('is-locked', block.locked)
@@ -239,7 +465,6 @@ export class LayersPanel {
             this.startInlineEdit(row, block)
         })
 
-        // Selecting a layer row.
         row.addEventListener('mousedown', (e) => {
             if ((e.target as HTMLElement).closest('.layer-vis-btn, .layer-lock-btn')) return
             this.onSelectBlock?.(block)
@@ -249,7 +474,6 @@ export class LayersPanel {
         row.addEventListener('dragstart', (e) => {
             this.dragSrcIdx = arrayIndex
             e.dataTransfer!.effectAllowed = 'move'
-            // Defer the opacity class so the ghost captures the normal state.
             requestAnimationFrame(() => row.classList.add('is-dragging'))
         })
 
@@ -287,6 +511,43 @@ export class LayersPanel {
 
     setName(name: string) {
         this.nameInput.value = name
+    }
+
+    private startGroupInlineEdit(header: HTMLElement, groupId: string, group: GroupRecord) {
+        const label = header.querySelector<HTMLElement>('.layer-label')!
+        const input = document.createElement('input')
+        input.className = 'layer-name-input'
+        input.value = group.name
+        label.replaceWith(input)
+        input.focus()
+        input.select()
+
+        let committed = false
+        const commit = () => {
+            if (committed) return
+            committed = true
+            const val = input.value.trim()
+            if (val && val !== group.name) this.onRenameGroup?.(groupId, val)
+            input.replaceWith(label)
+            label.textContent = this.cachedGroups.get(groupId)?.name ?? group.name
+        }
+        const cancel = () => {
+            if (committed) return
+            committed = true
+            input.replaceWith(label)
+        }
+        input.addEventListener('blur', commit)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault()
+                input.blur()
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault()
+                input.removeEventListener('blur', commit)
+                cancel()
+            }
+        })
     }
 
     private startInlineEdit(row: HTMLLIElement, block: BoardObject) {

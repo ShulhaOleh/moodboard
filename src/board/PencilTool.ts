@@ -39,6 +39,7 @@ export class PencilTool implements BoardObject {
     readonly omitCommonProps = true as const
     readonly hideDelete = true as const
     readonly hideName = true as const
+    readonly groupId = undefined
     onChange = null
     onSelect = null
     onDeselect = null

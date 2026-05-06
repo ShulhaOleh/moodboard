@@ -23,10 +23,16 @@ export type PersistedBlock =
     | { type: 'path'; data: PathBlockData }
     | { type: 'note'; data: NoteBlockData }
 
+export interface GroupRecord {
+    id: string
+    name: string
+}
+
 export interface BoardRecord {
     id: string
     schemaVersion: number
     blocks: PersistedBlock[]
+    groups?: GroupRecord[]
     panX: number
     panY: number
     zoom: number
@@ -34,7 +40,7 @@ export interface BoardRecord {
     boardName?: string
 }
 
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 export const MIN_SUPPORTED_VERSION = 1
 
 // One entry per version that requires a migration. Each function receives the

@@ -242,6 +242,104 @@
     box-shadow: 0 0 0 2px var(--color-accent-a12);
 }
 
+/* ── Group items ─────────────────────────────────────────────────────────── */
+
+.layer-group-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.layer-group-header {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px 4px 2px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    user-select: none;
+}
+
+.layer-group-header:hover {
+    background: var(--color-surface-sunken);
+}
+
+.layer-group-header.is-selected {
+    background: var(--color-accent-subtle);
+    color: var(--color-accent-hover);
+}
+
+.layer-group-chevron {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--color-text-faint);
+    border-radius: 3px;
+    transition: transform 150ms ease;
+}
+
+.layer-group-chevron svg {
+    width: 12px;
+    height: 12px;
+}
+
+.layer-group-chevron.is-open {
+    transform: rotate(90deg);
+}
+
+.layer-group-chevron:hover {
+    color: var(--color-text-secondary);
+    background: var(--color-accent-a12);
+}
+
+.layer-group-children {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2px 12px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Vertical connector line */
+.layer-group-children::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    top: 0;
+    bottom: 4px;
+    width: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+}
+
+/* Member rows — indented, with a horizontal connector tick */
+.layer-member-row {
+    padding-left: 20px !important;
+    position: relative;
+}
+
+.layer-member-row::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    width: 8px;
+    height: 1px;
+    background: var(--color-border);
+    pointer-events: none;
+}
+
 .layer-vis-btn,
 .layer-lock-btn {
     flex-shrink: 0;

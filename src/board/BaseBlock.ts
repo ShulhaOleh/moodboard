@@ -18,6 +18,7 @@ export abstract class BaseBlock implements BoardObject {
     getViewport: (() => { panX: number; panY: number; zoom: number }) | null = null
     onResize: (() => void) | null = null
     abstract readonly layerLabel: string
+    groupId: string | undefined = undefined
     visible = true
     locked = false
     name: string

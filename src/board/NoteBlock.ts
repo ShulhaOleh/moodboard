@@ -34,6 +34,7 @@ export interface NoteBlockData {
     shadowY: number
     shape: NoteShape
     name?: string
+    groupId?: string
 }
 
 export const NOTE_FOLD_SIZE = 28
@@ -376,7 +377,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
     }
 
     getData(): Readonly<NoteBlockData> {
-        return { ...this.data }
+        return { ...this.data, groupId: this.groupId }
     }
 
     override destroy() {
