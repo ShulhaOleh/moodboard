@@ -21,7 +21,7 @@ Vanilla TypeScript — no UI framework. Entry point is `src/main.ts`, which moun
 
 **Key dependencies:**
 - **TipTap** (`@tiptap/core`, `starter-kit`, `extension-text-style`, `extension-color`, `extension-underline`, `extension-text-align`) — rich text editing inside text blocks. Content is stored as HTML strings.
-- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`. Schema is versioned via `SCHEMA_VERSION` in `src/lib/db.ts` (currently 3) — bump it and add a migration branch in `loadBoard()` in `main.ts` whenever `PersistedBlock` changes. `loadBoard()` currently accepts versions 1–3; add new accepted versions alongside the bump.
+- **Dexie** — IndexedDB wrapper for local persistence. Board state is saved under the key `'default'` and loaded on startup; `scheduleSave()` debounces writes (1500 ms), `flushSave()` fires synchronously on `visibilitychange`/`pagehide`/`beforeunload`. Schema is versioned via `SCHEMA_VERSION` in `src/lib/db.ts` (currently 4) — bump it and add a migration branch in `loadBoard()` in `main.ts` whenever `PersistedBlock` changes. `loadBoard()` currently accepts versions 1–4; add new accepted versions alongside the bump.
 - **Tailwind CSS v4** — integrated via `@tailwindcss/vite` plugin, imported in `src/style.css`.
 
 **Rendering:** All board objects live in a single HTML `#overlay` div appended to `#app`. The overlay receives a CSS `transform: translate(panX, panY) scale(zoom)` for pan and zoom. Block positions are stored in board space (relative to the overlay origin at zoom=1), so new block placement in `main.ts` must account for both pan and zoom: `(clientX - panX) / zoom`. Scroll pans; Shift+scroll pans horizontally; Ctrl+scroll zooms. A zoom widget in the bottom-left mirrors the scroll-wheel zoom — it has `−`/`+` buttons (click or hold to repeat with a 500 ms initial delay), a clickable percentage label that accepts direct numeric input (Enter/Escape to confirm/cancel), and a range slider. Its `left` position is driven by `--layers-panel-offset` CSS variable, updated by `LayersPanel.updateOffset()` whenever the panel docks, undocks, collapses, or resizes.
@@ -105,6 +105,7 @@ src/
     ShapeBlock.ts     # SVG shape block (extends BoxBlock)
     LineBlock.ts      # line/arrow block with two draggable endpoints (extends BaseBlock)
     PathBlock.ts      # freehand path block with smoothing, taper, gradient (extends BoxBlock)
+    NoteBlock.ts      # sticky-note card with auto-height rich text and shape variants (extends BoxBlock)
     pathUtils.ts      # pure geometry: RDP, Catmull-Rom SVG/canvas, outline path builder
   ui/
     AddBar.ts             # top-center toolbar: mode/shape pickers, add buttons, pencil button, eraser button, undo/redo buttons
