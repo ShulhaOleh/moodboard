@@ -1,6 +1,7 @@
 // Draggable, resizable, rotatable geometric shape block rendered as an inline SVG.
 // Supports optional inline text editing via TipTap, activated by double-click.
 
+import { t } from '../translations'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
@@ -69,13 +70,16 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
     }
 
     get layerLabel(): string {
-        const names: Record<string, string> = {
-            rectangle: 'Rectangle',
-            ellipse: 'Ellipse',
-            polygon: 'Polygon',
-            star: 'Star',
+        const keys: Record<
+            string,
+            'shape.rectangle' | 'shape.ellipse' | 'shape.polygon' | 'shape.star'
+        > = {
+            rectangle: 'shape.rectangle',
+            ellipse: 'shape.ellipse',
+            polygon: 'shape.polygon',
+            star: 'shape.star',
         }
-        return names[this.data.shape] ?? 'Shape'
+        return keys[this.data.shape] ? t(keys[this.data.shape]) : 'Shape'
     }
 
     constructor(container: HTMLElement, data: ShapeBlockData) {
@@ -297,18 +301,24 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
 
     getAppearanceFields(): PropertyField[] {
         const fields: PropertyField[] = [
-            { type: 'color', key: 'fill', label: 'Fill', value: this.data.fill, clearable: true },
+            {
+                type: 'color',
+                key: 'fill',
+                label: t('field.fill'),
+                value: this.data.fill,
+                clearable: true,
+            },
             {
                 type: 'color',
                 key: 'stroke',
-                label: 'Stroke',
+                label: t('field.stroke'),
                 value: this.data.stroke,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'strokeWidth',
-                label: 'Stroke W',
+                label: t('field.strokeW'),
                 value: this.data.strokeWidth,
                 min: 0,
                 max: 40,
@@ -320,7 +330,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             fields.push({
                 type: 'number',
                 key: 'borderRadius',
-                label: 'Radius',
+                label: t('field.radius'),
                 value: this.data.borderRadius,
                 min: 0,
                 max: 50,
@@ -331,7 +341,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             fields.push({
                 type: 'number',
                 key: 'sides',
-                label: 'Sides',
+                label: t('field.sides'),
                 value: this.data.sides,
                 min: 3,
                 max: 12,
@@ -342,7 +352,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             fields.push({
                 type: 'number',
                 key: 'starPoints',
-                label: 'Points',
+                label: t('field.points'),
                 value: this.data.starPoints,
                 min: 3,
                 max: 12,
@@ -354,24 +364,24 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             {
                 type: 'slider',
                 key: 'opacity',
-                label: 'Opacity',
+                label: t('field.opacity'),
                 value: this.data.opacity,
                 min: 0,
                 max: 100,
                 step: 1,
             },
-            { type: 'section', label: 'Shadow' },
+            { type: 'section', label: t('field.shadow') },
             {
                 type: 'color',
                 key: 'shadowColor',
-                label: 'Color',
+                label: t('field.color'),
                 value: this.data.shadowColor,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'shadowX',
-                label: 'Shadow X',
+                label: t('field.shadowX'),
                 value: this.data.shadowX,
                 min: -100,
                 max: 100,
@@ -380,7 +390,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             {
                 type: 'number',
                 key: 'shadowY',
-                label: 'Shadow Y',
+                label: t('field.shadowY'),
                 value: this.data.shadowY,
                 min: -100,
                 max: 100,
@@ -389,7 +399,7 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
             {
                 type: 'slider',
                 key: 'shadowBlur',
-                label: 'Shadow blur',
+                label: t('field.shadowBlur'),
                 value: this.data.shadowBlur,
                 min: 0,
                 max: 80,
@@ -399,12 +409,17 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
 
         if (this.data.text.trim() || this.editing)
             fields.push(
-                { type: 'section', label: 'Text' },
-                { type: 'font', key: 'fontFamily', label: 'Font', value: this.data.fontFamily },
+                { type: 'section', label: t('field.text') },
+                {
+                    type: 'font',
+                    key: 'fontFamily',
+                    label: t('field.font'),
+                    value: this.data.fontFamily,
+                },
                 {
                     type: 'number',
                     key: 'fontSize',
-                    label: 'Font size',
+                    label: t('field.fontSize'),
                     value: this.data.fontSize,
                     min: 8,
                     max: 120,
@@ -413,36 +428,36 @@ export class ShapeBlock extends BoxBlock<ShapeBlockData> {
                 {
                     type: 'select',
                     key: 'textAlign',
-                    label: 'Align H',
+                    label: t('field.alignH'),
                     value: this.data.textAlign,
                     options: [
-                        { value: 'left', label: 'Left' },
-                        { value: 'center', label: 'Center' },
-                        { value: 'right', label: 'Right' },
-                        { value: 'justify', label: 'Justify' },
+                        { value: 'left', label: t('option.left') },
+                        { value: 'center', label: t('option.center') },
+                        { value: 'right', label: t('option.right') },
+                        { value: 'justify', label: t('option.justify') },
                     ],
                 },
                 {
                     type: 'select',
                     key: 'textVerticalAlign',
-                    label: 'Align V',
+                    label: t('field.alignV'),
                     value: this.data.textVerticalAlign,
                     options: [
-                        { value: 'top', label: 'Top' },
-                        { value: 'middle', label: 'Middle' },
-                        { value: 'bottom', label: 'Bottom' },
+                        { value: 'top', label: t('option.top') },
+                        { value: 'middle', label: t('option.middle') },
+                        { value: 'bottom', label: t('option.bottom') },
                     ],
                 },
                 {
                     type: 'color',
                     key: 'textColor',
-                    label: 'Text color',
+                    label: t('field.textColor'),
                     value: this.data.textColor,
                 },
                 {
                     type: 'number',
                     key: 'textPadding',
-                    label: 'Padding',
+                    label: t('field.padding'),
                     value: this.data.textPadding,
                     min: 0,
                     max: 100,

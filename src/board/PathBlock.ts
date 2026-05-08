@@ -3,6 +3,7 @@
 // Extending BoxBlock gives rotation, snap, and SelectionBox resize for free.
 // Supports optional gradient (stroke → strokeEnd) and width tapering at start/end.
 
+import { t } from '../translations'
 import { PropertyField } from './BoardObject'
 import { BoxBlock, type BoxBaseData } from './BoxBlock'
 import { buildSvgPath, buildOutlinePath, type Pt } from './pathUtils'
@@ -184,21 +185,21 @@ export class PathBlock extends BoxBlock<PathBlockData> {
             {
                 type: 'color',
                 key: 'stroke',
-                label: 'Stroke',
+                label: t('field.stroke'),
                 value: this.data.stroke,
                 clearable: true,
             },
             {
                 type: 'color',
                 key: 'strokeEnd',
-                label: 'Stroke end',
+                label: t('field.strokeEnd'),
                 value: this.data.strokeEnd ?? '',
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'strokeWidth',
-                label: 'Stroke W',
+                label: t('field.strokeW'),
                 value: this.data.strokeWidth,
                 min: 1,
                 max: 80,
@@ -207,17 +208,17 @@ export class PathBlock extends BoxBlock<PathBlockData> {
             {
                 type: 'slider',
                 key: 'opacity',
-                label: 'Opacity',
+                label: t('field.opacity'),
                 value: this.data.opacity,
                 min: 0,
                 max: 100,
                 step: 1,
             },
-            { type: 'section', label: 'Path' },
+            { type: 'section', label: t('field.path') },
             {
                 type: 'slider',
                 key: 'smoothing',
-                label: 'Smoothing',
+                label: t('field.smoothing'),
                 value: this.data.smoothing,
                 min: 0,
                 max: 100,
@@ -226,7 +227,7 @@ export class PathBlock extends BoxBlock<PathBlockData> {
             {
                 type: 'slider',
                 key: 'taper',
-                label: 'Taper',
+                label: t('field.taper'),
                 value: this.data.taper ?? 0,
                 min: 0,
                 max: 100,

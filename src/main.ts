@@ -39,6 +39,7 @@ import {
     type ActionBindings,
     type KeybindingMap,
 } from './lib/keybindings'
+import { t, loadSavedLocale, onLocaleChange } from './translations'
 
 type BlockSnapshot = PersistedBlock
 
@@ -56,6 +57,7 @@ if (userSettings.uiFont) {
     loadFont(userSettings.uiFont)
     applyUiFont(userSettings.uiFont)
 }
+loadSavedLocale()
 
 let keybindings: KeybindingMap = loadKeybindings()
 
@@ -89,6 +91,9 @@ settingsPanel.onKeybindingsChange = (updated) => {
     syncModeHints()
 }
 layersPanel.isRenameKey = (e) => matchesAction(e, keybindings.renameLayer)
+onLocaleChange(() => {
+    syncModeHints()
+})
 
 const overlay = document.createElement('div')
 overlay.id = 'overlay'
@@ -119,7 +124,7 @@ let mode: BoardMode = 'edit'
 let panX = 0
 let panY = 0
 let zoom = 1
-let boardName = 'Untitled board'
+let boardName = ''
 
 // Pencil tool state
 let pencilActive = false
@@ -230,7 +235,7 @@ async function loadBoard(): Promise<boolean> {
     applyTransform()
     zoomWidget.sync(zoom)
     canvasBoard.setBackground(record.canvasBackground ?? '')
-    boardName = record.boardName ?? 'Untitled board'
+    boardName = record.boardName ?? t('layers.untitledBoard')
     layersPanel.setName(boardName)
     groups.clear()
     for (const g of record.groups ?? []) groups.set(g.id, g)
@@ -1664,8 +1669,8 @@ addBar.onAddShape = (shape) => {
 
 async function newBoard() {
     if (
-        !(await Dialog.confirm('Clear the board and start fresh? This cannot be undone.', {
-            confirmLabel: 'Clear board',
+        !(await Dialog.confirm(t('dialog.clearBoard'), {
+            confirmLabel: t('dialog.clearBoardConfirm'),
             destructive: true,
         }))
     )
@@ -1683,7 +1688,7 @@ async function newBoard() {
     applyTransform()
     zoomWidget.sync(zoom)
     canvasBoard.setBackground('')
-    boardName = 'Untitled board'
+    boardName = t('layers.untitledBoard')
     layersPanel.setName(boardName)
     void db.boards.delete('default')
 }
@@ -1739,19 +1744,17 @@ function importBoard() {
             try {
                 data = JSON.parse(text)
             } catch {
-                void Dialog.alert('Invalid JSON file.')
+                void Dialog.alert(t('dialog.invalidJson'))
                 return
             }
             if (data.schemaVersion < MIN_SUPPORTED_VERSION || data.schemaVersion > SCHEMA_VERSION) {
-                void Dialog.alert(
-                    `Cannot import: schema version ${data.schemaVersion} is not supported.`
-                )
+                void Dialog.alert(t('dialog.oldSchema'))
                 return
             }
             if (
                 blocks.length > 0 &&
-                !(await Dialog.confirm('Import will overwrite the current board. Continue?', {
-                    confirmLabel: 'Import',
+                !(await Dialog.confirm(t('dialog.importConfirm'), {
+                    confirmLabel: t('dialog.confirm'),
                     destructive: true,
                 }))
             )
@@ -1770,7 +1773,7 @@ function importBoard() {
             applyTransform()
             zoomWidget.sync(zoom)
             canvasBoard.setBackground(data.canvasBackground ?? '')
-            boardName = data.boardName ?? 'Untitled board'
+            boardName = data.boardName ?? t('layers.untitledBoard')
             layersPanel.setName(boardName)
             for (const snap of migrateBlocks(data.blocks ?? [], data.schemaVersion)) {
                 if (
@@ -1803,8 +1806,8 @@ function importBoard() {
 async function loadDemo() {
     if (
         blocks.length > 0 &&
-        !(await Dialog.confirm('Load demo? This will overwrite the current board.', {
-            confirmLabel: 'Load demo',
+        !(await Dialog.confirm(t('dialog.loadDemo'), {
+            confirmLabel: t('dialog.loadDemoConfirm'),
             destructive: true,
         }))
     )
@@ -1816,7 +1819,7 @@ async function loadDemo() {
     future.length = 0
     groups.clear()
     syncHistoryState()
-    boardName = 'Untitled board'
+    boardName = t('layers.untitledBoard')
     layersPanel.setName(boardName)
     addBlock(
         new TextBlock(overlay, {

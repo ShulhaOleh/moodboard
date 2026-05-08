@@ -22,30 +22,64 @@ import {
     ICON_ERASER,
     ICON_SETTINGS,
 } from '../lib/icons'
+import { t, onLocaleChange } from '../translations'
 
 export type BoardMode = 'edit' | 'explore'
 
 export type DrawableShape = 'rectangle' | 'line' | 'arrow' | 'ellipse' | 'polygon' | 'star'
 
-const MODES: { mode: BoardMode; label: string; icon: string }[] = [
-    { mode: 'edit', label: 'Edit', icon: ICON_EDIT_MODE },
-    { mode: 'explore', label: 'Explore', icon: ICON_EXPLORE_MODE },
+const MODES: { mode: BoardMode; icon: string }[] = [
+    { mode: 'edit', icon: ICON_EDIT_MODE },
+    { mode: 'explore', icon: ICON_EXPLORE_MODE },
 ]
 
-const SHAPES: { shape: DrawableShape; label: string; icon: string }[] = [
-    { shape: 'rectangle', label: 'Rectangle', icon: ICON_SHAPE_RECT },
-    { shape: 'line', label: 'Line', icon: ICON_SHAPE_LINE },
-    { shape: 'arrow', label: 'Arrow', icon: ICON_SHAPE_ARROW },
-    { shape: 'ellipse', label: 'Ellipse', icon: ICON_SHAPE_ELLIPSE },
-    { shape: 'polygon', label: 'Polygon', icon: ICON_SHAPE_POLYGON },
-    { shape: 'star', label: 'Star', icon: ICON_SHAPE_STAR },
+const SHAPES: { shape: DrawableShape; icon: string }[] = [
+    { shape: 'rectangle', icon: ICON_SHAPE_RECT },
+    { shape: 'line', icon: ICON_SHAPE_LINE },
+    { shape: 'arrow', icon: ICON_SHAPE_ARROW },
+    { shape: 'ellipse', icon: ICON_SHAPE_ELLIPSE },
+    { shape: 'polygon', icon: ICON_SHAPE_POLYGON },
+    { shape: 'star', icon: ICON_SHAPE_STAR },
 ]
 
-const NOTE_SHAPES: { shape: NoteShape; label: string; icon: string }[] = [
-    { shape: 'rectangle', label: 'Plain', icon: ICON_NOTE_PLAIN },
-    { shape: 'dog-ear', label: 'Dog-ear', icon: ICON_NOTE_DOGEAR },
-    { shape: 'stacked', label: 'Stacked', icon: ICON_NOTE_STACKED },
+const NOTE_SHAPES: { shape: NoteShape; icon: string }[] = [
+    { shape: 'rectangle', icon: ICON_NOTE_PLAIN },
+    { shape: 'dog-ear', icon: ICON_NOTE_DOGEAR },
+    { shape: 'stacked', icon: ICON_NOTE_STACKED },
 ]
+
+function modeLabel(mode: BoardMode): string {
+    return mode === 'edit' ? t('mode.edit') : t('mode.explore')
+}
+
+function shapeLabel(shape: DrawableShape): string {
+    const map: Record<
+        DrawableShape,
+        | 'shape.rectangle'
+        | 'shape.line'
+        | 'shape.arrow'
+        | 'shape.ellipse'
+        | 'shape.polygon'
+        | 'shape.star'
+    > = {
+        rectangle: 'shape.rectangle',
+        line: 'shape.line',
+        arrow: 'shape.arrow',
+        ellipse: 'shape.ellipse',
+        polygon: 'shape.polygon',
+        star: 'shape.star',
+    }
+    return t(map[shape])
+}
+
+function noteLabel(shape: NoteShape): string {
+    const map: Record<NoteShape, 'noteShape.plain' | 'noteShape.dogEar' | 'noteShape.stacked'> = {
+        rectangle: 'noteShape.plain',
+        'dog-ear': 'noteShape.dogEar',
+        stacked: 'noteShape.stacked',
+    }
+    return t(map[shape])
+}
 
 export class AddBar {
     readonly el: HTMLElement
@@ -64,23 +98,30 @@ export class AddBar {
     private modeDropdownEl: HTMLElement
     private modeDropdownOpen = false
     private modeHintEls: Map<BoardMode, HTMLElement> = new Map()
+    private modeOptionSpans: Map<BoardMode, HTMLElement> = new Map()
 
     private noteIconBtn: HTMLButtonElement
     private noteChevronBtn: HTMLButtonElement
     private noteDropdownEl: HTMLElement
     private noteDropdownOpen = false
     private selectedNoteShape: NoteShape = 'rectangle'
+    private noteOptionSpans: Map<NoteShape, HTMLElement> = new Map()
 
     private shapeIconBtn: HTMLButtonElement
     private shapeChevronBtn: HTMLButtonElement
     private shapeDropdownEl: HTMLElement
     private shapeDropdownOpen = false
     private selectedShape: DrawableShape = 'rectangle'
+    private shapeOptionSpans: Map<DrawableShape, HTMLElement> = new Map()
 
+    private currentMode: BoardMode = 'edit'
     private undoBtn: HTMLButtonElement
     private redoBtn: HTMLButtonElement
     private pencilBtn: HTMLButtonElement
     private eraserBtn: HTMLButtonElement
+    private textBtn: HTMLButtonElement
+    private imageBtn: HTMLButtonElement
+    private settingsBtn: HTMLButtonElement
     private addButtons: HTMLButtonElement[]
 
     constructor(container: HTMLElement) {
@@ -102,15 +143,19 @@ export class AddBar {
         this.modeDropdownEl = document.createElement('div')
         this.modeDropdownEl.className = 'mode-dropdown hidden'
 
-        for (const { mode, label, icon } of MODES) {
+        for (const { mode, icon } of MODES) {
             const option = document.createElement('button')
             option.className = 'mode-option'
             option.dataset.mode = mode
+            const span = document.createElement('span')
+            span.textContent = modeLabel(mode)
             const hintEl = document.createElement('span')
             hintEl.className = 'mode-option-hint'
-            option.innerHTML = `${icon}<span>${label}</span>`
+            option.innerHTML = icon
+            option.appendChild(span)
             option.appendChild(hintEl)
             this.modeHintEls.set(mode, hintEl)
+            this.modeOptionSpans.set(mode, span)
             option.addEventListener('click', () => {
                 this.setMode(mode)
                 this.closeModeDropdown()
@@ -126,11 +171,11 @@ export class AddBar {
         this.el.appendChild(divider)
 
         // ── Undo / Redo ────────────────────────────────────────────────────────
-        this.undoBtn = this.makeButton('Undo (Ctrl+Z)', ICON_UNDO)
+        this.undoBtn = this.makeButton(t('addBar.undo'), ICON_UNDO)
         this.undoBtn.disabled = true
         this.undoBtn.addEventListener('click', () => this.onUndo?.())
 
-        this.redoBtn = this.makeButton('Redo (Ctrl+Y)', ICON_REDO)
+        this.redoBtn = this.makeButton(t('addBar.redo'), ICON_REDO)
         this.redoBtn.disabled = true
         this.redoBtn.addEventListener('click', () => this.onRedo?.())
 
@@ -138,11 +183,11 @@ export class AddBar {
         undoRedoDivider.className = 'add-bar-divider'
 
         // ── Add buttons ────────────────────────────────────────────────────────
-        const textBtn = this.makeButton('Text', ICON_TEXT)
-        textBtn.addEventListener('click', () => this.onAddText?.())
+        this.textBtn = this.makeButton(t('addBar.text'), ICON_TEXT)
+        this.textBtn.addEventListener('click', () => this.onAddText?.())
 
-        const imageBtn = this.makeButton('Image', ICON_IMAGE)
-        imageBtn.addEventListener('click', () => this.onAddImage?.())
+        this.imageBtn = this.makeButton(t('addBar.image'), ICON_IMAGE)
+        this.imageBtn.addEventListener('click', () => this.onAddImage?.())
 
         // ── Note split-button ──────────────────────────────────────────────────
         const notePicker = document.createElement('div')
@@ -161,7 +206,7 @@ export class AddBar {
         this.noteChevronBtn = document.createElement('button')
         this.noteChevronBtn.className = 'shape-chevron-btn'
         this.noteChevronBtn.innerHTML = ICON_CHEVRON_DOWN
-        this.noteChevronBtn.title = 'Choose note style'
+        this.noteChevronBtn.title = t('addBar.chooseNoteStyle')
         this.noteChevronBtn.addEventListener('click', () => {
             this.noteDropdownOpen = !this.noteDropdownOpen
             this.noteDropdownEl.classList.toggle('hidden', !this.noteDropdownOpen)
@@ -174,11 +219,15 @@ export class AddBar {
         this.noteDropdownEl = document.createElement('div')
         this.noteDropdownEl.className = 'mode-dropdown hidden'
 
-        for (const { shape, label, icon } of NOTE_SHAPES) {
+        for (const { shape, icon } of NOTE_SHAPES) {
             const option = document.createElement('button')
             option.className = 'mode-option'
             option.dataset.noteShape = shape
-            option.innerHTML = `${icon}<span>${label}</span>`
+            const span = document.createElement('span')
+            span.textContent = noteLabel(shape)
+            option.innerHTML = icon
+            option.appendChild(span)
+            this.noteOptionSpans.set(shape, span)
             option.addEventListener('click', () => {
                 this.selectedNoteShape = shape
                 this.updateNoteTrigger()
@@ -207,7 +256,7 @@ export class AddBar {
         this.shapeChevronBtn = document.createElement('button')
         this.shapeChevronBtn.className = 'shape-chevron-btn'
         this.shapeChevronBtn.innerHTML = ICON_CHEVRON_DOWN
-        this.shapeChevronBtn.title = 'Choose shape'
+        this.shapeChevronBtn.title = t('addBar.chooseShape')
         this.shapeChevronBtn.addEventListener('click', () => {
             this.shapeDropdownOpen = !this.shapeDropdownOpen
             this.shapeDropdownEl.classList.toggle('hidden', !this.shapeDropdownOpen)
@@ -220,11 +269,15 @@ export class AddBar {
         this.shapeDropdownEl = document.createElement('div')
         this.shapeDropdownEl.className = 'mode-dropdown hidden'
 
-        for (const { shape, label, icon } of SHAPES) {
+        for (const { shape, icon } of SHAPES) {
             const option = document.createElement('button')
             option.className = 'mode-option'
             option.dataset.shape = shape
-            option.innerHTML = `${icon}<span>${label}</span>`
+            const span = document.createElement('span')
+            span.textContent = shapeLabel(shape)
+            option.innerHTML = icon
+            option.appendChild(span)
+            this.shapeOptionSpans.set(shape, span)
             option.addEventListener('click', () => {
                 this.selectedShape = shape
                 this.updateShapeTrigger()
@@ -240,15 +293,15 @@ export class AddBar {
         const pencilDivider = document.createElement('div')
         pencilDivider.className = 'add-bar-divider'
 
-        this.pencilBtn = this.makeButton('Pencil (P)', ICON_PENCIL)
+        this.pencilBtn = this.makeButton(t('addBar.pencil'), ICON_PENCIL)
         this.pencilBtn.addEventListener('click', () => this.onTogglePencil?.())
 
-        this.eraserBtn = this.makeButton('Eraser (Shift+E)', ICON_ERASER)
+        this.eraserBtn = this.makeButton(t('addBar.eraser'), ICON_ERASER)
         this.eraserBtn.addEventListener('click', () => this.onToggleEraser?.())
 
         this.addButtons = [
-            textBtn,
-            imageBtn,
+            this.textBtn,
+            this.imageBtn,
             this.noteIconBtn,
             this.noteChevronBtn,
             this.shapeIconBtn,
@@ -259,23 +312,23 @@ export class AddBar {
         const settingsDivider = document.createElement('div')
         settingsDivider.className = 'add-bar-divider'
 
-        const settingsBtn = this.makeButton('Settings', ICON_SETTINGS)
-        settingsBtn.classList.add('settings-btn')
-        settingsBtn.addEventListener('click', () => this.onSettingsOpen?.())
+        this.settingsBtn = this.makeButton(t('addBar.settings'), ICON_SETTINGS)
+        this.settingsBtn.classList.add('settings-btn')
+        this.settingsBtn.addEventListener('click', () => this.onSettingsOpen?.())
 
         this.el.append(
             this.undoBtn,
             this.redoBtn,
             undoRedoDivider,
-            textBtn,
-            imageBtn,
+            this.textBtn,
+            this.imageBtn,
             notePicker,
             shapePicker,
             pencilDivider,
             this.pencilBtn,
             this.eraserBtn,
             settingsDivider,
-            settingsBtn
+            this.settingsBtn
         )
         container.appendChild(this.el)
 
@@ -290,6 +343,35 @@ export class AddBar {
         this.setMode('edit')
         this.updateNoteTrigger()
         this.updateShapeTrigger()
+
+        onLocaleChange(() => this.rebuild())
+    }
+
+    // Updates all translatable strings without rebuilding DOM.
+    rebuild() {
+        this.undoBtn.title = t('addBar.undo')
+        this.redoBtn.title = t('addBar.redo')
+        this.textBtn.title = t('addBar.text')
+        this.imageBtn.title = t('addBar.image')
+        this.pencilBtn.title = t('addBar.pencil')
+        this.eraserBtn.title = t('addBar.eraser')
+        this.settingsBtn.title = t('addBar.settings')
+        this.noteChevronBtn.title = t('addBar.chooseNoteStyle')
+        this.shapeChevronBtn.title = t('addBar.chooseShape')
+
+        for (const [mode, span] of this.modeOptionSpans) {
+            span.textContent = modeLabel(mode)
+        }
+        for (const [shape, span] of this.shapeOptionSpans) {
+            span.textContent = shapeLabel(shape)
+        }
+        for (const [shape, span] of this.noteOptionSpans) {
+            span.textContent = noteLabel(shape)
+        }
+
+        this.setMode(this.currentMode)
+        this.updateShapeTrigger()
+        this.updateNoteTrigger()
     }
 
     setHistoryState(canUndo: boolean, canRedo: boolean) {
@@ -313,10 +395,11 @@ export class AddBar {
     }
 
     setMode(mode: BoardMode) {
+        this.currentMode = mode
         const def = MODES.find((m) => m.mode === mode)!
 
         this.modeTriggerBtn.innerHTML = `${def.icon}${ICON_CHEVRON_DOWN}`
-        this.modeTriggerBtn.title = def.label
+        this.modeTriggerBtn.title = modeLabel(mode)
         this.modeTriggerBtn.classList.toggle('is-active', mode !== 'edit')
 
         this.modeDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
@@ -330,7 +413,7 @@ export class AddBar {
     private updateNoteTrigger() {
         const def = NOTE_SHAPES.find((s) => s.shape === this.selectedNoteShape)!
         this.noteIconBtn.innerHTML = def.icon
-        this.noteIconBtn.title = def.label
+        this.noteIconBtn.title = noteLabel(this.selectedNoteShape)
 
         this.noteDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
             opt.classList.toggle(
@@ -348,7 +431,7 @@ export class AddBar {
     private updateShapeTrigger() {
         const def = SHAPES.find((s) => s.shape === this.selectedShape)!
         this.shapeIconBtn.innerHTML = def.icon
-        this.shapeIconBtn.title = def.label
+        this.shapeIconBtn.title = shapeLabel(this.selectedShape)
 
         this.shapeDropdownEl.querySelectorAll('.mode-option').forEach((opt) => {
             opt.classList.toggle(

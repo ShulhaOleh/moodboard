@@ -10,6 +10,7 @@ import {
     ICON_CHEVRON_RIGHT,
 } from '../lib/icons'
 import type { GroupRecord } from '../lib/db'
+import { t, onLocaleChange } from '../translations'
 
 type BlockItem = { kind: 'block'; block: BoardObject; arrayIndex: number }
 type GroupItem = {
@@ -62,6 +63,10 @@ export class LayersPanel {
     private snapPreviewEl: HTMLElement
     private cachedBlocks: BoardObject[] = []
     private cachedGroups: Map<string, GroupRecord> = new Map()
+    private cachedSelectedBlocks: Set<BoardObject> = new Set()
+    private headerTitleEl!: HTMLElement
+    private collapseBtnEl!: HTMLButtonElement
+    private undockBtnEl!: HTMLButtonElement
     private collapsedGroups = new Set<string>()
     private dragSrcIdx: number | null = null
     private anchorKey: AnchorKey | null = null
@@ -74,14 +79,14 @@ export class LayersPanel {
         this.el.className = 'docked'
         this.el.innerHTML = `
             <div class="panel-header">
-                <button class="panel-collapse-btn" title="Hide panel">‹</button>
-                <span class="layers-title">Layers</span>
-                <button class="panel-undock-btn" title="Pop out">↗</button>
+                <button class="panel-collapse-btn" title="${t('layers.hidePanel')}">‹</button>
+                <span class="layers-title">${t('layers.header')}</span>
+                <button class="panel-undock-btn" title="${t('layers.popOut')}">↗</button>
                 <div class="panel-drag-handle"></div>
             </div>
             <div class="panel-content">
                 <div class="board-name-row">
-                    <input class="board-name-input" type="text" value="Untitled board" spellcheck="false" />
+                    <input class="board-name-input" type="text" value="${t('layers.untitledBoard')}" spellcheck="false" />
                 </div>
                 <ul class="layers-list"></ul>
             </div>
@@ -97,6 +102,9 @@ export class LayersPanel {
 
         this.listEl = this.el.querySelector('.layers-list') as HTMLUListElement
         this.nameInput = this.el.querySelector('.board-name-input') as HTMLInputElement
+        this.headerTitleEl = this.el.querySelector('.layers-title') as HTMLElement
+        this.collapseBtnEl = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
+        this.undockBtnEl = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
 
         let prevName = this.nameInput.value
         this.nameInput.addEventListener('focus', () => {
@@ -141,8 +149,7 @@ export class LayersPanel {
         // Prevent board's "click outside → deselect" from firing.
         this.el.addEventListener('mousedown', (e) => e.stopPropagation())
 
-        const undockBtn = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
-        undockBtn.addEventListener('click', () => this.setDocked(false))
+        this.undockBtnEl.addEventListener('click', () => this.setDocked(false))
 
         const handleEl = this.el.querySelector('.panel-drag-handle') as HTMLElement
         handleEl.addEventListener('mousedown', (e) => {
@@ -191,13 +198,12 @@ export class LayersPanel {
             window.addEventListener('mouseup', onUp)
         })
 
-        const collapseBtn = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
-        collapseBtn.addEventListener('click', () => this.setCollapsed(true))
+        this.collapseBtnEl.addEventListener('click', () => this.setCollapsed(true))
 
         // Expand button — visible only when docked and collapsed.
         this.expandBtnEl = document.createElement('button')
         this.expandBtnEl.className = 'layers-expand-btn hidden'
-        this.expandBtnEl.title = 'Show layers'
+        this.expandBtnEl.title = t('layers.showLayers')
         this.expandBtnEl.textContent = '›'
         this.expandBtnEl.addEventListener('click', () => this.setCollapsed(false))
         this.expandBtnEl.addEventListener('mousedown', (e) => e.stopPropagation())
@@ -211,6 +217,7 @@ export class LayersPanel {
         container.appendChild(this.snapPreviewEl)
         this.setupResizeHandles()
         requestAnimationFrame(() => this.updateOffset())
+        onLocaleChange(() => this.rebuildStaticText())
     }
 
     // Rebuilds the full layer list. Call after any structural change (add, remove, reorder, undo).
@@ -222,6 +229,7 @@ export class LayersPanel {
         for (const b of this.cachedBlocks) b.onLayerChange = null
         this.cachedBlocks = [...blocks]
         this.cachedGroups = groups ?? new Map()
+        this.cachedSelectedBlocks = selectedBlocks
         this.listEl.innerHTML = ''
         for (const item of this.buildDisplayItems()) {
             if (item.kind === 'group') {
@@ -340,7 +348,7 @@ export class LayersPanel {
 
         const chevron = document.createElement('button')
         chevron.className = 'layer-group-chevron'
-        chevron.title = isCollapsed ? 'Expand group' : 'Collapse group'
+        chevron.title = isCollapsed ? t('layers.expandGroup') : t('layers.collapseGroup')
         chevron.innerHTML = ICON_CHEVRON_RIGHT
         if (!isCollapsed) chevron.classList.add('is-open')
         chevron.addEventListener('click', (e) => {
@@ -348,12 +356,12 @@ export class LayersPanel {
             if (this.collapsedGroups.has(item.groupId)) {
                 this.collapsedGroups.delete(item.groupId)
                 chevron.classList.add('is-open')
-                chevron.title = 'Collapse group'
+                chevron.title = t('layers.collapseGroup')
                 children.style.display = ''
             } else {
                 this.collapsedGroups.add(item.groupId)
                 chevron.classList.remove('is-open')
-                chevron.title = 'Expand group'
+                chevron.title = t('layers.expandGroup')
                 children.style.display = 'none'
             }
         })
@@ -408,7 +416,7 @@ export class LayersPanel {
         const allVisible = item.members.every((m) => m.block.visible)
         const btn = document.createElement('button')
         btn.className = 'layer-vis-btn'
-        btn.title = 'Toggle group visibility'
+        btn.title = t('layers.toggleGroupVisibility')
         btn.innerHTML = allVisible ? ICON_EYE : ICON_EYE_OFF
         btn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -423,7 +431,7 @@ export class LayersPanel {
         const allLocked = item.members.every((m) => m.block.locked)
         const btn = document.createElement('button')
         btn.className = 'layer-lock-btn'
-        btn.title = 'Toggle group lock'
+        btn.title = t('layers.toggleGroupLock')
         btn.innerHTML = allLocked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
         btn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -452,7 +460,7 @@ export class LayersPanel {
 
         const visBtn = document.createElement('button')
         visBtn.className = 'layer-vis-btn'
-        visBtn.title = 'Toggle visibility'
+        visBtn.title = t('layers.toggleVisibility')
         visBtn.innerHTML = block.visible ? ICON_EYE : ICON_EYE_OFF
         visBtn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -461,7 +469,7 @@ export class LayersPanel {
 
         const lockBtn = document.createElement('button')
         lockBtn.className = 'layer-lock-btn'
-        lockBtn.title = 'Toggle lock'
+        lockBtn.title = t('layers.toggleLock')
         lockBtn.innerHTML = block.locked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
         lockBtn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -517,7 +525,7 @@ export class LayersPanel {
         const grip = document.createElement('span')
         grip.className = 'layer-grip'
         grip.textContent = '⠿'
-        grip.title = 'Drag to reorder'
+        grip.title = t('layers.dragToReorder')
 
         const label = document.createElement('span')
         label.className = 'layer-label'
@@ -525,7 +533,7 @@ export class LayersPanel {
 
         const visBtn = document.createElement('button')
         visBtn.className = 'layer-vis-btn'
-        visBtn.title = 'Toggle visibility'
+        visBtn.title = t('layers.toggleVisibility')
         visBtn.innerHTML = block.visible ? ICON_EYE : ICON_EYE_OFF
         visBtn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -534,7 +542,7 @@ export class LayersPanel {
 
         const lockBtn = document.createElement('button')
         lockBtn.className = 'layer-lock-btn'
-        lockBtn.title = 'Toggle lock'
+        lockBtn.title = t('layers.toggleLock')
         lockBtn.innerHTML = block.locked ? ICON_LOCK_CLOSED : ICON_LOCK_OPEN
         lockBtn.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -608,6 +616,15 @@ export class LayersPanel {
         })
 
         return row
+    }
+
+    // Updates static panel text after a locale change.
+    rebuildStaticText() {
+        this.headerTitleEl.textContent = t('layers.header')
+        this.collapseBtnEl.title = t('layers.hidePanel')
+        this.undockBtnEl.title = t('layers.popOut')
+        this.expandBtnEl.title = t('layers.showLayers')
+        this.refresh(this.cachedBlocks, this.cachedSelectedBlocks, this.cachedGroups)
     }
 
     setName(name: string) {

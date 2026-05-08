@@ -1,6 +1,7 @@
 // Sticky-note block: colored card with auto-height rich text content.
 // Height is always driven by content; only width is user-resizable.
 
+import { t } from '../translations'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
@@ -263,12 +264,17 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
 
     getAppearanceFields(): PropertyField[] {
         return [
-            { type: 'color', key: 'color', label: 'Color', value: this.data.color },
-            { type: 'font', key: 'fontFamily', label: 'Font', value: this.data.fontFamily },
+            { type: 'color', key: 'color', label: t('field.color'), value: this.data.color },
+            {
+                type: 'font',
+                key: 'fontFamily',
+                label: t('field.font'),
+                value: this.data.fontFamily,
+            },
             {
                 type: 'number',
                 key: 'fontSize',
-                label: 'Font size',
+                label: t('field.fontSize'),
                 value: this.data.fontSize,
                 min: 8,
                 max: 72,
@@ -277,7 +283,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
             {
                 type: 'slider',
                 key: 'opacity',
-                label: 'Opacity',
+                label: t('field.opacity'),
                 value: this.data.opacity,
                 min: 0,
                 max: 100,
@@ -286,24 +292,24 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
             {
                 type: 'number',
                 key: 'borderRadius',
-                label: 'Radius',
+                label: t('field.radius'),
                 value: this.data.borderRadius,
                 min: 0,
                 max: 100,
                 step: 1,
             },
-            { type: 'section', label: 'Shadow' },
+            { type: 'section', label: t('field.shadow') },
             {
                 type: 'color',
                 key: 'shadowColor',
-                label: 'Color',
+                label: t('field.color'),
                 value: this.data.shadowColor,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'shadowX',
-                label: 'Shadow X',
+                label: t('field.shadowX'),
                 value: this.data.shadowX,
                 min: -100,
                 max: 100,
@@ -312,7 +318,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
             {
                 type: 'number',
                 key: 'shadowY',
-                label: 'Shadow Y',
+                label: t('field.shadowY'),
                 value: this.data.shadowY,
                 min: -100,
                 max: 100,
@@ -321,7 +327,7 @@ export class NoteBlock extends BoxBlock<NoteBlockData> {
             {
                 type: 'slider',
                 key: 'shadowBlur',
-                label: 'Shadow blur',
+                label: t('field.shadowBlur'),
                 value: this.data.shadowBlur,
                 min: 0,
                 max: 80,

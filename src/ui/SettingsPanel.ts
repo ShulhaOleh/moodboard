@@ -24,6 +24,7 @@ import {
     bindingsEqual,
 } from '../lib/keybindings'
 import { ICON_CLOSE, ICON_RESET } from '../lib/icons'
+import { t, onLocaleChange, getLocales, getCurrentLocale, setLocale } from '../translations'
 
 type PageName = 'appearance' | 'keybindings' | 'about'
 type Slot = 'primary' | 'secondary'
@@ -60,6 +61,24 @@ export class SettingsPanel {
     private navItems = new Map<PageName, HTMLButtonElement>()
     private rowRefs = new Map<ShortcutAction, RowRefs>()
 
+    // Static text refs for live locale updates.
+    private sidebarLabelEl!: HTMLElement
+    private closeBtnEl!: HTMLButtonElement
+    private pageTitleEls = new Map<PageName, HTMLElement>()
+    private themeFieldLabelEl!: HTMLElement
+    private themeOptionBtns: { value: UserSettings['theme']; el: HTMLButtonElement }[] = []
+    private accentFieldLabelEl!: HTMLElement
+    private accentSwatchBtns: { value: string; el: HTMLButtonElement }[] = []
+    private uiFontFieldLabelEl!: HTMLElement
+    private langFieldLabelEl!: HTMLElement
+    private langSelectEl!: HTMLSelectElement
+    private keybindingsDescEl!: HTMLElement
+    private aboutNameEl!: HTMLElement
+    private aboutTaglineEl!: HTMLElement
+    private aboutGithubEl!: HTMLAnchorElement
+    private aboutBuiltWithEl!: HTMLElement
+    private aboutAuthorEl!: HTMLElement
+
     // Non-null while a binding is being captured or a conflict is awaiting confirmation.
     private captureState: {
         action: ShortcutAction
@@ -80,6 +99,7 @@ export class SettingsPanel {
         const content = this.buildContent()
         this.el.append(sidebar, content)
         container.appendChild(this.el)
+        onLocaleChange(() => this.rebuildText())
     }
 
     open() {
@@ -119,18 +139,22 @@ export class SettingsPanel {
 
         const label = document.createElement('div')
         label.className = 'settings-sidebar-label'
-        label.textContent = 'User Settings'
+        label.textContent = t('settings.userSettings')
+        this.sidebarLabelEl = label
         sidebar.appendChild(label)
 
-        const navDefs: { page: PageName; label: string }[] = [
-            { page: 'appearance', label: 'Appearance' },
-            { page: 'keybindings', label: 'Keyboard Shortcuts' },
+        const navDefs: {
+            page: PageName
+            labelKey: 'settings.appearance' | 'settings.keyboardShortcuts'
+        }[] = [
+            { page: 'appearance', labelKey: 'settings.appearance' },
+            { page: 'keybindings', labelKey: 'settings.keyboardShortcuts' },
         ]
 
         for (const def of navDefs) {
             const btn = document.createElement('button')
             btn.className = 'settings-nav-item'
-            btn.textContent = def.label
+            btn.textContent = t(def.labelKey)
             btn.classList.toggle('is-active', def.page === this.activePage)
             btn.addEventListener('click', () => this.switchPage(def.page))
             this.navItems.set(def.page, btn)
@@ -143,7 +167,7 @@ export class SettingsPanel {
 
         const aboutBtn = document.createElement('button')
         aboutBtn.className = 'settings-nav-item'
-        aboutBtn.textContent = 'About'
+        aboutBtn.textContent = t('settings.about')
         aboutBtn.classList.toggle('is-active', this.activePage === 'about')
         aboutBtn.addEventListener('click', () => this.switchPage('about'))
         this.navItems.set('about', aboutBtn)
@@ -158,9 +182,10 @@ export class SettingsPanel {
 
         const closeBtn = document.createElement('button')
         closeBtn.className = 'settings-close-btn'
-        closeBtn.title = 'Close settings (Escape)'
+        closeBtn.title = t('settings.close')
         closeBtn.innerHTML = ICON_CLOSE
         closeBtn.addEventListener('click', () => this.close())
+        this.closeBtnEl = closeBtn
 
         const appearancePage = this.buildAppearancePage()
         const keybindingsPage = this.buildKeybindingsPage()
@@ -191,7 +216,10 @@ export class SettingsPanel {
 
     private buildAppearancePage(): HTMLElement {
         const page = document.createElement('div')
-        page.appendChild(this.buildPageTitle('Appearance'))
+        const title = this.buildPageTitle(t('settings.appearance'))
+        this.pageTitleEls.set('appearance', title)
+        page.appendChild(title)
+        page.appendChild(this.buildLanguageField())
         page.appendChild(this.buildThemeField())
         page.appendChild(this.buildAccentField())
         page.appendChild(this.buildUiFontField())
@@ -204,23 +232,28 @@ export class SettingsPanel {
 
         const labelEl = document.createElement('div')
         labelEl.className = 'settings-field-label'
-        labelEl.textContent = 'Theme'
+        labelEl.textContent = t('settings.theme')
+        this.themeFieldLabelEl = labelEl
         field.appendChild(labelEl)
 
-        const options: { value: UserSettings['theme']; label: string }[] = [
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'system', label: 'System' },
+        const options: {
+            value: UserSettings['theme']
+            labelKey: 'settings.themeLight' | 'settings.themeDark' | 'settings.themeSystem'
+        }[] = [
+            { value: 'light', labelKey: 'settings.themeLight' },
+            { value: 'dark', labelKey: 'settings.themeDark' },
+            { value: 'system', labelKey: 'settings.themeSystem' },
         ]
 
         const segmented = document.createElement('div')
         segmented.className = 'theme-segmented'
 
+        this.themeOptionBtns = []
         const btns: HTMLButtonElement[] = []
         for (const opt of options) {
             const btn = document.createElement('button')
             btn.className = 'theme-option'
-            btn.textContent = opt.label
+            btn.textContent = t(opt.labelKey)
             btn.classList.toggle('is-active', this.settings.theme === opt.value)
             btn.addEventListener('click', () => {
                 btns.forEach((b) => b.classList.remove('is-active'))
@@ -231,6 +264,7 @@ export class SettingsPanel {
                 applyTheme(opt.value)
             })
             btns.push(btn)
+            this.themeOptionBtns.push({ value: opt.value, el: btn })
             segmented.appendChild(btn)
         }
 
@@ -244,26 +278,37 @@ export class SettingsPanel {
 
         const labelEl = document.createElement('div')
         labelEl.className = 'settings-field-label'
-        labelEl.textContent = 'Accent color'
+        labelEl.textContent = t('settings.accentColor')
+        this.accentFieldLabelEl = labelEl
         field.appendChild(labelEl)
 
         const swatches = document.createElement('div')
         swatches.className = 'accent-swatches'
 
-        const options: { value: AccentColor; label: string }[] = [
-            { value: 'purple', label: 'Purple' },
-            { value: 'blue', label: 'Blue' },
-            { value: 'teal', label: 'Teal' },
-            { value: 'green', label: 'Green' },
-            { value: 'orange', label: 'Orange' },
-            { value: 'pink', label: 'Pink' },
+        const options: {
+            value: AccentColor
+            labelKey:
+                | 'settings.accentPurple'
+                | 'settings.accentBlue'
+                | 'settings.accentTeal'
+                | 'settings.accentGreen'
+                | 'settings.accentOrange'
+                | 'settings.accentPink'
+        }[] = [
+            { value: 'purple', labelKey: 'settings.accentPurple' },
+            { value: 'blue', labelKey: 'settings.accentBlue' },
+            { value: 'teal', labelKey: 'settings.accentTeal' },
+            { value: 'green', labelKey: 'settings.accentGreen' },
+            { value: 'orange', labelKey: 'settings.accentOrange' },
+            { value: 'pink', labelKey: 'settings.accentPink' },
         ]
 
+        this.accentSwatchBtns = []
         for (const opt of options) {
             const swatch = document.createElement('button')
             swatch.className = 'accent-swatch'
             swatch.dataset.accentColor = opt.value
-            swatch.title = opt.label
+            swatch.title = t(opt.labelKey)
             swatch.classList.toggle('is-active', this.settings.accent === opt.value)
             swatch.addEventListener('click', () => {
                 swatches
@@ -275,6 +320,7 @@ export class SettingsPanel {
                 beginThemeTransition()
                 applyAccent(opt.value)
             })
+            this.accentSwatchBtns.push({ value: opt.value, el: swatch })
             swatches.appendChild(swatch)
         }
 
@@ -288,7 +334,8 @@ export class SettingsPanel {
 
         const labelEl = document.createElement('div')
         labelEl.className = 'settings-field-label'
-        labelEl.textContent = 'Interface font'
+        labelEl.textContent = t('settings.interfaceFont')
+        this.uiFontFieldLabelEl = labelEl
         field.appendChild(labelEl)
 
         const picker = new FontPicker(this.settings.uiFont, (family) => {
@@ -303,15 +350,96 @@ export class SettingsPanel {
         return field
     }
 
+    private buildLanguageField(): HTMLElement {
+        const field = document.createElement('div')
+        field.className = 'settings-field'
+
+        const labelEl = document.createElement('div')
+        labelEl.className = 'settings-field-label'
+        labelEl.textContent = t('settings.language')
+        this.langFieldLabelEl = labelEl
+        field.appendChild(labelEl)
+
+        const select = document.createElement('select')
+        select.className = 'settings-lang-select'
+        const locales = getLocales()
+        const current = getCurrentLocale()
+        for (const locale of locales) {
+            const opt = document.createElement('option')
+            opt.value = locale.code
+            opt.textContent = locale.name
+            if (locale.code === current) opt.selected = true
+            select.appendChild(opt)
+        }
+        select.addEventListener('change', () => setLocale(select.value))
+        this.langSelectEl = select
+        field.appendChild(select)
+
+        return field
+    }
+
+    // Updates all static text elements after a locale change.
+    private rebuildText() {
+        this.sidebarLabelEl.textContent = t('settings.userSettings')
+        this.navItems.get('appearance')!.textContent = t('settings.appearance')
+        this.navItems.get('keybindings')!.textContent = t('settings.keyboardShortcuts')
+        this.navItems.get('about')!.textContent = t('settings.about')
+        this.closeBtnEl.title = t('settings.close')
+        this.pageTitleEls.get('appearance')!.textContent = t('settings.appearance')
+        this.pageTitleEls.get('keybindings')!.textContent = t('settings.keyboardShortcuts')
+        this.langFieldLabelEl.textContent = t('settings.language')
+        // Update lang select selected option (locale code stays valid; options are locale-native names)
+        this.langSelectEl.value = getCurrentLocale()
+        this.themeFieldLabelEl.textContent = t('settings.theme')
+        const themeKeys: Record<
+            string,
+            'settings.themeLight' | 'settings.themeDark' | 'settings.themeSystem'
+        > = {
+            light: 'settings.themeLight',
+            dark: 'settings.themeDark',
+            system: 'settings.themeSystem',
+        }
+        for (const { value, el } of this.themeOptionBtns) el.textContent = t(themeKeys[value])
+        this.accentFieldLabelEl.textContent = t('settings.accentColor')
+        const accentKeys: Record<
+            string,
+            | 'settings.accentPurple'
+            | 'settings.accentBlue'
+            | 'settings.accentTeal'
+            | 'settings.accentGreen'
+            | 'settings.accentOrange'
+            | 'settings.accentPink'
+        > = {
+            purple: 'settings.accentPurple',
+            blue: 'settings.accentBlue',
+            teal: 'settings.accentTeal',
+            green: 'settings.accentGreen',
+            orange: 'settings.accentOrange',
+            pink: 'settings.accentPink',
+        }
+        for (const { value, el } of this.accentSwatchBtns) el.title = t(accentKeys[value])
+        this.uiFontFieldLabelEl.textContent = t('settings.interfaceFont')
+        this.keybindingsDescEl.textContent = t('settings.shortcutHint')
+        this.aboutNameEl.textContent = t('settings.aboutName')
+        this.aboutTaglineEl.textContent = t('settings.aboutTagline')
+        const githubSvg = this.aboutGithubEl.querySelector('svg')?.outerHTML ?? ''
+        this.aboutGithubEl.innerHTML = `${githubSvg}${t('settings.viewOnGitHub')}`
+        this.aboutBuiltWithEl.textContent = t('settings.builtWith')
+        this.aboutAuthorEl.textContent = t('settings.createdBy')
+    }
+
     // ── Keyboard shortcuts page ──────────────────────────────────────────────────
 
     private buildKeybindingsPage(): HTMLElement {
         const page = document.createElement('div')
-        page.appendChild(this.buildPageTitle('Keyboard Shortcuts'))
+        const title = this.buildPageTitle(t('settings.keyboardShortcuts'))
+        this.pageTitleEls.set('keybindings', title)
+        page.appendChild(title)
 
         const desc = document.createElement('p')
         desc.className = 'settings-page-desc'
-        desc.textContent = 'Click a shortcut badge to reassign it. Press Escape to cancel.'
+        desc.textContent = t('settings.shortcutHint')
+        this.keybindingsDescEl = desc
         page.appendChild(desc)
 
         const actions: ShortcutAction[] = [
@@ -355,7 +483,7 @@ export class SettingsPanel {
         const primaryBadge = document.createElement('button')
         primaryBadge.className = 'keybinding-badge'
         primaryBadge.textContent = formatBinding(bindings.primary)
-        primaryBadge.title = 'Click to reassign'
+        primaryBadge.title = t('settings.clickToReassign')
         primaryBadge.addEventListener('click', () =>
             this.startCapture(action, 'primary', primaryBadge, row)
         )
@@ -363,7 +491,7 @@ export class SettingsPanel {
         // Secondary badge — empty state when null
         const secondaryBadge = document.createElement('button')
         secondaryBadge.className = 'keybinding-badge'
-        secondaryBadge.title = 'Click to add a second shortcut'
+        secondaryBadge.title = t('settings.addSecondShortcut')
         secondaryBadge.addEventListener('click', () =>
             this.startCapture(action, 'secondary', secondaryBadge, row)
         )
@@ -371,7 +499,7 @@ export class SettingsPanel {
         // Clear button for secondary — hidden when secondary is null
         const secondaryClear = document.createElement('button')
         secondaryClear.className = 'keybinding-clear-sec'
-        secondaryClear.title = 'Remove second shortcut'
+        secondaryClear.title = t('settings.removeSecondShortcut')
         secondaryClear.innerHTML = ICON_CLOSE
         secondaryClear.addEventListener('click', () => {
             if (this.captureState?.action === action && this.captureState.slot === 'secondary') {
@@ -382,7 +510,7 @@ export class SettingsPanel {
 
         const resetBtn = document.createElement('button')
         resetBtn.className = 'keybinding-aux-btn'
-        resetBtn.title = 'Reset to default'
+        resetBtn.title = t('settings.resetToDefault')
         resetBtn.innerHTML = ICON_RESET
         resetBtn.addEventListener('click', () => {
             if (this.captureState?.action === action && this.captureState.slot === 'primary')
@@ -438,7 +566,7 @@ export class SettingsPanel {
     ) {
         if (this.captureState) this.cancelCapture()
 
-        badgeEl.textContent = 'Press a key…'
+        badgeEl.textContent = t('settings.pressKey')
         badgeEl.classList.remove('is-empty')
         badgeEl.classList.add('is-capturing')
 
@@ -519,19 +647,19 @@ export class SettingsPanel {
         const bar = document.createElement('div')
         bar.className = 'keybinding-conflict-bar'
 
-        const slotLabel = conflict.slot === 'secondary' ? ' (second shortcut)' : ''
+        const slotLabel = conflict.slot === 'secondary' ? t('settings.secondShortcut') : ''
         const msg = document.createElement('span')
         msg.className = 'keybinding-conflict-msg'
-        msg.innerHTML = `Conflicts with <strong>${ACTION_LABELS[conflict.action]}</strong>${slotLabel}`
+        msg.innerHTML = `${t('settings.conflictsWith')} <strong>${ACTION_LABELS[conflict.action]}</strong>${slotLabel}`
 
         const overrideBtn = document.createElement('button')
         overrideBtn.className = 'keybinding-conflict-override'
-        overrideBtn.textContent = 'Override'
+        overrideBtn.textContent = t('settings.override')
         overrideBtn.addEventListener('click', onOverride)
 
         const cancelBtn = document.createElement('button')
         cancelBtn.className = 'keybinding-conflict-cancel'
-        cancelBtn.textContent = 'Cancel'
+        cancelBtn.textContent = t('settings.cancel')
         cancelBtn.addEventListener('click', onCancel)
 
         bar.append(msg, overrideBtn, cancelBtn)
@@ -611,29 +739,34 @@ export class SettingsPanel {
 
         const name = document.createElement('div')
         name.className = 'about-name'
-        name.textContent = 'Moodboard'
+        name.textContent = t('settings.aboutName')
+        this.aboutNameEl = name
 
         const tagline = document.createElement('div')
         tagline.className = 'about-tagline'
-        tagline.textContent = 'A minimal canvas for collecting visual ideas.'
+        tagline.textContent = t('settings.aboutTagline')
+        this.aboutTaglineEl = tagline
 
         const githubLink = document.createElement('a')
         githubLink.className = 'about-github-btn'
         githubLink.href = 'https://github.com/ShulhaOleh/moodboard'
         githubLink.target = '_blank'
         githubLink.rel = 'noopener noreferrer'
-        githubLink.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.071 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>View on GitHub`
+        githubLink.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.071 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836a9.59 9.59 0 0 1 2.504.337c1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>${t('settings.viewOnGitHub')}`
+        this.aboutGithubEl = githubLink
 
         const divider = document.createElement('div')
         divider.className = 'about-divider'
 
         const builtWith = document.createElement('div')
         builtWith.className = 'about-built-with'
-        builtWith.textContent = 'Built with Vite · TypeScript · TipTap · Dexie'
+        builtWith.textContent = t('settings.builtWith')
+        this.aboutBuiltWithEl = builtWith
 
         const author = document.createElement('div')
         author.className = 'about-author'
-        author.textContent = 'Created by Oleh Shulha'
+        author.textContent = t('settings.createdBy')
+        this.aboutAuthorEl = author
 
         page.append(name, tagline, githubLink, divider, builtWith, author)
         return page

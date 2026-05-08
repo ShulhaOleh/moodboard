@@ -2,6 +2,7 @@
 // Stored as absolute board coordinates (x1,y1) → (x2,y2); no rotation or bounding-box resize.
 // Endpoint decorations (arrowheads, dots, etc.) are rendered via SVG markers.
 
+import { t } from '../translations'
 import { PropertyField } from './BoardObject'
 import { BaseBlock } from './BaseBlock'
 
@@ -33,16 +34,18 @@ export interface LineBlockData {
 // Extra space around the bounding box so thick strokes and endpoint handles are never clipped.
 const PADDING = 14
 
-const POINT_STYLE_OPTIONS = [
-    { value: 'none', label: 'None' },
-    { value: 'round', label: 'Round' },
-    { value: 'square', label: 'Square' },
-    { value: 'line-arrow', label: 'Line arrow' },
-    { value: 'triangle-arrow', label: 'Triangle arrow' },
-    { value: 'reversed-triangle', label: 'Reversed triangle' },
-    { value: 'circle-arrow', label: 'Circle arrow' },
-    { value: 'diamond-arrow', label: 'Diamond arrow' },
-]
+function pointStyleOptions() {
+    return [
+        { value: 'none', label: t('option.none') },
+        { value: 'round', label: t('option.round') },
+        { value: 'square', label: t('option.square') },
+        { value: 'line-arrow', label: t('option.lineArrow') },
+        { value: 'triangle-arrow', label: t('option.triangleArrow') },
+        { value: 'reversed-triangle', label: t('option.reversedTriangle') },
+        { value: 'circle-arrow', label: t('option.circleArrow') },
+        { value: 'diamond-arrow', label: t('option.diamondArrow') },
+    ]
+}
 
 export class LineBlock extends BaseBlock {
     readonly layerLabel = 'Line'
@@ -487,14 +490,14 @@ export class LineBlock extends BaseBlock {
             {
                 type: 'color',
                 key: 'stroke',
-                label: 'Stroke',
+                label: t('field.stroke'),
                 value: this.data.stroke,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'strokeWidth',
-                label: 'Stroke W',
+                label: t('field.strokeW'),
                 value: this.data.strokeWidth,
                 min: 1,
                 max: 40,
@@ -503,26 +506,26 @@ export class LineBlock extends BaseBlock {
             {
                 type: 'slider',
                 key: 'opacity',
-                label: 'Opacity',
+                label: t('field.opacity'),
                 value: this.data.opacity,
                 min: 0,
                 max: 100,
                 step: 1,
             },
-            { type: 'section', label: 'Endpoints' },
+            { type: 'section', label: t('field.endpoints') },
             {
                 type: 'select',
                 key: 'startPoint',
-                label: 'Start point',
+                label: t('field.startPoint'),
                 value: this.data.startPoint,
-                options: POINT_STYLE_OPTIONS,
+                options: pointStyleOptions(),
             },
             {
                 type: 'select',
                 key: 'endPoint',
-                label: 'End point',
+                label: t('field.endPoint'),
                 value: this.data.endPoint,
-                options: POINT_STYLE_OPTIONS,
+                options: pointStyleOptions(),
             },
         ]
     }

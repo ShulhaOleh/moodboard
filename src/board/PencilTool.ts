@@ -1,5 +1,6 @@
 // Pseudo board object for the pencil tool, shown in the properties panel when the pencil is active.
 
+import { t } from '../translations'
 import { BoardObject, PropertyField } from './BoardObject'
 
 export interface PencilSettings {
@@ -87,19 +88,19 @@ export class PencilTool implements BoardObject {
 
     getAppearanceFields(): PropertyField[] {
         return [
-            { type: 'section', label: 'Pencil' },
-            { type: 'color', key: 'stroke', label: 'Stroke', value: this.settings.stroke },
+            { type: 'section', label: t('field.pencil') },
+            { type: 'color', key: 'stroke', label: t('field.stroke'), value: this.settings.stroke },
             {
                 type: 'color',
                 key: 'strokeEnd',
-                label: 'Gradient',
+                label: t('field.gradient'),
                 value: this.settings.strokeEnd,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'strokeWidth',
-                label: 'Width',
+                label: t('field.width'),
                 value: this.settings.strokeWidth,
                 min: 1,
                 max: 80,
@@ -107,7 +108,7 @@ export class PencilTool implements BoardObject {
             {
                 type: 'slider',
                 key: 'taper',
-                label: 'Taper',
+                label: t('field.taper'),
                 value: this.settings.taper,
                 min: 0,
                 max: 100,
@@ -115,7 +116,7 @@ export class PencilTool implements BoardObject {
             {
                 type: 'slider',
                 key: 'smoothing',
-                label: 'Smooth',
+                label: t('field.smooth'),
                 value: this.settings.smoothing,
                 min: 0,
                 max: 100,

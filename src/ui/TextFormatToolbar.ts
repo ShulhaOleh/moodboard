@@ -1,17 +1,20 @@
 // Floating toolbar that appears on text selection inside a TipTap editor.
 // Positioned above the selection using the browser's Selection API.
 
+import { t } from '../translations'
 import { Editor } from '@tiptap/core'
 import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
 import { ColorPicker } from './ColorPicker'
 
-const ALIGN_OPTIONS = [
-    { value: 'left', label: 'Left' },
-    { value: 'center', label: 'Center' },
-    { value: 'right', label: 'Right' },
-    { value: 'justify', label: 'Justify' },
-]
+function alignOptions() {
+    return [
+        { value: 'left', label: t('option.left') },
+        { value: 'center', label: t('option.center') },
+        { value: 'right', label: t('option.right') },
+        { value: 'justify', label: t('option.justify') },
+    ]
+}
 
 export class TextFormatToolbar {
     readonly el: HTMLElement
@@ -119,7 +122,7 @@ export class TextFormatToolbar {
 
         this.alignSelect = document.createElement('select')
         this.alignSelect.className = 'tf-align-select'
-        for (const opt of ALIGN_OPTIONS) {
+        for (const opt of alignOptions()) {
             const option = document.createElement('option')
             option.value = opt.value
             option.textContent = opt.label

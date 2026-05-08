@@ -9,6 +9,7 @@ import { loadFont } from '../lib/fonts'
 import { FontPicker } from './FontPicker'
 import { ColorPicker } from './ColorPicker'
 import { ICON_CONTRAST } from '../lib/icons'
+import { t, onLocaleChange } from '../translations'
 
 // Evaluates an expression like "+5", "-10", "*2", "/3", or a plain number against
 // a current value. Returns NaN when the input cannot be parsed.
@@ -97,6 +98,21 @@ export class PropertiesPanel {
     private fieldUpdaters: Map<string, (value: string | number) => void> = new Map()
     private snapPreviewEl: HTMLElement
     private expandBtnEl: HTMLElement
+    private headerTitleEl!: HTMLElement
+    private panelCollapseBtnEl!: HTMLButtonElement
+    private panelUndockBtnEl!: HTMLButtonElement
+    private commonSectionEls: {
+        position: HTMLElement
+        size: HTMLElement
+        rotation: HTMLElement
+    } | null = null
+    private commonLabelEls: {
+        x: HTMLElement
+        y: HTMLElement
+        w: HTMLElement
+        h: HTMLElement
+        angle: HTMLElement
+    } | null = null
 
     constructor(container: HTMLElement) {
         this.el = document.createElement('div')
@@ -105,41 +121,41 @@ export class PropertiesPanel {
         this.el.innerHTML = `
             <div class="panel-header">
                 <div class="panel-drag-handle"></div>
-                <button class="panel-undock-btn" title="Pop out">↗</button>
-                <span class="layers-title">Properties</span>
-                <button class="panel-collapse-btn" title="Hide panel">›</button>
+                <button class="panel-undock-btn" title="${t('props.popOut')}">↗</button>
+                <span class="layers-title">${t('props.header')}</span>
+                <button class="panel-collapse-btn" title="${t('props.hidePanel')}">›</button>
             </div>
             <div class="panel-content">
                 <div class="prop-name-row">
-                    <input type="text" id="prop-name" placeholder="Name" />
+                    <input type="text" id="prop-name" placeholder="${t('props.namePlaceholder')}" />
                 </div>
                 <div class="panel-common-props">
-                    <div class="prop-section">Position</div>
+                    <div class="prop-section prop-section-position">${t('props.position')}</div>
                     <div class="prop-row">
-                        <label>X</label>
+                        <label class="prop-label-x">${t('props.x')}</label>
                         <input type="number" id="prop-x" step="1" />
                     </div>
                     <div class="prop-row">
-                        <label>Y</label>
+                        <label class="prop-label-y">${t('props.y')}</label>
                         <input type="number" id="prop-y" step="1" />
                     </div>
-                    <div class="prop-section">Size</div>
+                    <div class="prop-section prop-section-size">${t('props.size')}</div>
                     <div class="prop-row">
-                        <label>W</label>
+                        <label class="prop-label-w">${t('props.width')}</label>
                         <input type="number" id="prop-width" min="1" step="1" />
                     </div>
                     <div class="prop-row">
-                        <label>H</label>
+                        <label class="prop-label-h">${t('props.height')}</label>
                         <input type="number" id="prop-height" min="1" step="1" />
                     </div>
-                    <div class="prop-section">Rotation</div>
+                    <div class="prop-section prop-section-rotation">${t('props.rotation')}</div>
                     <div class="prop-row">
-                        <label>Angle</label>
+                        <label class="prop-label-angle">${t('props.angle')}</label>
                         <input type="text" inputmode="numeric" id="prop-rotation" />
                     </div>
                 </div>
                 <div id="prop-appearance"></div>
-                <button id="prop-delete">Delete</button>
+                <button id="prop-delete">${t('props.delete')}</button>
             </div>
             <div class="panel-resize-left"></div>
             <div class="panel-resize-right"></div>
@@ -156,6 +172,21 @@ export class PropertiesPanel {
         this.deleteBtnEl = this.el.querySelector('#prop-delete') as HTMLButtonElement
         this.nameInputEl = this.el.querySelector('#prop-name') as HTMLInputElement
         this.deleteBtnEl.addEventListener('click', () => this.onDelete?.())
+        this.headerTitleEl = this.el.querySelector('.layers-title') as HTMLElement
+        this.panelCollapseBtnEl = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
+        this.panelUndockBtnEl = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
+        this.commonSectionEls = {
+            position: this.el.querySelector('.prop-section-position') as HTMLElement,
+            size: this.el.querySelector('.prop-section-size') as HTMLElement,
+            rotation: this.el.querySelector('.prop-section-rotation') as HTMLElement,
+        }
+        this.commonLabelEls = {
+            x: this.el.querySelector('.prop-label-x') as HTMLElement,
+            y: this.el.querySelector('.prop-label-y') as HTMLElement,
+            w: this.el.querySelector('.prop-label-w') as HTMLElement,
+            h: this.el.querySelector('.prop-label-h') as HTMLElement,
+            angle: this.el.querySelector('.prop-label-angle') as HTMLElement,
+        }
 
         this.inputs = {
             x: this.el.querySelector('#prop-x') as HTMLInputElement,
@@ -177,8 +208,7 @@ export class PropertiesPanel {
         // stopPropagation prevents the board's "click outside → deselect" listener from firing.
         this.el.addEventListener('mousedown', (e) => e.stopPropagation())
 
-        const undockBtn = this.el.querySelector('.panel-undock-btn') as HTMLButtonElement
-        undockBtn.addEventListener('click', () => {
+        this.panelUndockBtnEl.addEventListener('click', () => {
             this.setDocked(false)
         })
 
@@ -231,15 +261,14 @@ export class PropertiesPanel {
             window.addEventListener('mouseup', onUp)
         })
 
-        const collapseBtn = this.el.querySelector('.panel-collapse-btn') as HTMLButtonElement
-        collapseBtn.addEventListener('click', () => this.setCollapsed(true))
+        this.panelCollapseBtnEl.addEventListener('click', () => this.setCollapsed(true))
 
         // Mirror of the collapse button, fixed at the same screen position.
         // Visible only when the panel is docked and collapsed, so there is always
         // a button at that location regardless of panel state.
         this.expandBtnEl = document.createElement('button')
         this.expandBtnEl.className = 'panel-expand-btn hidden'
-        this.expandBtnEl.title = 'Show panel'
+        this.expandBtnEl.title = t('props.showPanel')
         this.expandBtnEl.textContent = '‹'
         this.expandBtnEl.addEventListener('click', () => this.setCollapsed(false))
         this.expandBtnEl.addEventListener('mousedown', (e) => e.stopPropagation())
@@ -253,6 +282,7 @@ export class PropertiesPanel {
         container.appendChild(this.snapPreviewEl)
         this.setupCommonEvents()
         this.setupResizeHandles()
+        onLocaleChange(() => this.localeChanged())
     }
 
     private setupCommonEvents() {
@@ -318,7 +348,7 @@ export class PropertiesPanel {
 
         const section = document.createElement('div')
         section.className = 'prop-section'
-        section.textContent = 'Appearance'
+        section.textContent = t('props.appearance')
         this.appearanceEl.appendChild(section)
 
         for (const field of fields) {
@@ -407,7 +437,7 @@ export class PropertiesPanel {
                     const browseBtn = document.createElement('button')
                     browseBtn.className = 'prop-browse-btn'
                     browseBtn.textContent = '…'
-                    browseBtn.title = 'Browse file'
+                    browseBtn.title = t('props.browseFile')
                     browseBtn.addEventListener('click', () => fileInput.click())
                     fileInput.addEventListener('change', () => {
                         const file = fileInput.files?.[0]
@@ -461,7 +491,7 @@ export class PropertiesPanel {
                 if (field.themeDefault) {
                     const themeBtn = document.createElement('button')
                     themeBtn.className = 'prop-color-theme-btn'
-                    themeBtn.title = 'Set to theme background'
+                    themeBtn.title = t('props.setThemeBackground')
                     themeBtn.innerHTML = ICON_CONTRAST
                     themeBtn.addEventListener('click', () => {
                         const color = getComputedStyle(document.documentElement)
@@ -501,7 +531,7 @@ export class PropertiesPanel {
 
         const section = document.createElement('div')
         section.className = 'prop-section'
-        section.textContent = 'Appearance'
+        section.textContent = t('props.appearance')
         this.appearanceEl.appendChild(section)
 
         for (const field of fields) {
@@ -1158,6 +1188,34 @@ export class PropertiesPanel {
             } else if (normalised !== '') {
                 obj.setAppearanceProperty(key, normalised)
             }
+        }
+    }
+
+    // Updates static text and re-renders appearance fields after a locale change.
+    localeChanged() {
+        this.headerTitleEl.textContent = t('props.header')
+        this.panelCollapseBtnEl.title = t('props.hidePanel')
+        this.panelUndockBtnEl.title = t('props.popOut')
+        ;(this.expandBtnEl as HTMLButtonElement).title = t('props.showPanel')
+        this.nameInputEl.placeholder = t('props.namePlaceholder')
+        this.deleteBtnEl.textContent = t('props.delete')
+        if (this.commonSectionEls) {
+            this.commonSectionEls.position.textContent = t('props.position')
+            this.commonSectionEls.size.textContent = t('props.size')
+            this.commonSectionEls.rotation.textContent = t('props.rotation')
+        }
+        if (this.commonLabelEls) {
+            this.commonLabelEls.x.textContent = t('props.x')
+            this.commonLabelEls.y.textContent = t('props.y')
+            this.commonLabelEls.w.textContent = t('props.width')
+            this.commonLabelEls.h.textContent = t('props.height')
+            this.commonLabelEls.angle.textContent = t('props.angle')
+        }
+        // Re-render appearance fields with new locale labels.
+        if (this.object) {
+            this.show(this.object)
+        } else if (this.objects) {
+            this.showMultiple(this.objects)
         }
     }
 

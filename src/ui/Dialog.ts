@@ -1,5 +1,7 @@
 // Modal dialog utility — replaces native alert/confirm with styled popups.
 
+import { t } from '../translations'
+
 interface ConfirmOptions {
     confirmLabel?: string
     destructive?: boolean
@@ -10,7 +12,7 @@ export class Dialog {
         return new Promise((resolve) => {
             const { backdrop, actions } = buildShell(message)
 
-            const okBtn = makeBtn('OK', ['dialog-btn-primary'])
+            const okBtn = makeBtn(t('dialog.ok'), ['dialog-btn-primary'])
             okBtn.addEventListener('click', dismiss)
             actions.appendChild(okBtn)
 
@@ -32,11 +34,11 @@ export class Dialog {
     }
 
     static confirm(message: string, opts: ConfirmOptions = {}): Promise<boolean> {
-        const { confirmLabel = 'Confirm', destructive = false } = opts
+        const { confirmLabel = t('dialog.confirm'), destructive = false } = opts
         return new Promise((resolve) => {
             const { backdrop, actions } = buildShell(message)
 
-            const cancelBtn = makeBtn('Cancel', ['dialog-btn-secondary'])
+            const cancelBtn = makeBtn(t('dialog.cancel'), ['dialog-btn-secondary'])
             const confirmBtn = makeBtn(confirmLabel, [
                 'dialog-btn-primary',
                 ...(destructive ? ['is-destructive'] : []),

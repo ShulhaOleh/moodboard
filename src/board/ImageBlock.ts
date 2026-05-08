@@ -1,5 +1,6 @@
 // Draggable, resizable, rotatable image block rendered in the HTML overlay.
 
+import { t } from '../translations'
 import { PropertyField } from './BoardObject'
 import { BoxBlock } from './BoxBlock'
 
@@ -81,7 +82,7 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'text',
                 key: 'src',
-                label: 'Source',
+                label: t('field.source'),
                 value: this.data.src,
                 placeholder: '/path/to/image.jpg',
                 allowFilePick: true,
@@ -89,18 +90,18 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'select',
                 key: 'objectFit',
-                label: 'Fit',
+                label: t('field.fit'),
                 value: this.data.objectFit,
                 options: [
-                    { value: 'cover', label: 'Cover' },
-                    { value: 'contain', label: 'Contain' },
-                    { value: 'fill', label: 'Fill' },
+                    { value: 'cover', label: t('option.cover') },
+                    { value: 'contain', label: t('option.contain') },
+                    { value: 'fill', label: t('option.fill') },
                 ],
             },
             {
                 type: 'slider',
                 key: 'opacity',
-                label: 'Opacity',
+                label: t('field.opacity'),
                 value: this.data.opacity,
                 min: 0,
                 max: 100,
@@ -109,7 +110,7 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'number',
                 key: 'borderRadius',
-                label: 'Radius',
+                label: t('field.radius'),
                 value: this.data.borderRadius,
                 min: 0,
                 max: 500,
@@ -118,22 +119,22 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'color',
                 key: 'background',
-                label: 'Background',
+                label: t('field.background'),
                 value: this.data.background,
                 clearable: true,
             },
-            { type: 'section', label: 'Shadow' },
+            { type: 'section', label: t('field.shadow') },
             {
                 type: 'color',
                 key: 'shadowColor',
-                label: 'Color',
+                label: t('field.color'),
                 value: this.data.shadowColor,
                 clearable: true,
             },
             {
                 type: 'number',
                 key: 'shadowX',
-                label: 'Shadow X',
+                label: t('field.shadowX'),
                 value: this.data.shadowX,
                 min: -100,
                 max: 100,
@@ -142,7 +143,7 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'number',
                 key: 'shadowY',
-                label: 'Shadow Y',
+                label: t('field.shadowY'),
                 value: this.data.shadowY,
                 min: -100,
                 max: 100,
@@ -151,7 +152,7 @@ export class ImageBlock extends BoxBlock<ImageBlockData> {
             {
                 type: 'slider',
                 key: 'shadowBlur',
-                label: 'Shadow blur',
+                label: t('field.shadowBlur'),
                 value: this.data.shadowBlur,
                 min: 0,
                 max: 80,

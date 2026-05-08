@@ -1,6 +1,7 @@
 // Draggable, editable text block with rich text editing via TipTap.
 // Content is stored as an HTML string and rendered directly into the content element.
 
+import { t } from '../translations'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyle } from '@tiptap/extension-text-style'
@@ -286,11 +287,11 @@ export class TextBlock extends BoxBlock<TextBlockData> {
         }
 
         return [
-            { type: 'font', key: 'fontFamily', label: 'Font', value: fontFamily },
+            { type: 'font', key: 'fontFamily', label: t('field.font'), value: fontFamily },
             {
                 type: 'number',
                 key: 'fontSize',
-                label: 'Font size',
+                label: t('field.fontSize'),
                 value: fontSize,
                 min: 8,
                 max: 120,
@@ -299,24 +300,24 @@ export class TextBlock extends BoxBlock<TextBlockData> {
             {
                 type: 'select',
                 key: 'textAlign',
-                label: 'Align',
+                label: t('field.align'),
                 value: textAlign,
                 options: [
-                    { value: 'left', label: 'Left' },
-                    { value: 'center', label: 'Center' },
-                    { value: 'right', label: 'Right' },
-                    { value: 'justify', label: 'Justify' },
+                    { value: 'left', label: t('option.left') },
+                    { value: 'center', label: t('option.center') },
+                    { value: 'right', label: t('option.right') },
+                    { value: 'justify', label: t('option.justify') },
                 ],
             },
-            { type: 'color', key: 'color', label: 'Color', value: color },
+            { type: 'color', key: 'color', label: t('field.color'), value: color },
             {
                 type: 'select',
                 key: 'autoHeight',
-                label: 'Height',
+                label: t('field.height'),
                 value: this.data.autoHeight ? 'auto' : 'fixed',
                 options: [
-                    { value: 'auto', label: 'Auto' },
-                    { value: 'fixed', label: 'Fixed' },
+                    { value: 'auto', label: t('option.auto') },
+                    { value: 'fixed', label: t('option.fixed') },
                 ],
             },
         ]

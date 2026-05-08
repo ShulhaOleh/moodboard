@@ -2,6 +2,7 @@
 // when no block is selected. Exposes the canvas background color and a collapsible
 // PNG export section (toggle header → preview thumbnail, scale dropdown, export button).
 
+import { t } from '../translations'
 import { BoardObject, PropertyField } from './BoardObject'
 
 function parseAlpha(color: string): number {
@@ -59,7 +60,7 @@ export class CanvasBoard implements BoardObject {
         // Toggle header — looks like a prop-section but is clickable
         const toggle = document.createElement('button')
         toggle.className = 'export-section-toggle'
-        toggle.innerHTML = `<span>Export PNG</span><span class="export-section-chevron">▾</span>`
+        toggle.innerHTML = `<span>${t('field.exportPng')}</span><span class="export-section-chevron">▾</span>`
 
         // Collapsible body — outer div is the grid container that animates row height;
         // inner div holds the actual content so overflow: hidden doesn't clip the flex gap.
@@ -96,7 +97,7 @@ export class CanvasBoard implements BoardObject {
         controlsRow.className = 'export-controls-row'
 
         const scaleLabel = document.createElement('label')
-        scaleLabel.textContent = 'Scale'
+        scaleLabel.textContent = t('field.scale')
         scaleLabel.className = 'export-scale-label'
 
         const dropdown = document.createElement('div')
@@ -157,7 +158,7 @@ export class CanvasBoard implements BoardObject {
         // Export button
         this.exportBtn = document.createElement('button')
         this.exportBtn.className = 'prop-action-btn export-png-btn'
-        this.exportBtn.textContent = 'Export PNG'
+        this.exportBtn.textContent = t('field.exportPng')
         this.exportBtn.disabled = true
         this.exportBtn.addEventListener('click', () => {
             if (this.previewUrl) this.onExportPng?.(this.previewUrl)
@@ -179,7 +180,7 @@ export class CanvasBoard implements BoardObject {
         const scale = this.currentScale
         const gen = ++this.renderGeneration
 
-        this.exportMetaEl.textContent = 'Rendering…'
+        this.exportMetaEl.textContent = t('export.rendering')
         this.exportPreviewImg.classList.add('is-loading')
         this.exportBtn.disabled = true
 
@@ -199,7 +200,7 @@ export class CanvasBoard implements BoardObject {
             }
         } catch {
             if (gen !== this.renderGeneration) return
-            this.exportMetaEl.textContent = 'Render failed.'
+            this.exportMetaEl.textContent = t('export.failed')
             this.exportPreviewImg.classList.remove('is-loading')
         }
     }
@@ -243,16 +244,16 @@ export class CanvasBoard implements BoardObject {
             {
                 type: 'color',
                 key: 'background',
-                label: 'Background',
+                label: t('field.background'),
                 value: this.bg,
                 themeDefault: true,
                 clearable: true,
             },
-            { type: 'section', label: 'Board' },
-            { type: 'button', key: 'export', label: 'Export JSON' },
-            { type: 'button', key: 'import', label: 'Import JSON' },
-            { type: 'button', key: 'loadDemo', label: 'Load demo' },
-            { type: 'button', key: 'newBoard', label: 'New board', destructive: true },
+            { type: 'section', label: t('field.board') },
+            { type: 'button', key: 'export', label: t('field.exportJson') },
+            { type: 'button', key: 'import', label: t('field.importJson') },
+            { type: 'button', key: 'loadDemo', label: t('field.loadDemo') },
+            { type: 'button', key: 'newBoard', label: t('field.newBoard'), destructive: true },
             { type: 'node', key: 'exportSection', node: this.exportSectionEl },
         ]
     }

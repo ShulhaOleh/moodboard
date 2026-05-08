@@ -2,6 +2,7 @@
 // Shows the curated list by default; fetches all ~1500 families on first open for search.
 
 import { FONTS, loadFont, fetchAllFonts } from '../lib/fonts'
+import { t } from '../translations'
 
 const MAX_RESULTS = 30
 
@@ -42,7 +43,7 @@ export class FontPicker {
         this.searchInput = document.createElement('input')
         this.searchInput.type = 'text'
         this.searchInput.className = 'font-picker-search'
-        this.searchInput.placeholder = 'Search fonts…'
+        this.searchInput.placeholder = t('fontPicker.search')
         this.searchInput.addEventListener('input', () => {
             this.renderList()
             this.updateSearchClear()
