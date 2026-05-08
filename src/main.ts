@@ -83,6 +83,12 @@ function syncModeHints() {
         edit: formatBinding(keybindings.switchToEdit.primary),
         explore: formatBinding(keybindings.switchToExplore.primary),
     })
+    addBar.updateButtonHints({
+        undo: formatBinding(keybindings.undo.primary),
+        redo: formatBinding(keybindings.redo.primary),
+        pencil: formatBinding(keybindings.pencilToggle.primary),
+        eraser: formatBinding(keybindings.eraserToggle.primary),
+    })
 }
 
 syncModeHints()

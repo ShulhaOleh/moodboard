@@ -123,6 +123,12 @@ export class AddBar {
     private imageBtn: HTMLButtonElement
     private settingsBtn: HTMLButtonElement
     private addButtons: HTMLButtonElement[]
+    private buttonHints: { undo: string; redo: string; pencil: string; eraser: string } = {
+        undo: '',
+        redo: '',
+        pencil: '',
+        eraser: '',
+    }
 
     constructor(container: HTMLElement) {
         this.el = document.createElement('div')
@@ -347,14 +353,23 @@ export class AddBar {
         onLocaleChange(() => this.rebuild())
     }
 
+    updateButtonHints(hints: { undo: string; redo: string; pencil: string; eraser: string }) {
+        this.buttonHints = hints
+        this.undoBtn.title = hints.undo ? `${t('addBar.undo')} (${hints.undo})` : t('addBar.undo')
+        this.redoBtn.title = hints.redo ? `${t('addBar.redo')} (${hints.redo})` : t('addBar.redo')
+        this.pencilBtn.title = hints.pencil
+            ? `${t('addBar.pencil')} (${hints.pencil})`
+            : t('addBar.pencil')
+        this.eraserBtn.title = hints.eraser
+            ? `${t('addBar.eraser')} (${hints.eraser})`
+            : t('addBar.eraser')
+    }
+
     // Updates all translatable strings without rebuilding DOM.
     rebuild() {
-        this.undoBtn.title = t('addBar.undo')
-        this.redoBtn.title = t('addBar.redo')
+        this.updateButtonHints(this.buttonHints)
         this.textBtn.title = t('addBar.text')
         this.imageBtn.title = t('addBar.image')
-        this.pencilBtn.title = t('addBar.pencil')
-        this.eraserBtn.title = t('addBar.eraser')
         this.settingsBtn.title = t('addBar.settings')
         this.noteChevronBtn.title = t('addBar.chooseNoteStyle')
         this.shapeChevronBtn.title = t('addBar.chooseShape')
