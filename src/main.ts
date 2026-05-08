@@ -399,42 +399,9 @@ function paste() {
                     groupId: newGroupId,
                 },
             }
-        } else if (snap.type === 'text') {
-            newSnap = {
-                type: 'text',
-                data: {
-                    ...snap.data,
-                    id: crypto.randomUUID(),
-                    x: snap.data.x + offset,
-                    y: snap.data.y + offset,
-                    groupId: newGroupId,
-                },
-            }
-        } else if (snap.type === 'path') {
-            newSnap = {
-                type: 'path',
-                data: {
-                    ...snap.data,
-                    id: crypto.randomUUID(),
-                    x: snap.data.x + offset,
-                    y: snap.data.y + offset,
-                    groupId: newGroupId,
-                },
-            }
-        } else if (snap.type === 'note') {
-            newSnap = {
-                type: 'note',
-                data: {
-                    ...snap.data,
-                    id: crypto.randomUUID(),
-                    x: snap.data.x + offset,
-                    y: snap.data.y + offset,
-                    groupId: newGroupId,
-                },
-            }
         } else {
             newSnap = {
-                type: 'shape',
+                ...snap,
                 data: {
                     ...snap.data,
                     id: crypto.randomUUID(),
@@ -442,7 +409,7 @@ function paste() {
                     y: snap.data.y + offset,
                     groupId: newGroupId,
                 },
-            }
+            } as BlockSnapshot
         }
         const b = blockFromSnapshot(newSnap)
         addBlock(b)
