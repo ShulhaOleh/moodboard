@@ -17,7 +17,6 @@ import {
     type ActionBindings,
     type ShortcutAction,
     type Keybinding,
-    ACTION_LABELS,
     DEFAULT_KEYBINDINGS,
     saveKeybindings,
     formatBinding,
@@ -43,9 +42,28 @@ const MODIFIER_KEYS = new Set([
 ])
 
 interface RowRefs {
+    labelEl: HTMLElement
     primaryBadge: HTMLButtonElement
     secondaryBadge: HTMLButtonElement
     secondaryClear: HTMLButtonElement
+}
+
+import type { TranslationKey } from '../translations'
+
+const ACTION_TRANSLATION_KEYS: Record<ShortcutAction, TranslationKey> = {
+    delete: 'action.delete',
+    undo: 'action.undo',
+    redo: 'action.redo',
+    copy: 'action.copy',
+    cut: 'action.cut',
+    paste: 'action.paste',
+    pencilToggle: 'action.pencilToggle',
+    eraserToggle: 'action.eraserToggle',
+    renameLayer: 'action.renameLayer',
+    switchToEdit: 'action.switchToEdit',
+    switchToExplore: 'action.switchToExplore',
+    group: 'action.group',
+    ungroup: 'action.ungroup',
 }
 
 export class SettingsPanel {
@@ -420,6 +438,9 @@ export class SettingsPanel {
         for (const { value, el } of this.accentSwatchBtns) el.title = t(accentKeys[value])
         this.uiFontFieldLabelEl.textContent = t('settings.interfaceFont')
         this.keybindingsDescEl.textContent = t('settings.shortcutHint')
+        for (const [action, refs] of this.rowRefs) {
+            refs.labelEl.textContent = t(ACTION_TRANSLATION_KEYS[action])
+        }
         this.aboutNameEl.textContent = t('settings.aboutName')
         this.aboutTaglineEl.textContent = t('settings.aboutTagline')
         const githubSvg = this.aboutGithubEl.querySelector('svg')?.outerHTML ?? ''
@@ -471,7 +492,7 @@ export class SettingsPanel {
 
         const labelEl = document.createElement('div')
         labelEl.className = 'settings-field-label'
-        labelEl.textContent = ACTION_LABELS[action]
+        labelEl.textContent = t(ACTION_TRANSLATION_KEYS[action])
         row.appendChild(labelEl)
 
         const right = document.createElement('div')
@@ -524,7 +545,7 @@ export class SettingsPanel {
 
         secondaryClear.className = 'keybinding-aux-btn keybinding-clear-sec'
 
-        this.rowRefs.set(action, { primaryBadge, secondaryBadge, secondaryClear })
+        this.rowRefs.set(action, { labelEl, primaryBadge, secondaryBadge, secondaryClear })
         this.syncSecondaryBadge(action)
 
         const primaryPair = document.createElement('div')
@@ -650,7 +671,7 @@ export class SettingsPanel {
         const slotLabel = conflict.slot === 'secondary' ? t('settings.secondShortcut') : ''
         const msg = document.createElement('span')
         msg.className = 'keybinding-conflict-msg'
-        msg.innerHTML = `${t('settings.conflictsWith')} <strong>${ACTION_LABELS[conflict.action]}</strong>${slotLabel}`
+        msg.innerHTML = `${t('settings.conflictsWith')} <strong>${t(ACTION_TRANSLATION_KEYS[conflict.action])}</strong>${slotLabel}`
 
         const overrideBtn = document.createElement('button')
         overrideBtn.className = 'keybinding-conflict-override'
