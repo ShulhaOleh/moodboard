@@ -180,6 +180,7 @@
     "dialog.confirm": "Confirm",
 
     "fontPicker.search": "Search fonts…",
+    "fontPicker.noResults": "No fonts found",
 
     "export.rendering": "Rendering…",
     "export.failed": "Render failed."
