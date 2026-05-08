@@ -1,12 +1,12 @@
 // Translation module — auto-discovers locale JSON files and provides a typed t() lookup.
-// Adding a new language requires only dropping a new <code>.json file in this folder.
+// Adding a new language requires only dropping a new <code>.json file in src/translations/.
 
-import en from './en.json'
+import en from './translations/en.json'
 
 export type TranslationKey = keyof typeof en
 
 // Each module is the parsed JSON object (the default export of the JSON file).
-const all = import.meta.glob<Record<string, string>>('./*.json', {
+const all = import.meta.glob<Record<string, string>>('./translations/*.json', {
     eager: true,
     import: 'default',
 })
@@ -23,7 +23,7 @@ export function onLocaleChange(fn: () => void): void {
 }
 
 export function setLocale(code: string): void {
-    const match = all[`./${code}.json`]
+    const match = all[`./translations/${code}.json`]
     current = match
         ? { ...(en as Record<string, string>), ...match }
         : (en as Record<string, string>)
@@ -45,7 +45,7 @@ export function getCurrentLocale(): string {
 export function getLocales(): { code: string; name: string }[] {
     return Object.keys(all)
         .map((path) => {
-            const code = path.slice(2, -5) // './en.json' → 'en'
+            const code = path.slice('./translations/'.length, -5) // './translations/en.json' → 'en'
             const name = (all[path] as Record<string, string>)['_name'] ?? code
             return { code, name }
         })
