@@ -11,30 +11,32 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), '../src/translations')
-const en = JSON.parse(readFileSync(resolve(dir, 'en.json'), 'utf8'))
+const en: Record<string, string> = JSON.parse(readFileSync(resolve(dir, 'en.json'), 'utf8'))
 const enKeys = Object.keys(en).filter((k) => k !== '_name')
 const enKeySet = new Set(enKeys)
 
-const red = (s) => `\x1b[31m${s}\x1b[0m`
-const yellow = (s) => `\x1b[33m${s}\x1b[0m`
-const green = (s) => `\x1b[32m${s}\x1b[0m`
-const bold = (s) => `\x1b[1m${s}\x1b[0m`
+const red = (s: string) => `\x1b[31m${s}\x1b[0m`
+const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`
+const green = (s: string) => `\x1b[32m${s}\x1b[0m`
+const bold = (s: string) => `\x1b[1m${s}\x1b[0m`
 
 const generate = process.argv[2] === '--generate'
 const target = generate ? process.argv[3] : process.argv[2]
 
 if (generate) {
     if (!target) {
-        console.error(red('Usage: node scripts/check-translations.js --generate <code>'))
+        console.error(red('Usage: npm run translate <code>'))
         process.exit(1)
     }
 
     const code = target.replace(/\.json$/, '')
     const file = resolve(dir, `${code}.json`)
-    const existing = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {}
+    const existing: Record<string, string> = existsSync(file)
+        ? JSON.parse(readFileSync(file, 'utf8'))
+        : {}
     const isNew = !existsSync(file)
 
-    const output = { _name: existing['_name'] ?? `!! ${code}` }
+    const output: Record<string, string> = { _name: existing['_name'] ?? `!! ${code}` }
     let filled = 0
     let marked = 0
 
@@ -72,12 +74,14 @@ if (target && !existsSync(resolve(dir, files[0]))) {
 let totalIssues = 0
 
 for (const file of files) {
-    const locale = JSON.parse(readFileSync(resolve(dir, file), 'utf8'))
+    const locale: Record<string, string> = JSON.parse(readFileSync(resolve(dir, file), 'utf8'))
     const localeKeys = new Set(Object.keys(locale).filter((k) => k !== '_name'))
     const name = locale['_name'] ?? file
 
     const missing = enKeys.filter((k) => !localeKeys.has(k))
-    const untranslated = enKeys.filter((k) => localeKeys.has(k) && typeof locale[k] === 'string' && locale[k].startsWith('!! '))
+    const untranslated = enKeys.filter(
+        (k) => localeKeys.has(k) && typeof locale[k] === 'string' && locale[k].startsWith('!! '),
+    )
     const extra = [...localeKeys].filter((k) => !enKeySet.has(k))
     const issues = missing.length + untranslated.length + extra.length
     const translated = enKeys.length - missing.length - untranslated.length
@@ -99,7 +103,9 @@ for (const file of files) {
     }
 
     if (untranslated.length > 0) {
-        console.log(`  ${red(`${untranslated.length} untranslated key${untranslated.length > 1 ? 's' : ''}:`)}`)
+        console.log(
+            `  ${red(`${untranslated.length} untranslated key${untranslated.length > 1 ? 's' : ''}:`)}`,
+        )
         for (const k of untranslated) console.log(`    ${red('!')} ${k}`)
     }
 
