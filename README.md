@@ -41,6 +41,8 @@ A moodboard editor that runs entirely in the browser with local persistence.
 | `npm run typecheck` | Type-check only, no emit |
 | `npm run lint` | Lint source files |
 | `npm run format` | Format source files |
+| `npm run check-translations` | Verify all locale files are complete |
+| `npm run translate <code>` | Generate or sync a locale file |
 
 ## License
 
