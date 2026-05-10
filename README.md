@@ -2,6 +2,9 @@
 
 A moodboard editor that runs entirely in the browser with local persistence.
 
+> [!WARNING]
+> Primarily developed and tested on Chrome-based browsers. Other browsers may work but are not guaranteed to behave correctly.
+
 ## Stack
 
 - **TypeScript** — strict mode, no framework
