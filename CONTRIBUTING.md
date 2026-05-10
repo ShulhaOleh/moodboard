@@ -38,14 +38,14 @@ The commit-msg hook will reject commits that don't follow this format.
 
 Locale files live in `src/translations/`. Each file is a flat JSON object where every key matches the canonical English file `en.json`.
 
-1. Copy `en.json` to `<code>.json` (e.g. `fr.json` for French).
-2. Add a `"_name"` key with the language's native name (e.g. `"Français"`).
-3. Translate all the values. Do not add or remove keys — missing keys fall back to English silently.
+1. Run `npm run translate ru` to create a pre-filled `src/translations/ru.json` with all keys marked `!!` where translation is needed.
+2. Set the `"_name"` key to the language's native name (e.g. `"Русский"`).
+3. Translate every value that starts with `!!` — when done, remove the `!!` prefix.
 4. Run `npm run check-translations` to verify your file is complete.
 5. Open a pull request. The app picks up the new file automatically; no code changes needed.
 
 Use the locale code as the commit scope:
 
 ```
-feat(fr): add French translation
+feat(ru): add Russian translation
 ```
