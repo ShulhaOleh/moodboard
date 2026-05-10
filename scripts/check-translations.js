@@ -3,9 +3,8 @@
 // Exits with code 1 if any issues are found.
 //
 // Usage:
-//   node scripts/check-translations.js              # check all locales
-//   node scripts/check-translations.js fr           # check one locale
-//   node scripts/check-translations.js --generate fr  # generate/sync fr.json
+//   npm run check-translations                      # check all locales
+//   npm run translate fr                            # generate/sync fr.json
 
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'fs'
 import { resolve, dirname } from 'path'
@@ -40,7 +39,7 @@ if (generate) {
     let marked = 0
 
     for (const key of enKeys) {
-        if (existing[key] !== undefined && !existing[key].startsWith('!! ')) {
+        if (typeof existing[key] === 'string' && !existing[key].startsWith('!! ')) {
             output[key] = existing[key]
             filled++
         } else {
@@ -65,6 +64,11 @@ const files = target
     ? [`${target.replace(/\.json$/, '')}.json`]
     : readdirSync(dir).filter((f) => f.endsWith('.json') && f !== 'en.json')
 
+if (target && !existsSync(resolve(dir, files[0]))) {
+    console.error(red(`Locale file not found: src/translations/${files[0]}`))
+    process.exit(1)
+}
+
 let totalIssues = 0
 
 for (const file of files) {
@@ -73,7 +77,7 @@ for (const file of files) {
     const name = locale['_name'] ?? file
 
     const missing = enKeys.filter((k) => !localeKeys.has(k))
-    const untranslated = enKeys.filter((k) => localeKeys.has(k) && locale[k].startsWith('!! '))
+    const untranslated = enKeys.filter((k) => localeKeys.has(k) && typeof locale[k] === 'string' && locale[k].startsWith('!! '))
     const extra = [...localeKeys].filter((k) => !enKeySet.has(k))
     const issues = missing.length + untranslated.length + extra.length
     const translated = enKeys.length - missing.length - untranslated.length
