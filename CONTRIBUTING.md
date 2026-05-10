@@ -41,7 +41,8 @@ Locale files live in `src/translations/`. Each file is a flat JSON object where 
 1. Copy `en.json` to `<code>.json` (e.g. `fr.json` for French).
 2. Add a `"_name"` key with the language's native name (e.g. `"Français"`).
 3. Translate all the values. Do not add or remove keys — missing keys fall back to English silently.
-4. Open a pull request. The app picks up the new file automatically; no code changes needed.
+4. Run `npm run check-translations` to verify your file is complete.
+5. Open a pull request. The app picks up the new file automatically; no code changes needed.
 
 Use the locale code as the commit scope:
 

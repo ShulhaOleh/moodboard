@@ -10,7 +10,8 @@
     "prepare": "husky",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
-    "format": "prettier --write src"
+    "format": "prettier --write src",
+    "check-translations": "node scripts/check-translations.js"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
