@@ -30,15 +30,18 @@ for (const file of files) {
     const missing = [...enKeys].filter((k) => !localeKeys.has(k))
     const extra = [...localeKeys].filter((k) => !enKeys.has(k))
     const issues = missing.length + extra.length
+    const translated = enKeys.size - missing.length
+    const pct = Math.floor((translated / enKeys.size) * 100)
+    const progress = `${translated}/${enKeys.size} keys (${pct}%)`
 
     totalIssues += issues
 
     if (issues === 0) {
-        console.log(`${green('✓')} ${bold(name)} (${file}) — complete`)
+        console.log(`${green('✓')} ${bold(name)} (${file}) — ${progress}`)
         continue
     }
 
-    console.log(`\n${bold(name)} (${file})`)
+    console.log(`\n${bold(name)} (${file}) — ${red(progress)}`)
 
     if (missing.length > 0) {
         console.log(`  ${red(`${missing.length} missing key${missing.length > 1 ? 's' : ''}:`)  }`)
