@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "start": "npm run build && vite preview --open",
+    "start": "pnpm run build && vite preview --open",
     "prepare": "husky",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
@@ -42,8 +42,13 @@
     "dexie": "^4.3.0",
     "lucide": "^1.14.0"
   },
+  "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   },
   "lint-staged": {
     "src/**/*.ts": [
