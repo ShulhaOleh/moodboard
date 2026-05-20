@@ -38,14 +38,14 @@ A moodboard editor that runs entirely in the browser with local persistence.
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start dev server with HMR |
-| `npm run build` | Type-check and build for production |
-| `npm run start` | Build and open in browser |
-| `npm run typecheck` | Type-check only, no emit |
-| `npm run lint` | Lint source files |
-| `npm run format` | Format source files |
-| `npm run check-translations` | Verify all locale files are complete |
-| `npm run translate <code>` | Generate or sync a locale file |
+| `pnpm dev` | Start dev server with HMR |
+| `pnpm build` | Type-check and build for production |
+| `pnpm start` | Build and open in browser |
+| `pnpm typecheck` | Type-check only, no emit |
+| `pnpm lint` | Lint source files |
+| `pnpm format` | Format source files |
+| `pnpm check-translations` | Verify all locale files are complete |
+| `pnpm translate <code>` | Generate or sync a locale file |
 
 ## License
 
