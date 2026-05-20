@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev                        # dev server with HMR
-npm run build                      # type-check (tsc) then bundle (vite)
-npm run start                      # build then serve and open in browser
-npm run lint                       # ESLint
-npm run format                     # Prettier (writes in place)
-npm run typecheck                  # type-check only, no emit
-npm run check-translations         # verify all locale files are complete
-npm run translate <code>           # generate/sync a locale file (e.g. npm run translate ru)
+pnpm dev                           # dev server with HMR
+pnpm build                         # type-check (tsc) then bundle (vite)
+pnpm start                         # build then serve and open in browser
+pnpm lint                          # ESLint
+pnpm format                        # Prettier (writes in place)
+pnpm typecheck                     # type-check only, no emit
+pnpm check-translations            # verify all locale files are complete
+pnpm translate <code>              # generate/sync a locale file (e.g. pnpm translate ru)
 ```
 
 There are no tests yet.
